@@ -22030,7 +22030,6 @@ function estimateAirbnbIncome(p) {
   // Lakefront premium
   if (p.waterType === 'lakefront') nightlyRate *= 1.25;
   // Pool community premium
-  const comm = COMMUNITY_DATA[p.waterBodyName];
   if (comm && comm.amenities.includes('Pool')) nightlyRate *= 1.1;
   const occupancy = 0.58;
   const monthly = Math.round(nightlyRate * 30 * occupancy);
