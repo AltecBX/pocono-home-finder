@@ -151,6 +151,254 @@ function decodeEntities(str) {
     .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
 }
 
+// Known lake community names for matching Redfin listings to lakes
+const LAKE_COMMUNITY_KEYWORDS = {};
+for (const l of LAKES) {
+  const words = l.name.toLowerCase().replace(/\blakes?\b/g, '').trim().split(/\s+/);
+  LAKE_COMMUNITY_KEYWORDS[l.name] = words.filter(w => w.length > 2);
+}
+
+// ========== REDFIN STINGRAY API ==========
+
+async function scrapeRedfin() {
+  console.log('\n🔴 Scraping Redfin (Stingray API)...');
+  const listings = [];
+
+  try {
+    // Fetch ALL Monroe County active single-family listings
+    const apiUrl = 'https://www.redfin.com/stingray/api/gis?al=1&region_id=2405&region_type=5&num_homes=500&status=9&sf=1,2,3,5,6,7&uipt=1&v=8';
+    const resp = await fetch(apiUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Referer': 'https://www.redfin.com/county/2405/PA/Monroe-County',
+      },
+    });
+
+    if (!resp.ok) {
+      console.warn(`   Redfin API returned HTTP ${resp.status}`);
+      return listings;
+    }
+
+    let text = await resp.text();
+    // Strip CSRF prefix: {}&&
+    if (text.startsWith('{}&&')) text = text.slice(4);
+    const data = JSON.parse(text);
+
+    const homes = data?.payload?.homes || [];
+    console.log(`   Redfin returned ${homes.length} total Monroe County listings`);
+
+    // Filter for waterfront/lake keywords
+    const waterKeywords = /\b(lake|lakefront|lake\s*front|waterfront|water\s*front|pond|lakeshore|lakeside|lake\s*access|lake\s*community|lake\s*view)\b/i;
+
+    for (const home of homes) {
+      const remarks = home.listingRemarks || '';
+      const tags = (home.listingTags || []).join(' ');
+      const subdivision = home.location || '';
+      const address = home.streetLine || '';
+
+      // Check if this is a waterfront/lake property
+      const isWaterfront = waterKeywords.test(remarks) ||
+                           waterKeywords.test(tags) ||
+                           waterKeywords.test(subdivision) ||
+                           waterKeywords.test(address);
+
+      if (!isWaterfront) continue;
+
+      // Try to match to a specific lake
+      let matchedLake = 'Unknown Lake';
+      const searchText = `${remarks} ${tags} ${subdivision} ${address}`.toLowerCase();
+      for (const lake of LAKES) {
+        const lakeLower = lake.name.toLowerCase();
+        if (searchText.includes(lakeLower) || searchText.includes(lakeLower.replace(' lake', '').replace('lake ', ''))) {
+          matchedLake = lake.name;
+          break;
+        }
+      }
+
+      // If no exact match, try partial keyword matching
+      if (matchedLake === 'Unknown Lake') {
+        for (const lake of LAKES) {
+          const keywords = LAKE_COMMUNITY_KEYWORDS[lake.name];
+          if (keywords && keywords.length > 0 && keywords.every(kw => searchText.includes(kw))) {
+            matchedLake = lake.name;
+            break;
+          }
+        }
+      }
+
+      const price = home.price?.value || home.price || 0;
+      if (!price || price <= 0) continue;
+
+      const lat = home.latLong?.latitude || home.latitude || 0;
+      const lng = home.latLong?.longitude || home.longitude || 0;
+
+      // Build listing URL
+      const listingUrl = home.url ? `https://www.redfin.com${home.url}` : '';
+
+      // Get photo
+      let image = '';
+      if (home.photos && home.photos.length > 0) {
+        const photo = home.photos[0];
+        if (typeof photo === 'string') image = photo;
+        else if (photo.photoUrls && photo.photoUrls.fullScreenPhotoUrl) image = photo.photoUrls.fullScreenPhotoUrl;
+        else if (photo.photoUrls && photo.photoUrls.nonFullScreenPhotoUrl) image = photo.photoUrls.nonFullScreenPhotoUrl;
+      }
+
+      listings.push({
+        address: address,
+        city: home.city || '',
+        zipCode: home.zip || '',
+        price: typeof price === 'number' ? price : parseInt(price),
+        bedrooms: home.beds || 0,
+        bathrooms: home.baths || 0,
+        sqft: home.sqFt?.value || home.sqFt || 0,
+        lotAcres: home.lotSize?.value ? Math.round(home.lotSize.value / 43560 * 100) / 100 : 0,
+        yearBuilt: home.yearBuilt || 0,
+        latitude: lat,
+        longitude: lng,
+        waterBodyName: matchedLake,
+        hoaFee: home.hoa?.value || home.hoa || 0,
+        motorboats: false,
+        description: remarks.slice(0, 500),
+        image: image,
+        listingUrl: listingUrl,
+        mlsId: home.mlsId || '',
+        daysOnMarket: home.dom || home.timeOnRedfin?.value || 0,
+        isReduced: (home.sashes || []).some(s => typeof s === 'string' ? s.includes('PRICE_DROP') : (s?.sashType || s?.sashTypeId || '').toString().includes('PRICE_DROP')),
+        photoCount: (home.photos || []).length,
+        source: 'Redfin',
+        redfin: true,
+      });
+    }
+
+    console.log(`   Found ${listings.length} waterfront/lake listings on Redfin`);
+  } catch (err) {
+    console.error(`   Redfin scrape error: ${err.message}`);
+  }
+
+  return listings;
+}
+
+// ========== CRAIGSLIST FSBO SCRAPING ==========
+
+async function scrapeCraigslistFSBO() {
+  console.log('\n📋 Scraping Craigslist Poconos FSBO...');
+  const listings = [];
+
+  try {
+    const url = 'https://poconos.craigslist.org/search/rea?purveyor=owner&query=lake&min_price=50000&max_price=2000000#search=1~list~0~0';
+    const html = await fetchPage(url);
+
+    // Extract listing links from search results (can be /reb/ or /rea/ or other)
+    const linkPattern = /href="(https:\/\/poconos\.craigslist\.org\/[^"]*\/d\/[^"]+)"/g;
+    let linkMatch;
+    const links = [];
+    while ((linkMatch = linkPattern.exec(html)) !== null && links.length < 30) {
+      links.push(linkMatch[1]);
+    }
+
+    console.log(`   Found ${links.length} FSBO listings on Craigslist`);
+
+    // Fetch each listing for details (limit to 20 to be polite)
+    for (let i = 0; i < Math.min(links.length, 20); i++) {
+      try {
+        await new Promise(r => setTimeout(r, 500));
+        const listingHtml = await fetchPage(links[i]);
+
+        const titleMatch = listingHtml.match(/<span id="titletextonly">([^<]+)<\/span>/);
+        const priceMatch = listingHtml.match(/<span class="price">\$([^<]+)<\/span>/);
+        const latMatch = listingHtml.match(/"latitude":"([\d.-]+)"/);
+        const lngMatch = listingHtml.match(/"longitude":"([\d.-]+)"/);
+        const bodyMatch = listingHtml.match(/<section id="postingbody">([\s\S]*?)<\/section>/);
+        const imgMatch = listingHtml.match(/<img[^>]+src="(https:\/\/images\.craigslist\.org\/[^"]+)"/);
+
+        if (!priceMatch) continue;
+
+        const title = titleMatch ? titleMatch[1].trim() : '';
+        const price = parseInt(priceMatch[1].replace(/,/g, ''));
+        const body = bodyMatch ? bodyMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+        const lat = latMatch ? parseFloat(latMatch[1]) : 0;
+        const lng = lngMatch ? parseFloat(lngMatch[1]) : 0;
+
+        if (price < 100000 || price > 1500000) continue;
+
+        // Try to extract address from title or body
+        const addrMatch = (title + ' ' + body).match(/(\d+\s+[A-Z][a-z]+[\w\s]*(?:Rd|Dr|St|Ave|Ln|Way|Ct|Blvd|Road|Drive|Street|Lane|Court|Place|Pl|Circle|Cir|Trail|Trl))/);
+        const address = addrMatch ? addrMatch[1].trim() : title.slice(0, 50);
+
+        // Try to match lake
+        let matchedLake = 'Unknown Lake';
+        const searchText = `${title} ${body}`.toLowerCase();
+        for (const lake of LAKES) {
+          if (searchText.includes(lake.name.toLowerCase())) {
+            matchedLake = lake.name;
+            break;
+          }
+        }
+
+        // Extract beds/baths from body
+        const bedsMatch = body.match(/(\d+)\s*(?:bed|br|bedroom)/i);
+        const bathsMatch = body.match(/([\d.]+)\s*(?:bath|ba|bathroom)/i);
+        const sqftMatch = body.match(/([\d,]+)\s*(?:sq\s*ft|sqft|square\s*feet)/i);
+
+        listings.push({
+          address: address,
+          city: '',
+          zipCode: '',
+          price: price,
+          bedrooms: bedsMatch ? parseInt(bedsMatch[1]) : 0,
+          bathrooms: bathsMatch ? parseFloat(bathsMatch[1]) : 0,
+          sqft: sqftMatch ? parseInt(sqftMatch[1].replace(/,/g, '')) : 0,
+          lotAcres: 0,
+          yearBuilt: 0,
+          latitude: lat,
+          longitude: lng,
+          waterBodyName: matchedLake,
+          hoaFee: 0,
+          motorboats: false,
+          description: body.slice(0, 500),
+          image: imgMatch ? imgMatch[1] : '',
+          listingUrl: links[i],
+          daysOnMarket: 0,
+          isReduced: false,
+          photoCount: 1,
+          source: 'Craigslist FSBO',
+          fsbo: true,
+        });
+      } catch (err) {
+        // Skip individual listing errors
+      }
+    }
+
+    console.log(`   Parsed ${listings.length} FSBO listings`);
+  } catch (err) {
+    console.warn(`   Craigslist scrape error: ${err.message}`);
+  }
+
+  return listings;
+}
+
+// ========== ADDRESS NORMALIZATION FOR DEDUP ==========
+
+function normalizeAddress(addr) {
+  return String(addr || '').trim().toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/\bstreet\b/g, 'st')
+    .replace(/\broad\b/g, 'rd')
+    .replace(/\bdrive\b/g, 'dr')
+    .replace(/\blane\b/g, 'ln')
+    .replace(/\bavenue\b/g, 'ave')
+    .replace(/\bcourt\b/g, 'ct')
+    .replace(/\bplace\b/g, 'pl')
+    .replace(/\bcircle\b/g, 'cir')
+    .replace(/\btrail\b/g, 'trl')
+    .replace(/\bboulevard\b/g, 'blvd')
+    .replace(/[.,#]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ========== DIRECT HTTP SCRAPING (NO API NEEDED) ==========
 
 async function fetchPage(url, retries = 3) {
@@ -318,16 +566,18 @@ async function enrichListing(listing) {
 // ========== PROPERTY JS GENERATOR ==========
 
 function generatePropertyJS(listing, id) {
-  const isLakefront = (listing.description || '').toLowerCase().includes('lakefront') ||
-                      (listing.description || '').toLowerCase().includes('lake front') ||
-                      listing.address.toLowerCase().includes('lake shore') ||
-                      listing.address.toLowerCase().includes('lakeshore') ||
-                      listing.address.toLowerCase().includes('lakeside');
+  const addr = String(listing.address || '');
+  const desc = String(listing.description || '');
+  const isLakefront = desc.toLowerCase().includes('lakefront') ||
+                      desc.toLowerCase().includes('lake front') ||
+                      addr.toLowerCase().includes('lake shore') ||
+                      addr.toLowerCase().includes('lakeshore') ||
+                      addr.toLowerCase().includes('lakeside');
 
   const waterType = isLakefront ? 'LAKEFRONT' : 'LAKE_ACCESS';
 
   // Scoring heuristics (seeded by address hash for consistency between runs)
-  const hash = listing.address.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+  const hash = addr.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
   const pseudoRand = (seed, range) => Math.abs((hash * seed) % range);
 
   const waterScore = isLakefront ? 85 + pseudoRand(7, 10) : 50 + pseudoRand(7, 15);
@@ -343,18 +593,21 @@ function generatePropertyJS(listing, id) {
         : 'Lakefront with calm water (no motorboats). Dogs can swim from shoreline.')
     : 'Community beach access only. Dogs may be restricted at main beaches.';
 
-  const sources = [
-    { name: 'LakeHouse.com', url: listing.listingUrl, verified: true },
-    ...getSourcesForProperty(listing.address, listing.city, listing.zipCode),
-    ...(listing.realtorUrl ? [{ name: 'Realtor.com', url: listing.realtorUrl, verified: true }] : []),
-  ];
+  // Build sources: verified (actually found on that site) + search links (for user convenience)
+  const verifiedSources = (listing._sources || [{ name: 'LakeHouse.com', url: listing.listingUrl, verified: true }]);
+  if (listing.realtorUrl) verifiedSources.push({ name: 'Realtor.com', url: listing.realtorUrl, verified: true });
+
+  const searchLinks = getSourcesForProperty(listing.address, listing.city, listing.zipCode)
+    .filter(s => !verifiedSources.some(v => v.name === s.name));
+
+  const sources = [...verifiedSources, ...searchLinks];
 
   const image = listing.image || FALLBACK_PHOTOS[id % FALLBACK_PHOTOS.length];
   const lat = listing.latitude || (41.1 + pseudoRand(31, 400) / 1000);
   const lng = listing.longitude || (-75.6 + pseudoRand(37, 400) / 1000);
 
-  // Days on market: hash-based for consistency
-  const daysOnMarket = 5 + pseudoRand(41, 45);
+  // Days on market: use real data if available, otherwise hash-based
+  const daysOnMarket = listing.daysOnMarket || (5 + pseudoRand(41, 45));
 
   // Calculate distances to nearest amenities
   const nearestTesla = findNearest(lat, lng, TESLA_SUPERCHARGERS);
@@ -364,8 +617,8 @@ function generatePropertyJS(listing, id) {
 
   // Escape strings for safe JS output
   const safeDesc = JSON.stringify(listing.description || '');
-  const safeAddress = listing.address.replace(/"/g, '\\"');
-  const safeCity = (listing.city || '').replace(/"/g, '\\"');
+  const safeAddress = String(listing.address || '').replace(/"/g, '\\"');
+  const safeCity = String(listing.city || '').replace(/"/g, '\\"');
   const safeDogNotes = JSON.stringify(dogNotes);
 
   return `  {
@@ -390,42 +643,94 @@ function generatePropertyJS(listing, id) {
 // ========== MAIN ==========
 
 async function main() {
-  console.log('🏠 Pocono Home Finder — Listing Updater (Direct Scrape)');
+  console.log('🏠 Pocono Home Finder — Multi-Source Listing Aggregator');
   console.log('========================================================');
-  console.log('   No API keys needed — scraping LakeHouse.com directly\n');
+  console.log('   Sources: LakeHouse.com + Redfin + Craigslist FSBO\n');
 
-  const allListings = [];
-  const seenAddresses = new Set();
+  // Master listing map: keyed by normalized address for dedup
+  const masterListings = new Map();
 
-  // Step 1: Scrape index pages for each lake
+  function addListing(listing, sourceName) {
+    const key = normalizeAddress(listing.address);
+    if (!key || key.length < 5) return false;
+
+    if (masterListings.has(key)) {
+      // Merge: add this source to existing listing
+      const existing = masterListings.get(key);
+      if (!existing._sources) existing._sources = [];
+      existing._sources.push({
+        name: sourceName,
+        url: listing.listingUrl,
+        verified: true,
+      });
+
+      // Update fields if the new source has better data
+      if (!existing.latitude && listing.latitude) {
+        existing.latitude = listing.latitude;
+        existing.longitude = listing.longitude;
+      }
+      if (!existing.image && listing.image) existing.image = listing.image;
+      if (!existing.sqft && listing.sqft) existing.sqft = listing.sqft;
+      if (!existing.yearBuilt && listing.yearBuilt) existing.yearBuilt = listing.yearBuilt;
+      if (!existing.description && listing.description) existing.description = listing.description;
+      if (listing.mlsId && !existing.mlsId) existing.mlsId = listing.mlsId;
+      if (listing.daysOnMarket && !existing.daysOnMarket) existing.daysOnMarket = listing.daysOnMarket;
+      if (listing.isReduced) existing.isReduced = true;
+
+      return false; // duplicate
+    }
+
+    // New listing
+    listing._sources = [{ name: sourceName, url: listing.listingUrl, verified: true }];
+    listing.lakeName = listing.waterBodyName || listing.lakeName;
+    masterListings.set(key, listing);
+    return true;
+  }
+
+  // ===== SOURCE 1: LakeHouse.com =====
+  console.log('📗 SOURCE 1: LakeHouse.com');
+  console.log('─'.repeat(40));
   for (const lake of LAKES) {
     console.log(`📍 Scraping ${lake.name}...`);
     try {
       const html = await fetchPage(lake.indexUrl);
       const listings = parseIndexPageHTML(html, lake);
-      console.log(`   Found ${listings.length} listings`);
-
       let added = 0;
       for (const l of listings) {
-        const key = (l.address || '').trim().toLowerCase().replace(/\s+/g, ' ');
-        if (key && !seenAddresses.has(key)) {
-          seenAddresses.add(key);
-          allListings.push({ ...l, lakeName: lake.name });
-          added++;
-        }
+        if (addListing(l, 'LakeHouse.com')) added++;
       }
-      if (added < listings.length) {
-        console.log(`   ⚠️ Skipped ${listings.length - added} duplicates`);
-      }
+      console.log(`   Found ${listings.length}, added ${added} new`);
     } catch (err) {
       console.error(`   Error scraping ${lake.name}: ${err.message}`);
     }
-
-    // Small delay between lakes to be polite
     await new Promise(r => setTimeout(r, 500));
   }
+  console.log(`   LakeHouse.com total: ${masterListings.size} unique listings\n`);
 
-  console.log(`\n📊 Total unique listings: ${allListings.length}\n`);
+  // ===== SOURCE 2: Redfin Stingray API =====
+  const redfinListings = await scrapeRedfin();
+  let redfinAdded = 0;
+  for (const l of redfinListings) {
+    if (addListing(l, 'Redfin')) redfinAdded++;
+  }
+  console.log(`   Redfin added ${redfinAdded} NEW listings not on LakeHouse.com`);
+  console.log(`   Running total: ${masterListings.size} unique listings\n`);
+
+  // ===== SOURCE 3: Craigslist FSBO =====
+  const fsboListings = await scrapeCraigslistFSBO();
+  let fsboAdded = 0;
+  for (const l of fsboListings) {
+    if (addListing(l, 'Craigslist FSBO')) fsboAdded++;
+  }
+  console.log(`   FSBO added ${fsboAdded} NEW listings`);
+  console.log(`   Running total: ${masterListings.size} unique listings\n`);
+
+  const allListings = Array.from(masterListings.values());
+  console.log(`\n📊 TOTAL UNIQUE LISTINGS: ${allListings.length}`);
+  console.log(`   From LakeHouse.com: ${allListings.filter(l => l._sources?.some(s => s.name === 'LakeHouse.com')).length}`);
+  console.log(`   From Redfin: ${allListings.filter(l => l._sources?.some(s => s.name === 'Redfin')).length}`);
+  console.log(`   From Craigslist FSBO: ${allListings.filter(l => l._sources?.some(s => s.name === 'Craigslist FSBO')).length}`);
+  console.log(`   Multi-source (on 2+ sites): ${allListings.filter(l => (l._sources || []).length >= 2).length}\n`);
 
   if (allListings.length === 0) {
     console.error('No listings found. Aborting update.');
