@@ -527,13 +527,13 @@ const PROPERTIES = [
   },
   {
     id: 10, address: "4169 Hemlock Trail", city: "Pocono Pines", zipCode: "18350",
-    price: 579000, bedrooms: 3, bathrooms: 3, sqft: 1746, lotAcres: 0.35, yearBuilt: 1988,
+    price: 579000, previousPrice: 629000, bedrooms: 3, bathrooms: 3, sqft: 1746, lotAcres: 0.35, yearBuilt: 1988,
     waterType: "LAKE_ACCESS", waterBodyName: "Lake Naomi",
     overallScore: 75, waterAccessScore: 62, dogSwimScore: 50, privacyScore: 72, valueScore: 80,
     daysOnMarket: 30, sourceCount: 2, hasConflicts: false, isFavorite: false,
     description: "Price reduced! Welcome to 4169 Hemlock Trail! This tri-level beauty has been lovingly restored in 2022 with dream kitchen, plenty of cabinets, stainless appliances and quartz counter tops. Lake Naomi community with lake access privileges.",
     latitude: 41.12124634, longitude: -75.43794250,
-    status: "Active", hoaFee: 500, annualTax: 6200, garage: "1-car attached",
+    status: "Price Reduced", hoaFee: 500, annualTax: 6200, garage: "1-car attached",
     basement: "Unfinished", fireplace: true, fencedYard: false,
     dogSwimAccessible: false, dogAccessNotes: "Community beach access only. Dogs may be restricted at main beaches. No private water access on property.",
     shorelineType: "Community beach only", photoCount: 15,
@@ -546,13 +546,13 @@ const PROPERTIES = [
   },
   {
     id: 11, address: "275 Tanglewood Dr", city: "Pocono Pines", zipCode: "18350",
-    price: 539000, bedrooms: 3, bathrooms: 2, sqft: 3310, lotAcres: 0.40, yearBuilt: 1999,
+    price: 539000, previousPrice: 599000, bedrooms: 3, bathrooms: 2, sqft: 3310, lotAcres: 0.40, yearBuilt: 1999,
     waterType: "LAKE_ACCESS", waterBodyName: "Lake Naomi",
     overallScore: 76, waterAccessScore: 58, dogSwimScore: 45, privacyScore: 75, valueScore: 85,
     daysOnMarket: 32, sourceCount: 2, hasConflicts: false, isFavorite: false,
     description: "The deal of a lifetime! Three floors, great bones, great price — all in Lake Naomi! Welcome to your dream home. 3,310 sq ft with 3 bedrooms, 2 baths. Under contract with kickout clause, able to consider offers. Community lake access.",
     latitude: 41.11575699, longitude: -75.42842102,
-    status: "Active", hoaFee: 500, annualTax: 6800, garage: "2-car attached",
+    status: "Price Reduced", hoaFee: 500, annualTax: 6800, garage: "2-car attached",
     basement: "Finished", fireplace: true, fencedYard: false,
     dogSwimAccessible: false, dogAccessNotes: "Community lake access — dogs may be restricted at beaches. No private waterfront. Wooded lot provides privacy.",
     shorelineType: "Community beach only", photoCount: 16,
@@ -791,8 +791,18 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       </div>
     </div>
 
+    <!-- Last Updated -->
+    <div class="mt-8 animate-fade-in-up stagger-4">
+      <div class="inline-flex items-center gap-2 text-xs text-slate-600 glass rounded-full px-4 py-2">
+        <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+        <span>Last updated: <span id="last-updated" class="text-slate-400">March 21, 2026</span></span>
+        <span class="text-slate-700">|</span>
+        <span class="text-slate-500">Data from MLS & public listings</span>
+      </div>
+    </div>
+
     <!-- Scroll down indicator -->
-    <div class="mt-16 animate-fade-in-up stagger-4">
+    <div class="mt-8 animate-fade-in-up stagger-4">
       <a href="#search" class="inline-flex flex-col items-center gap-1 text-slate-600 hover:text-water transition">
         <span class="text-xs">Explore Properties</span>
         <i data-lucide="chevron-down" class="w-5 h-5 animate-bounce"></i>
@@ -843,6 +853,9 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <option value="price-asc">Price: Low to High</option>
       <option value="price-desc">Price: High to Low</option>
       <option value="water">Best Water Access</option>
+      <option value="newest">Newest First</option>
+      <option value="reduced">Price Drops First</option>
+      <option value="sqft">Largest First</option>
     </select>
     <!-- Dog friendly toggle -->
     <div class="flex items-center gap-2 ml-auto">
@@ -864,6 +877,9 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <option value="price-asc">Price Low</option>
       <option value="price-desc">Price High</option>
       <option value="water">Water Access</option>
+      <option value="newest">Newest</option>
+      <option value="reduced">Price Drops</option>
+      <option value="sqft">Largest</option>
     </select>
   </div>
 
@@ -1140,7 +1156,8 @@ function renderPropertyCard(p) {
         <!-- Price overlaid on photo -->
         <div class="absolute top-4 left-4 z-10">
           <span class="text-2xl font-bold text-white drop-shadow-lg">${formatPrice(p.price)}</span>
-          ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/80 text-white rounded-full px-2 py-0.5">Price Drop</span>' : ''}
+          ${p.previousPrice ? `<span class="ml-2 text-sm text-red-300 line-through drop-shadow">${formatPrice(p.previousPrice)}</span>` : ''}
+          ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/80 text-white rounded-full px-2 py-0.5 animate-pulse">Price Drop</span>' : ''}
         </div>
 
         <!-- Favorite button -->
@@ -1242,6 +1259,9 @@ function getFilteredProperties() {
     case 'price-asc': filtered.sort((a, b) => a.price - b.price); break;
     case 'price-desc': filtered.sort((a, b) => b.price - a.price); break;
     case 'water': filtered.sort((a, b) => b.waterAccessScore - a.waterAccessScore); break;
+    case 'newest': filtered.sort((a, b) => a.daysOnMarket - b.daysOnMarket); break;
+    case 'reduced': filtered.sort((a, b) => (b.previousPrice ? 1 : 0) - (a.previousPrice ? 1 : 0) || b.overallScore - a.overallScore); break;
+    case 'sqft': filtered.sort((a, b) => b.sqft - a.sqft); break;
     default: filtered.sort((a, b) => b.overallScore - a.overallScore);
   }
   return filtered;
@@ -1476,7 +1496,7 @@ function openDetailModal(id) {
               <span class="text-xs rounded-full px-2.5 py-0.5 ${p.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${p.status}</span>
               <span class="inline-block text-xs rounded-full px-2.5 py-1 font-medium ${waterTypeBadgeClass(p.waterType)}">${waterTypeLabel(p.waterType)}</span>
             </div>
-            <div class="text-3xl font-bold mt-2 text-white drop-shadow-lg">${formatPriceFull(p.price)}</div>
+            <div class="text-3xl font-bold mt-2 text-white drop-shadow-lg">${formatPriceFull(p.price)}${p.previousPrice ? ` <span class="text-lg text-red-400 line-through font-normal">${formatPriceFull(p.previousPrice)}</span> <span class="text-sm bg-red-500/80 text-white rounded-full px-2 py-0.5">-${Math.round((1 - p.price / p.previousPrice) * 100)}%</span>` : ''}</div>
             <div class="text-white/70 mt-1">${p.address}, ${p.city}, PA ${p.zipCode}</div>
             <div class="flex items-center gap-4 mt-2 text-sm text-white/60">
               <span>${p.bedrooms} bd</span><span>${p.bathrooms} ba</span><span>${p.sqft.toLocaleString()} sqft</span><span>${p.lotAcres} acres</span>
@@ -1587,9 +1607,10 @@ function closeModal() {
 function initMap() {
   map = L.map('leaflet-map', { zoomControl: true }).setView([41.25, -75.38], 9);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  // Google Maps tiles
+  L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    attribution: '&copy; Google Maps'
   }).addTo(map);
 
   addMarkers('all');
