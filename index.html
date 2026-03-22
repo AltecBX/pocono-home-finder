@@ -20931,7 +20931,7 @@ const PROPERTIES = [
 // ========== STATE ==========
 let favorites = JSON.parse(localStorage.getItem('phf-favorites') || '[]');
 let compareList = JSON.parse(localStorage.getItem('phf-compare') || '[]');
-let activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false };
+let activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all' };
 let map = null;
 let markers = [];
 
@@ -21148,6 +21148,10 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <option value="600000">Under $600K</option>
       <option value="750000">Under $750K</option>
     </select>
+    <!-- Source filter -->
+    <select id="filter-source" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none min-w-[140px]">
+      <option value="all">All Sources</option>
+    </select>
     <!-- Sort -->
     <select id="filter-sort" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none">
       <option value="score">Best Match</option>
@@ -21247,6 +21251,12 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
           <option value="500000">Under $500K</option>
           <option value="600000">Under $600K</option>
           <option value="750000">Under $750K</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm text-slate-400 block mb-2">Source</label>
+        <select id="mf-source" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
+          <option value="all">All Sources</option>
         </select>
       </div>
       <div class="flex items-center justify-between">
@@ -22073,6 +22083,9 @@ function getFilteredProperties() {
   if (f.minBeds > 0) filtered = filtered.filter(p => p.bedrooms >= f.minBeds);
   if (f.maxPrice < 999999999) filtered = filtered.filter(p => p.price <= f.maxPrice);
   if (f.dogFriendly) filtered = filtered.filter(p => p.dogSwimAccessible);
+  if (f.source !== 'all') {
+    filtered = filtered.filter(p => p.sources && p.sources.some(s => s.name === f.source && s.verified));
+  }
 
   switch (f.sort) {
     case 'price-asc': filtered.sort((a, b) => a.price - b.price); break;
@@ -22096,6 +22109,7 @@ function applyFilters() {
   activeFilters.minBeds = parseInt(document.getElementById('filter-beds').value);
   activeFilters.maxPrice = parseInt(document.getElementById('filter-price').value);
   activeFilters.sort = document.getElementById('filter-sort').value;
+  activeFilters.source = document.getElementById('filter-source').value;
 
   const filtered = getFilteredProperties();
   renderCards(filtered);
@@ -22207,6 +22221,7 @@ function openMobileFilters() {
   document.getElementById('mf-water').value = activeFilters.waterType;
   document.getElementById('mf-beds').value = activeFilters.minBeds.toString();
   document.getElementById('mf-price').value = activeFilters.maxPrice === Infinity ? '999999999' : activeFilters.maxPrice.toString();
+  if (document.getElementById('mf-source')) document.getElementById('mf-source').value = activeFilters.source;
   const mfDog = document.getElementById('mf-dog-toggle');
   if (activeFilters.dogFriendly) mfDog.classList.add('active');
   else mfDog.classList.remove('active');
@@ -22223,6 +22238,7 @@ function applyMobileFilters() {
   document.getElementById('filter-water').value = document.getElementById('mf-water').value;
   document.getElementById('filter-beds').value = document.getElementById('mf-beds').value;
   document.getElementById('filter-price').value = document.getElementById('mf-price').value;
+  if (document.getElementById('mf-source')) document.getElementById('filter-source').value = document.getElementById('mf-source').value;
   activeFilters.dogFriendly = document.getElementById('mf-dog-toggle').classList.contains('active');
   if (activeFilters.dogFriendly) document.getElementById('filter-dog-toggle').classList.add('active');
   else document.getElementById('filter-dog-toggle').classList.remove('active');
@@ -22925,6 +22941,21 @@ function populateLakeFilters() {
     mapBtns.insertAdjacentHTML('beforeend',
       `<button onclick="filterMap('${lake}')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="${lake}">${lake}</button>`
     );
+  });
+
+  // Source filter dropdowns
+  const allSources = {};
+  PROPERTIES.forEach(p => {
+    (p.sources || []).filter(s => s.verified).forEach(s => {
+      allSources[s.name] = (allSources[s.name] || 0) + 1;
+    });
+  });
+  const sourceSelect = document.getElementById('filter-source');
+  const mobileSourceSelect = document.getElementById('mf-source');
+  Object.entries(allSources).sort((a, b) => b[1] - a[1]).forEach(([name, count]) => {
+    const opt = `<option value="${name}">${name} (${count})</option>`;
+    if (sourceSelect) sourceSelect.insertAdjacentHTML('beforeend', opt);
+    if (mobileSourceSelect) mobileSourceSelect.insertAdjacentHTML('beforeend', opt);
   });
 }
 
