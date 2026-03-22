@@ -301,6 +301,133 @@ async function scrapeRedfin() {
   return listings;
 }
 
+// ========== ZILLOW SCRAPING ==========
+
+async function scrapeZillow() {
+  console.log('\n🔵 Scraping Zillow...');
+  const listings = [];
+
+  try {
+    // Zillow blocks Node.js fetch via TLS fingerprinting — must use curl
+    const { execSync } = require('child_process');
+    let html;
+    try {
+      html = execSync(`curl -s --compressed --max-time 30 \
+        -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+        -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
+        -H "Accept-Language: en-US,en;q=0.9" \
+        -H "Sec-Fetch-Dest: document" \
+        -H "Sec-Fetch-Mode: navigate" \
+        -H "Sec-Fetch-Site: none" \
+        -H "Sec-Fetch-User: ?1" \
+        "https://www.zillow.com/monroe-county-pa/waterfront/"`, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+    } catch (e) {
+      console.warn(`   Zillow curl failed: ${e.message.slice(0, 100)}`);
+      return listings;
+    }
+
+    if (!html || html.length < 10000) {
+      console.warn(`   Zillow returned empty page (${html.length} bytes)`);
+      return listings;
+    }
+
+    // Check if we got a block page (no __NEXT_DATA__)
+    if (!html.includes('__NEXT_DATA__')) {
+      console.warn(`   Zillow blocked — no listing data in response`);
+      return listings;
+    }
+
+    // Extract __NEXT_DATA__ JSON
+    const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (!nextDataMatch) {
+      console.warn('   Could not find __NEXT_DATA__ in Zillow response');
+      return listings;
+    }
+
+    const nextData = JSON.parse(nextDataMatch[1]);
+
+    // Navigate to search results - path varies but usually under props.pageProps.searchPageState
+    let searchResults = [];
+    try {
+      const state = nextData?.props?.pageProps?.searchPageState || nextData?.props?.pageProps;
+      const cat1 = state?.cat1 || state?.searchResults?.cat1;
+      if (cat1?.searchResults?.listResults) {
+        searchResults = cat1.searchResults.listResults;
+      } else if (cat1?.searchResults?.mapResults) {
+        searchResults = cat1.searchResults.mapResults;
+      }
+      // Also try alternate paths
+      if (searchResults.length === 0) {
+        const results = state?.searchResults?.listResults || state?.searchResults?.mapResults || [];
+        if (results.length > 0) searchResults = results;
+      }
+    } catch (e) {
+      // Try to find zpid entries anywhere in the data
+      const jsonStr = JSON.stringify(nextData);
+      const zpidPattern = /"zpid":"?(\d+)"?/g;
+      let zpidMatch;
+      const zpids = new Set();
+      while ((zpidMatch = zpidPattern.exec(jsonStr)) !== null) {
+        zpids.add(zpidMatch[1]);
+      }
+      console.log(`   Found ${zpids.size} zpids but couldn't parse listing data`);
+    }
+
+    console.log(`   Zillow returned ${searchResults.length} waterfront listings`);
+
+    for (const result of searchResults) {
+      const address = result.addressStreet || result.address || '';
+      const price = result.unformattedPrice || result.price || 0;
+      if (!address || !price) continue;
+
+      const lat = result.latLong?.latitude || result.latitude || 0;
+      const lng = result.latLong?.longitude || result.longitude || 0;
+      const detailUrl = result.detailUrl ? (result.detailUrl.startsWith('http') ? result.detailUrl : `https://www.zillow.com${result.detailUrl}`) : '';
+
+      // Try to match to a specific lake
+      let matchedLake = 'Unknown Lake';
+      const searchText = `${address} ${result.addressCity || ''} ${result.addressZipcode || ''}`.toLowerCase();
+      for (const lake of LAKES) {
+        if (searchText.includes(lake.name.toLowerCase())) {
+          matchedLake = lake.name;
+          break;
+        }
+      }
+
+      listings.push({
+        address: String(address),
+        city: String(result.addressCity || ''),
+        zipCode: String(result.addressZipcode || ''),
+        price: typeof price === 'number' ? price : parseInt(String(price).replace(/[^0-9]/g, '')) || 0,
+        bedrooms: result.beds || 0,
+        bathrooms: result.baths || 0,
+        sqft: result.area || 0,
+        lotAcres: 0,
+        yearBuilt: 0,
+        latitude: lat,
+        longitude: lng,
+        waterBodyName: matchedLake,
+        hoaFee: 0,
+        motorboats: false,
+        description: String(result.hdpData?.homeInfo?.description || '').slice(0, 500),
+        image: result.imgSrc || result.image || '',
+        listingUrl: detailUrl,
+        daysOnMarket: result.hdpData?.homeInfo?.daysOnZillow || 0,
+        isReduced: (result.hdpData?.homeInfo?.priceChange || 0) < 0,
+        photoCount: result.carouselPhotos?.length || 1,
+        source: 'Zillow',
+        zillow: true,
+      });
+    }
+
+    console.log(`   Parsed ${listings.length} Zillow listings`);
+  } catch (err) {
+    console.error(`   Zillow scrape error: ${err.message}`);
+  }
+
+  return listings;
+}
+
 // ========== CRAIGSLIST FSBO SCRAPING ==========
 
 async function scrapeCraigslistFSBO() {
@@ -683,7 +810,7 @@ function generatePropertyJS(listing, id) {
 async function main() {
   console.log('🏠 Pocono Home Finder — Multi-Source Listing Aggregator');
   console.log('========================================================');
-  console.log('   Sources: LakeHouse.com + Redfin + Craigslist FSBO\n');
+  console.log('   Sources: LakeHouse.com + Zillow + Redfin + Craigslist FSBO\n');
 
   // Master listing map: keyed by normalized address for dedup
   const masterListings = new Map();
@@ -745,7 +872,16 @@ async function main() {
   }
   console.log(`   LakeHouse.com total: ${masterListings.size} unique listings\n`);
 
-  // ===== SOURCE 2: Redfin Stingray API =====
+  // ===== SOURCE 2: Zillow =====
+  const zillowListings = await scrapeZillow();
+  let zillowAdded = 0;
+  for (const l of zillowListings) {
+    if (addListing(l, 'Zillow')) zillowAdded++;
+  }
+  console.log(`   Zillow added ${zillowAdded} NEW listings not on LakeHouse.com`);
+  console.log(`   Running total: ${masterListings.size} unique listings\n`);
+
+  // ===== SOURCE 3: Redfin Stingray API =====
   const redfinListings = await scrapeRedfin();
   let redfinAdded = 0;
   for (const l of redfinListings) {
@@ -766,6 +902,7 @@ async function main() {
   const allListings = Array.from(masterListings.values());
   console.log(`\n📊 TOTAL UNIQUE LISTINGS: ${allListings.length}`);
   console.log(`   From LakeHouse.com: ${allListings.filter(l => l._sources?.some(s => s.name === 'LakeHouse.com')).length}`);
+  console.log(`   From Zillow: ${allListings.filter(l => l._sources?.some(s => s.name === 'Zillow')).length}`);
   console.log(`   From Redfin: ${allListings.filter(l => l._sources?.some(s => s.name === 'Redfin')).length}`);
   console.log(`   From Craigslist FSBO: ${allListings.filter(l => l._sources?.some(s => s.name === 'Craigslist FSBO')).length}`);
   console.log(`   Multi-source (on 2+ sites): ${allListings.filter(l => (l._sources || []).length >= 2).length}\n`);
