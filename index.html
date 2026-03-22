@@ -16200,6 +16200,10 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <i data-lucide="waves" class="w-6 h-6 text-water"></i>
       <span class="gradient-text">Pocono Lakehouse Search</span>
     </a>
+    <!-- Weather Widget -->
+    <div id="pocono-weather" class="flex items-center gap-1.5 text-xs" title="Current weather in the Poconos">
+      <span class="text-slate-600 text-[10px]">...</span>
+    </div>
     <!-- Desktop Nav -->
     <nav class="hidden md:flex items-center gap-8">
       <a href="#search" class="text-sm text-slate-300 hover:text-water transition-colors">Search</a>
@@ -16213,9 +16217,6 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <i data-lucide="menu" class="w-6 h-6"></i>
     </button>
   </div>
-  <!-- Weather Bar -->
-  <div id="pocono-weather" class="flex items-center justify-center gap-2 text-xs py-1 border-t border-white/5 bg-navy-800/50" title="Current weather in the Poconos">
-    <span class="text-slate-600">Loading weather...</span>
   </div>
 </header>
 
@@ -18032,11 +18033,12 @@ async function fetchPoconoWeather() {
     const el = document.getElementById('pocono-weather');
     el.title = forecastTooltip;
     el.innerHTML = `
-      <span class="text-slate-500">Poconos</span>
-      <i data-lucide="${w.icon}" class="w-3.5 h-3.5 ${w.color}"></i>
-      <span class="font-semibold text-slate-300">${temp}°</span>
-      <span class="text-slate-500">${w.desc}</span>
-      <span class="text-slate-600">H:${hi}° L:${lo}°</span>
+      <i data-lucide="${w.icon}" class="w-4 h-4 ${w.color}"></i>
+      <div class="flex flex-col items-center leading-none">
+        <span class="font-semibold text-slate-200 text-sm">${temp}°</span>
+        <span class="text-[9px] text-slate-500">H:${hi}° L:${lo}°</span>
+      </div>
+      <span class="text-slate-500 text-[10px] hidden sm:inline">${w.desc}</span>
       ${advisory}
     `;
     lucide.createIcons();
