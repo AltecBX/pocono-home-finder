@@ -2,10 +2,8 @@
 /**
  * Pocono Home Finder — Automated Listing Updater
  *
- * Scrapes LakeHouse.com for current Pocono waterfront listings across 3 lakes:
- *   - Arrowhead Lake (Pocono Lake, PA 18347)
- *   - Lake Naomi (Pocono Pines, PA 18350)
- *   - Lake Wallenpaupack (Hawley/Lakeville/Greentown, PA)
+ * Scrapes LakeHouse.com for ALL Pocono waterfront listings in Monroe County, PA
+ * plus Lake Wallenpaupack (Pike County). Covers 30 lake communities.
  *
  * Updates index.html with fresh listing data including:
  *   - Real addresses, prices, beds/baths/sqft
@@ -23,38 +21,53 @@ const path = require('path');
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
 const INDEX_PATH = path.join(__dirname, '..', 'index.html');
 
-// Lakes to scrape
+// Helper to build a lake config entry
+function lake(name, urlSlug, opts = {}) {
+  return {
+    name,
+    waterBodyName: name,
+    indexUrl: `https://www.lakehouse.com/${urlSlug}-pennsylvania-lake-homes-for-sale-${opts.id}.html`,
+    city: opts.city || null,
+    zipCode: opts.zip || null,
+    hoaFee: opts.hoa || 0,
+    motorboats: opts.motorboats || false,
+  };
+}
+
+// All Monroe County lakes + Lake Wallenpaupack
 const LAKES = [
-  {
-    name: 'Arrowhead Lake',
-    waterBodyName: 'Arrowhead Lake',
-    indexUrl: 'https://www.lakehouse.com/arrowhead-lake-pennsylvania-lake-homes-for-sale-b5650.html',
-    city: 'Pocono Lake',
-    zipCode: '18347',
-    hoaFee: 350,
-    motorboats: false,
-    maxListings: Infinity,
-  },
-  {
-    name: 'Lake Naomi',
-    waterBodyName: 'Lake Naomi',
-    indexUrl: 'https://www.lakehouse.com/lake-naomi-pennsylvania-lake-homes-for-sale-b4874.html',
-    city: 'Pocono Pines',
-    zipCode: '18350',
-    hoaFee: 500,
-    motorboats: false,
-    maxListings: Infinity,
-  },
-  {
-    name: 'Lake Wallenpaupack',
-    waterBodyName: 'Lake Wallenpaupack',
-    indexUrl: 'https://www.lakehouse.com/lake-wallenpaupack-pennsylvania-lake-homes-for-sale-b755.html',
-    city: null, // varies
-    zipCode: null, // varies
-    hoaFee: 0,
-    motorboats: true,
-    maxListings: Infinity,
-  },
+  // Major lakes
+  lake('Arrowhead Lake', 'arrowhead-lake', { id: 'b5650', city: 'Pocono Lake', zip: '18347', hoa: 350 }),
+  lake('Lake Naomi', 'lake-naomi', { id: 'b4874', city: 'Pocono Pines', zip: '18350', hoa: 500 }),
+  lake('Lake Wallenpaupack', 'lake-wallenpaupack', { id: 'b755', motorboats: true }),
+  lake('Stillwater Lake', 'stillwater-lake', { id: 'b5139' }),
+  lake('Big Bass Lake', 'big-bass-lake', { id: 'b5329' }),
+  lake('Emerald Lakes', 'emerald-lakes', { id: 'b5499' }),
+  lake('Indian Mountain Lakes', 'indian-mountain-lakes', { id: 'b3953' }),
+  lake('Lake Carobeth', 'lake-carobeth', { id: 'b3134' }),
+  lake('Locust Lake', 'locust-lake', { id: 'b6403' }),
+  lake('Pinetree Lake', 'pinetree-lake', { id: 'b3017' }),
+  lake('Timber Lake', 'timber-lake', { id: 'b9580' }),
+  lake('Tamaque Lake', 'tamaque-lake-pinecrest-lake', { id: 'b10093' }),
+  lake('Saylors Lake', 'saylors-lake', { id: 'b10764' }),
+  lake('Lake Guenevere', 'lake-guenevere', { id: 'b10720' }),
+  lake('Winona Lakes', 'winona-lakes-forest-lake', { id: 'b8067' }),
+  lake('Lake Monroe', 'lake-monroe', { id: 'b8373' }),
+  lake('Lake Jamie', 'lake-jamie', { id: 'b6217' }),
+  // Smaller lakes
+  lake('Blue Mountain Lake', 'blue-mountain-lake', { id: 'b17656' }),
+  lake('Chicola Lake', 'chicola-lake', { id: 'b17976' }),
+  lake('Deer Trail Lake', 'deer-trail-lake', { id: 'b17661' }),
+  lake('Lake Onocup', 'lake-onocup', { id: 'b17659' }),
+  lake('Lake Sinca', 'lake-sinca', { id: 'b17662' }),
+  lake('Lake Valhalla', 'lake-valhalla', { id: 'b17654' }),
+  lake('Pines Lake', 'pines-lake', { id: 'b17673' }),
+  lake('Pocono Lake', 'pocono-lake', { id: 'b23279' }),
+  lake('Pocono Summit Lake', 'pocono-summit-lake', { id: 'b17672' }),
+  lake('Ramot Lakes', 'ramot-lakes', { id: 'b18337' }),
+  lake('Sunset Lake', 'sunset-lake', { id: 'b17671' }),
+  lake('Timber Trails Lake', 'timber-trails-lake', { id: 'b17658' }),
+  lake('Werry Lake', 'werry-lake', { id: 'b22114' }),
 ];
 
 // Unsplash fallback photos in case listing photo fails
@@ -64,22 +77,11 @@ const FALLBACK_PHOTOS = [
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=500&fit=crop',
 ];
 
-// Source sites for each listing
-const SOURCE_SITES = {
-  'Arrowhead Lake': [
-    { name: 'Zillow', url: 'https://www.zillow.com/arrowhead-lake-pocono-lake-pa/waterfront/' },
-    { name: 'Redfin', url: 'https://www.redfin.com/zipcode/18347/waterfront' },
-  ],
-  'Lake Naomi': [
-    { name: 'Zillow', url: 'https://www.zillow.com/lake-naomi-estates-pocono-pines-pa/waterfront/' },
-    { name: 'Redfin', url: 'https://www.redfin.com/county/2405/PA/Monroe-County/waterfront' },
-  ],
-  'Lake Wallenpaupack': [
-    { name: 'Zillow', url: 'https://www.zillow.com/homes/Lakeville-PA_rb/' },
-    { name: 'Redfin', url: 'https://www.redfin.com/city/35392/PA/Wallenpaupack-Lake-Estates/waterfront' },
-    { name: 'Coldwell Banker', url: 'https://www.cblakeview.com/lake-wallenpaupack-homes' },
-  ],
-};
+// Default source sites for all Monroe County listings
+const DEFAULT_SOURCES = [
+  { name: 'Redfin', url: 'https://www.redfin.com/county/2405/PA/Monroe-County/waterfront' },
+  { name: 'Zillow', url: 'https://www.zillow.com/monroe-county-pa/waterfront/' },
+];
 
 async function firecrawlScrape(url) {
   const resp = await fetch('https://api.firecrawl.dev/v1/scrape', {
@@ -214,7 +216,7 @@ function generatePropertyJS(listing, id) {
     : 'Community beach access only. Dogs may be restricted at main beaches.';
 
   const sources = [
-    ...(SOURCE_SITES[listing.waterBodyName] || []),
+    ...DEFAULT_SOURCES,
     { name: 'LakeHouse.com', url: listing.listingUrl },
     ...(listing.realtorUrl ? [{ name: 'Realtor.com', url: listing.realtorUrl }] : []),
   ];
@@ -259,9 +261,7 @@ async function main() {
       const listings = parseIndexPage(markdown, lake);
       console.log(`   Found ${listings.length} listings`);
 
-      // Take top N by price (most likely to be lakefront)
-      const top = listings.slice(0, lake.maxListings);
-      allListings.push(...top.map(l => ({ ...l, lakeName: lake.name })));
+      allListings.push(...listings.map(l => ({ ...l, lakeName: lake.name })));
     } catch (err) {
       console.error(`   Error scraping ${lake.name}: ${err.message}`);
     }

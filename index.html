@@ -1975,7 +1975,7 @@ const PROPERTIES = [
 // ========== STATE ==========
 let favorites = JSON.parse(localStorage.getItem('phf-favorites') || '[]');
 let compareList = JSON.parse(localStorage.getItem('phf-compare') || '[]');
-let activeFilters = { waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false };
+let activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false };
 let map = null;
 let markers = [];
 
@@ -2110,8 +2110,8 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
         </div>
         <div class="w-px bg-white/10 hidden sm:block"></div>
         <div class="text-center">
-          <div class="text-2xl font-bold text-water" id="stat-sources">13</div>
-          <div class="text-xs text-slate-500 mt-0.5">Sites Searched</div>
+          <div class="text-2xl font-bold text-water" id="stat-sources">3</div>
+          <div class="text-xs text-slate-500 mt-0.5">Lakes Covered</div>
         </div>
       </div>
     </div>
@@ -2149,13 +2149,14 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 
   <!-- Desktop Filter Bar -->
   <div class="hidden sm:flex flex-wrap items-center gap-3 mb-8 glass rounded-xl p-4">
+    <!-- Lake filter -->
+    <select id="filter-lake" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none min-w-[160px]">
+      <option value="all">All Lakes</option>
+    </select>
     <!-- Water type -->
     <select id="filter-water" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none min-w-[140px]">
-      <option value="all">All Water Types</option>
+      <option value="all">All Types</option>
       <option value="LAKEFRONT">Lakefront</option>
-      <option value="PONDFRONT">Pondfront</option>
-      <option value="CREEKFRONT">Creekfront</option>
-      <option value="RIVERFRONT">Riverfront</option>
       <option value="LAKE_ACCESS">Community Access</option>
     </select>
     <!-- Min beds -->
@@ -2235,13 +2236,16 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     </div>
     <div class="space-y-5">
       <div>
+        <label class="text-sm text-slate-400 block mb-2">Lake</label>
+        <select id="mf-lake" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
+          <option value="all">All Lakes</option>
+        </select>
+      </div>
+      <div>
         <label class="text-sm text-slate-400 block mb-2">Water Type</label>
         <select id="mf-water" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
-          <option value="all">All Water Types</option>
+          <option value="all">All Types</option>
           <option value="LAKEFRONT">Lakefront</option>
-          <option value="PONDFRONT">Pondfront</option>
-          <option value="CREEKFRONT">Creekfront</option>
-          <option value="RIVERFRONT">Riverfront</option>
           <option value="LAKE_ACCESS">Community Access</option>
         </select>
       </div>
@@ -2291,11 +2295,8 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 
   <!-- Map filter buttons -->
   <div class="flex flex-wrap gap-2 mb-4">
-    <button onclick="filterMap('all')" class="map-filter-btn active px-3 py-1.5 rounded-full text-xs glass text-water border-water/30" data-filter="all">All</button>
-    <button onclick="filterMap('LAKEFRONT')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="LAKEFRONT">Lakefront</button>
-    <button onclick="filterMap('PONDFRONT')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="PONDFRONT">Pondfront</button>
-    <button onclick="filterMap('CREEKFRONT')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="CREEKFRONT">Creek/River</button>
-    <button onclick="filterMap('LAKE_ACCESS')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="LAKE_ACCESS">Community</button>
+    <button onclick="filterMap('all')" class="map-filter-btn active px-3 py-1.5 rounded-full text-xs glass text-water border-water/30" data-filter="all">All Lakes</button>
+    <span id="map-lake-buttons"></span>
   </div>
 
   <div class="glass rounded-2xl overflow-hidden" style="height: 500px;">
@@ -2571,14 +2572,11 @@ function getFilteredProperties() {
   let filtered = [...PROPERTIES];
   const f = activeFilters;
 
+  if (f.lake !== 'all') {
+    filtered = filtered.filter(p => p.waterBodyName === f.lake);
+  }
   if (f.waterType !== 'all') {
-    if (f.waterType === 'CREEKFRONT') {
-      filtered = filtered.filter(p => p.waterType === 'CREEKFRONT' || p.waterType === 'RIVERFRONT');
-    } else if (f.waterType === 'LAKE_ACCESS') {
-      filtered = filtered.filter(p => p.waterType === 'LAKE_ACCESS' || p.waterType === 'WATER_NEARBY');
-    } else {
-      filtered = filtered.filter(p => p.waterType === f.waterType);
-    }
+    filtered = filtered.filter(p => p.waterType === f.waterType);
   }
   if (f.minBeds > 0) filtered = filtered.filter(p => p.bedrooms >= f.minBeds);
   if (f.maxPrice < 999999999) filtered = filtered.filter(p => p.price <= f.maxPrice);
@@ -2597,6 +2595,7 @@ function getFilteredProperties() {
 }
 
 function applyFilters() {
+  activeFilters.lake = document.getElementById('filter-lake').value;
   activeFilters.waterType = document.getElementById('filter-water').value;
   activeFilters.minBeds = parseInt(document.getElementById('filter-beds').value);
   activeFilters.maxPrice = parseInt(document.getElementById('filter-price').value);
@@ -2615,7 +2614,8 @@ function toggleDogFilter() {
 }
 
 function resetFilters() {
-  activeFilters = { waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false };
+  activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false };
+  document.getElementById('filter-lake').value = 'all';
   document.getElementById('filter-water').value = 'all';
   document.getElementById('filter-beds').value = '0';
   document.getElementById('filter-price').value = '999999999';
@@ -2631,6 +2631,7 @@ function applyPreset(preset) {
     case 'lakefront3':
       document.getElementById('filter-water').value = 'LAKEFRONT';
       document.getElementById('filter-beds').value = '3';
+      activeFilters.lake = 'all';
       activeFilters.waterType = 'LAKEFRONT';
       activeFilters.minBeds = 3;
       break;
@@ -2657,6 +2658,7 @@ function applyPreset(preset) {
 
 function updateActiveFilterCount() {
   let count = 0;
+  if (activeFilters.lake !== 'all') count++;
   if (activeFilters.waterType !== 'all') count++;
   if (activeFilters.minBeds > 0) count++;
   if (activeFilters.maxPrice < 999999999) count++;
@@ -2676,6 +2678,7 @@ function openMobileFilters() {
   document.getElementById('mobile-filter-panel').classList.add('open');
   document.getElementById('mobile-filter-backdrop').classList.add('open');
   // Sync values
+  document.getElementById('mf-lake').value = activeFilters.lake;
   document.getElementById('mf-water').value = activeFilters.waterType;
   document.getElementById('mf-beds').value = activeFilters.minBeds.toString();
   document.getElementById('mf-price').value = activeFilters.maxPrice === Infinity ? '999999999' : activeFilters.maxPrice.toString();
@@ -2691,6 +2694,7 @@ function closeMobileFilters() {
 }
 
 function applyMobileFilters() {
+  document.getElementById('filter-lake').value = document.getElementById('mf-lake').value;
   document.getElementById('filter-water').value = document.getElementById('mf-water').value;
   document.getElementById('filter-beds').value = document.getElementById('mf-beds').value;
   document.getElementById('filter-price').value = document.getElementById('mf-price').value;
@@ -2952,13 +2956,7 @@ function addMarkers(filter) {
 
   let props = PROPERTIES;
   if (filter !== 'all') {
-    if (filter === 'CREEKFRONT') {
-      props = props.filter(p => p.waterType === 'CREEKFRONT' || p.waterType === 'RIVERFRONT');
-    } else if (filter === 'LAKE_ACCESS') {
-      props = props.filter(p => p.waterType === 'LAKE_ACCESS' || p.waterType === 'WATER_NEARBY');
-    } else {
-      props = props.filter(p => p.waterType === filter);
-    }
+    props = props.filter(p => p.waterBodyName === filter);
   }
 
   props.forEach(p => {
@@ -3144,13 +3142,36 @@ function updateHeroStats() {
   document.getElementById('stat-total').textContent = PROPERTIES.length;
   document.getElementById('stat-lakefront').textContent = PROPERTIES.filter(p => p.waterType === 'LAKEFRONT').length;
   document.getElementById('stat-dogfriendly').textContent = PROPERTIES.filter(p => p.dogSwimAccessible).length;
-  document.getElementById('stat-sources').textContent = 14;
+  document.getElementById('stat-sources').textContent = [...new Set(PROPERTIES.map(p => p.waterBodyName))].length;
 }
 
 // ========== INIT ==========
 
+function populateLakeFilters() {
+  const lakes = [...new Set(PROPERTIES.map(p => p.waterBodyName))].sort();
+  // Desktop dropdown
+  const desktopSelect = document.getElementById('filter-lake');
+  // Mobile dropdown
+  const mobileSelect = document.getElementById('mf-lake');
+  lakes.forEach(lake => {
+    const count = PROPERTIES.filter(p => p.waterBodyName === lake).length;
+    const opt = `<option value="${lake}">${lake} (${count})</option>`;
+    desktopSelect.insertAdjacentHTML('beforeend', opt);
+    mobileSelect.insertAdjacentHTML('beforeend', opt);
+  });
+  // Map filter buttons
+  const mapBtns = document.getElementById('map-lake-buttons');
+  const topLakes = lakes.filter(l => PROPERTIES.filter(p => p.waterBodyName === l).length >= 3);
+  topLakes.forEach(lake => {
+    mapBtns.insertAdjacentHTML('beforeend',
+      `<button onclick="filterMap('${lake}')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="${lake}">${lake}</button>`
+    );
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons();
+  populateLakeFilters();
   renderCards(getFilteredProperties());
   initMap();
   renderDashboard();
