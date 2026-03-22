@@ -77,16 +77,18 @@ const FALLBACK_PHOTOS = [
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=500&fit=crop',
 ];
 
-// Default source sites for all Monroe County listings
-const DEFAULT_SOURCES = [
-  { name: 'Redfin', url: 'https://www.redfin.com/county/2405/PA/Monroe-County/waterfront' },
-  { name: 'Zillow', url: 'https://www.zillow.com/monroe-county-pa/waterfront/' },
-  { name: 'Realtor.com', url: 'https://www.realtor.com/realestateandhomes-search/Monroe-County_PA/type-single-family-home/feature-waterfront' },
-  { name: 'Trulia', url: 'https://www.trulia.com/PA/Monroe_County/' },
-  { name: 'Homes.com', url: 'https://www.homes.com/monroe-county-pa/lakefront/' },
-  { name: 'LakeHomes.com', url: 'https://www.lakehomes.com/pennsylvania/pocono-country-place' },
-  { name: 'FSBO', url: 'https://www.forsalebyowner.com/search/list/monroe-county-pennsylvania' },
-];
+// Generate property-specific search URLs for each listing site
+function getSourcesForProperty(address, city, zipCode) {
+  const q = encodeURIComponent(`${address} ${city} PA ${zipCode}`);
+  const addr = encodeURIComponent(address);
+  return [
+    { name: 'Zillow', url: `https://www.zillow.com/homes/${q}_rb/`, verified: false },
+    { name: 'Redfin', url: `https://www.redfin.com/search#query=${q}`, verified: false },
+    { name: 'Realtor.com', url: `https://www.realtor.com/realestateandhomes-search/${encodeURIComponent(city + '_PA')}/type-single-family-home?keyword=${addr}`, verified: false },
+    { name: 'Trulia', url: `https://www.trulia.com/home/${q}`, verified: false },
+    { name: 'Homes.com', url: `https://www.homes.com/property-search/?q=${q}`, verified: false },
+  ];
+}
 
 // Tesla Superchargers near the Poconos (within ~50 miles)
 // Tesla Superchargers near Monroe County (verified from tesla.com/findus)
@@ -273,9 +275,9 @@ function generatePropertyJS(listing, id) {
     : 'Community beach access only. Dogs may be restricted at main beaches.';
 
   const sources = [
-    ...DEFAULT_SOURCES,
-    { name: 'LakeHouse.com', url: listing.listingUrl },
-    ...(listing.realtorUrl ? [{ name: 'Realtor.com', url: listing.realtorUrl }] : []),
+    { name: 'LakeHouse.com', url: listing.listingUrl, verified: true },
+    ...getSourcesForProperty(listing.address, listing.city, listing.zipCode),
+    ...(listing.realtorUrl ? [{ name: 'Realtor.com', url: listing.realtorUrl, verified: true }] : []),
   ];
 
   const image = listing.image || FALLBACK_PHOTOS[id % FALLBACK_PHOTOS.length];
