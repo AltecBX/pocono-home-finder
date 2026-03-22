@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Pocono Lakehouse Search — Jerry & Theresa's 2nd Home</title>
 
 <!-- Tailwind CSS -->
@@ -216,9 +216,12 @@ tailwind.config = {
     .modal-content {
       width: 100vw;
       max-height: 100vh;
+      max-height: 100dvh;
       height: 100vh;
+      height: 100dvh;
       border-radius: 0;
       animation: slideUp 0.3s ease-out;
+      padding-top: env(safe-area-inset-top, 0px);
     }
     .modal-overlay {
       align-items: flex-end;
@@ -11822,11 +11825,15 @@ function openDetailModal(id) {
   modal.innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-content">
+        <!-- Mobile drag handle -->
+        <div class="sm:hidden flex justify-center py-2" style="padding-top: max(8px, env(safe-area-inset-top, 0px));">
+          <div class="w-10 h-1 rounded-full bg-white/20"></div>
+        </div>
         <!-- Photo Header -->
         <div class="relative">
           <img src="${p.image}" alt="${p.address}" class="w-full object-cover" style="aspect-ratio: 16/9; max-height: 300px;">
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-          <div class="absolute top-4 right-4 z-10 flex gap-2">
+          <div class="absolute right-4 z-10 flex gap-2" style="top: calc(env(safe-area-inset-top, 0px) + 16px);">
             <button id="share-btn" onclick="shareProperty(PROPERTIES.find(pr=>pr.id===${p.id}))" class="p-2 rounded-full bg-black/40 hover:bg-black/60 transition" aria-label="Share">
               <i data-lucide="share-2" class="w-5 h-5 text-white"></i>
             </button>
