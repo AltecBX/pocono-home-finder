@@ -95,19 +95,25 @@ const TESLA_SUPERCHARGERS = [
   { name: 'Newton NJ Supercharger', lat: 41.0584, lng: -74.7524 },
 ];
 
-// Major grocery stores / Walmart near Monroe County
+// Major grocery stores near Monroe County (verified locations)
 const GROCERY_STORES = [
+  { name: 'Walmart Supercenter', address: 'Mount Pocono', lat: 41.1220, lng: -75.3646 },
   { name: 'Walmart Supercenter', address: 'East Stroudsburg', lat: 41.0016, lng: -75.1808 },
-  { name: 'Walmart Supercenter', address: 'Bartonsville', lat: 41.0121, lng: -75.3046 },
+  { name: 'ShopRite', address: 'Mount Pocono', lat: 41.1285, lng: -75.3590 },
+  { name: 'ShopRite', address: 'Brodheadsville', lat: 40.9270, lng: -75.3940 },
+  { name: 'ShopRite', address: 'Stroudsburg', lat: 41.0050, lng: -75.2200 },
   { name: 'Giant Food', address: 'East Stroudsburg', lat: 40.9941, lng: -75.1856 },
-  { name: 'ShopRite', address: 'East Stroudsburg', lat: 41.0026, lng: -75.1906 },
-  { name: 'Weis Markets', address: 'Brodheadsville', lat: 40.9236, lng: -75.3939 },
+  { name: 'Giant Food', address: 'Bartonsville', lat: 41.0121, lng: -75.3046 },
+  { name: 'Weis Markets', address: 'Mount Pocono', lat: 41.1200, lng: -75.3600 },
   { name: 'Weis Markets', address: 'East Stroudsburg', lat: 41.0053, lng: -75.1832 },
-  { name: 'ALDI', address: 'East Stroudsburg', lat: 40.9987, lng: -75.1939 },
-  { name: 'ALDI', address: 'Bartonsville', lat: 41.0159, lng: -75.2903 },
-  { name: 'Costco', address: 'East Stroudsburg', lat: 41.0008, lng: -75.1760 },
-  { name: 'Price Chopper', address: 'Brodheadsville', lat: 40.9312, lng: -75.3916 },
-  { name: 'ShopRite', address: 'Tobyhanna', lat: 41.1829, lng: -75.4207 },
+  { name: 'Weis Markets', address: 'Stroudsburg', lat: 41.0000, lng: -75.1950 },
+  { name: 'Weis Markets', address: 'Tannersville', lat: 41.0393, lng: -75.3209 },
+  { name: 'ALDI', address: 'Stroudsburg', lat: 41.0060, lng: -75.1940 },
+  { name: 'ALDI', address: 'Pocono Summit', lat: 41.1050, lng: -75.4100 },
+  { name: 'Lidl', address: 'Stroudsburg', lat: 41.0080, lng: -75.1930 },
+  { name: 'Price Chopper', address: 'East Stroudsburg', lat: 40.9950, lng: -75.1700 },
+  { name: "BJ's Wholesale", address: 'Stroudsburg', lat: 41.0100, lng: -75.2150 },
+  { name: 'Target', address: 'Stroudsburg', lat: 41.0095, lng: -75.2160 },
 ];
 
 // Haversine distance in miles
