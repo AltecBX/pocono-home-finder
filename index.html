@@ -258,21 +258,21 @@ tailwind.config = {
   .mobile-menu-backdrop.open { display: block; }
 
   /* ========== LEAFLET OVERRIDES ========== */
-  .leaflet-container { background: #0b1120; }
+  .leaflet-container { background: #f0f4f8; }
   .leaflet-popup-content-wrapper {
-    background: var(--bg-card) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-subtle) !important;
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #e2e8f0 !important;
     border-radius: 12px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
   }
-  .leaflet-popup-tip { background: var(--bg-card) !important; }
+  .leaflet-popup-tip { background: #ffffff !important; }
   .leaflet-popup-content { margin: 12px 16px !important; font-size: 14px; }
-  .leaflet-popup-close-button { color: var(--text-secondary) !important; font-size: 20px !important; }
+  .leaflet-popup-close-button { color: #64748b !important; font-size: 20px !important; }
   .leaflet-control-zoom a {
-    background: var(--bg-card) !important;
-    color: var(--text-primary) !important;
-    border-color: var(--border-subtle) !important;
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #e2e8f0 !important;
   }
   .leaflet-control-attribution { display: none !important; }
 
@@ -353,7 +353,15 @@ const PROPERTIES = [
     status: "Active", hoaFee: 0, annualTax: 8200, garage: "2-car attached",
     basement: "Finished walkout", fireplace: true, fencedYard: true,
     dogSwimAccessible: true, dogAccessNotes: "Private sandy beach with gradual entry. Fenced yard leads directly to shoreline. Excellent for dogs.",
-    shorelineType: "Sandy beach", photoCount: 24
+    shorelineType: "Sandy beach", photoCount: 24,
+    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/147+Lakeside+Dr+Hawley+PA_rb/"},
+      {name: "Redfin", url: "https://www.redfin.com/PA/Hawley/147-Lakeside-Dr"},
+      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/147-Lakeside-Dr-Hawley_PA"},
+      {name: "Howard Hanna", url: "https://www.howardhanna.com/"},
+      {name: "Coldwell Banker", url: "https://www.coldwellbanker.com/search/"}
+    ]
   },
   {
     id: 2, address: "23 Pine Cove Ln", city: "Pocono Pines", zipCode: "18350",
@@ -366,7 +374,14 @@ const PROPERTIES = [
     status: "Active", hoaFee: 150, annualTax: 5400, garage: "1-car detached",
     basement: "Unfinished", fireplace: true, fencedYard: true,
     dogSwimAccessible: true, dogAccessNotes: "Gradual muddy shore with easy water entry for dogs. Fenced yard. Pond is calm and shallow near shore — ideal for swimming dogs.",
-    shorelineType: "Gradual natural", photoCount: 16
+    shorelineType: "Gradual natural", photoCount: 16,
+    image: "https://images.unsplash.com/photo-1572120360610-d971b9d7767c?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/23+Pine+Cove+Ln+Pocono+Pines+PA_rb/"},
+      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono+Pines/"},
+      {name: "Movoto", url: "https://www.movoto.com/pa/pocono-pines/"},
+      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/"}
+    ]
   },
   {
     id: 3, address: "89 Harmony Way", city: "Lake Harmony", zipCode: "18624",
@@ -379,7 +394,15 @@ const PROPERTIES = [
     status: "Active", hoaFee: 285, annualTax: 6800, garage: "2-car attached",
     basement: "Finished", fireplace: true, fencedYard: false,
     dogSwimAccessible: true, dogAccessNotes: "Community beach allows dogs during off-peak hours. Rocky shoreline near property requires supervision. No private beach.",
-    shorelineType: "Rocky with community beach", photoCount: 20
+    shorelineType: "Rocky with community beach", photoCount: 20,
+    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Redfin", url: "https://www.redfin.com/PA/Lake-Harmony/89-Harmony-Way"},
+      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/89-Harmony-Way-Lake-Harmony_PA"},
+      {name: "FlexMLS", url: "https://www.flexmls.com/search/pocono"},
+      {name: "Century 21", url: "https://www.century21.com/real-estate/lake-harmony-pa/"},
+      {name: "Weichert", url: "https://www.weichert.com/search/"}
+    ]
   },
   {
     id: 4, address: "312 Creek Hollow Rd", city: "Stroudsburg", zipCode: "18360",
@@ -392,7 +415,13 @@ const PROPERTIES = [
     status: "Active", hoaFee: 0, annualTax: 4200, garage: "2-car detached",
     basement: "Partial", fireplace: true, fencedYard: true,
     dogSwimAccessible: true, dogAccessNotes: "Creek has shallow wading areas perfect for dogs. Large fenced yard with direct creek access path. Seasonal water levels vary.",
-    shorelineType: "Rocky creek bed", photoCount: 12
+    shorelineType: "Rocky creek bed", photoCount: 12,
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/312+Creek+Hollow+Rd+Stroudsburg+PA_rb/"},
+      {name: "Homes.com", url: "https://www.homes.com/property/312-Creek-Hollow-Rd-Stroudsburg-pa/"},
+      {name: "Mashvisor", url: "https://www.mashvisor.com/search/"}
+    ]
   },
   {
     id: 5, address: "1820 River Rd", city: "Milford", zipCode: "18337",
@@ -405,7 +434,16 @@ const PROPERTIES = [
     status: "Active", hoaFee: 0, annualTax: 11500, garage: "3-car attached",
     basement: "Finished walkout", fireplace: true, fencedYard: false,
     dogSwimAccessible: true, dogAccessNotes: "River access via gentle slope. Current can be strong — supervision required. Calm eddies near shore suitable for confident swimmers. No fence near water.",
-    shorelineType: "Natural riverbank", photoCount: 30
+    shorelineType: "Natural riverbank", photoCount: 30,
+    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/1820+River+Rd+Milford+PA_rb/"},
+      {name: "Redfin", url: "https://www.redfin.com/PA/Milford/1820-River-Rd"},
+      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/1820-River-Rd-Milford_PA"},
+      {name: "Coldwell Banker", url: "https://www.coldwellbanker.com/search/"},
+      {name: "Howard Hanna", url: "https://www.howardhanna.com/"},
+      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/"}
+    ]
   },
   {
     id: 6, address: "445 Naomi Pines Dr", city: "Pocono Lake", zipCode: "18347",
@@ -418,7 +456,14 @@ const PROPERTIES = [
     status: "Active", hoaFee: 420, annualTax: 5100, garage: "1-car attached",
     basement: "Unfinished", fireplace: false, fencedYard: false,
     dogSwimAccessible: false, dogAccessNotes: "Community beach does NOT allow dogs. No private water access. Nearest dog-friendly water is 15 min drive.",
-    shorelineType: "Community beach only", photoCount: 14
+    shorelineType: "Community beach only", photoCount: 14,
+    image: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono+Lake/"},
+      {name: "Movoto", url: "https://www.movoto.com/pa/pocono-lake/"},
+      {name: "Century 21", url: "https://www.century21.com/real-estate/pocono-lake-pa/"},
+      {name: "FlexMLS", url: "https://www.flexmls.com/search/pocono"}
+    ]
   },
   {
     id: 7, address: "67 Pond View Ct", city: "Canadensis", zipCode: "18325",
@@ -431,7 +476,13 @@ const PROPERTIES = [
     status: "Price Reduced", hoaFee: 75, annualTax: 3800, garage: "None",
     basement: "Crawl space", fireplace: false, fencedYard: false,
     dogSwimAccessible: false, dogAccessNotes: "WARNING: Despite listing claims, there is NO water access. The pond is on neighboring private property across the road. Misleading listing.",
-    shorelineType: "No access", photoCount: 8
+    shorelineType: "No access", photoCount: 8,
+    image: "https://images.unsplash.com/photo-1599427303058-f04cbcf4756f?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/67+Pond+View+Ct+Canadensis+PA_rb/"},
+      {name: "Homes.com", url: "https://www.homes.com/property/67-Pond-View-Ct-Canadensis-pa/"},
+      {name: "Weichert", url: "https://www.weichert.com/search/"}
+    ]
   },
   {
     id: 8, address: "201 Arrowhead Blvd", city: "Pocono Lake", zipCode: "18347",
@@ -444,7 +495,14 @@ const PROPERTIES = [
     status: "Active", hoaFee: 380, annualTax: 4800, garage: "1-car attached",
     basement: "Unfinished", fireplace: true, fencedYard: false,
     dogSwimAccessible: false, dogAccessNotes: "Community beach restricts pets. No private water access on property. Seasonal creek nearby but not suitable for swimming.",
-    shorelineType: "Community beach only", photoCount: 11
+    shorelineType: "Community beach only", photoCount: 11,
+    image: "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Redfin", url: "https://www.redfin.com/PA/Pocono-Lake/201-Arrowhead-Blvd"},
+      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/201-Arrowhead-Blvd-Pocono-Lake_PA"},
+      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono+Lake/"},
+      {name: "Mashvisor", url: "https://www.mashvisor.com/search/"}
+    ]
   },
   {
     id: 9, address: "156 Lakeshore Ter", city: "Pocono Lake", zipCode: "18347",
@@ -457,7 +515,15 @@ const PROPERTIES = [
     status: "Active", hoaFee: 200, annualTax: 7500, garage: "2-car attached",
     basement: "Finished", fireplace: true, fencedYard: true,
     dogSwimAccessible: true, dogAccessNotes: "Private sandy beach with very gradual entry — perfect for dogs. Fenced yard connects to beach. Calm lake waters ideal for swimming.",
-    shorelineType: "Sandy beach", photoCount: 22
+    shorelineType: "Sandy beach", photoCount: 22,
+    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/156+Lakeshore+Ter+Pocono+Lake+PA_rb/"},
+      {name: "Redfin", url: "https://www.redfin.com/PA/Pocono-Lake/156-Lakeshore-Ter"},
+      {name: "Howard Hanna", url: "https://www.howardhanna.com/"},
+      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/"},
+      {name: "Homes.com", url: "https://www.homes.com/property/156-Lakeshore-Ter-Pocono-Lake-pa/"}
+    ]
   },
   {
     id: 10, address: "78 Promised Land Rd", city: "Greentown", zipCode: "18426",
@@ -470,7 +536,14 @@ const PROPERTIES = [
     status: "Active", hoaFee: 0, annualTax: 5800, garage: "2-car detached",
     basement: "Partial", fireplace: true, fencedYard: false,
     dogSwimAccessible: true, dogAccessNotes: "Deeded lake access with small beach area. Dogs allowed. Gradual entry with some rocky patches. Adjacent to dog-friendly state park trails.",
-    shorelineType: "Mixed natural", photoCount: 18
+    shorelineType: "Mixed natural", photoCount: 18,
+    image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c0?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/78+Promised+Land+Rd+Greentown+PA_rb/"},
+      {name: "Coldwell Banker", url: "https://www.coldwellbanker.com/search/"},
+      {name: "FlexMLS", url: "https://www.flexmls.com/search/pocono"},
+      {name: "Weichert", url: "https://www.weichert.com/search/"}
+    ]
   },
   {
     id: 11, address: "934 Hawley Pond Ln", city: "Hawley", zipCode: "18428",
@@ -483,7 +556,13 @@ const PROPERTIES = [
     status: "Active", hoaFee: 0, annualTax: 4500, garage: "1-car detached",
     basement: "Crawl space", fireplace: true, fencedYard: true,
     dogSwimAccessible: true, dogAccessNotes: "Private pond with muddy but gradual shoreline. Fully fenced property. Dogs can swim freely. Calm, shallow water — ideal for all dog sizes.",
-    shorelineType: "Natural muddy shore", photoCount: 10
+    shorelineType: "Natural muddy shore", photoCount: 10,
+    image: "https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/934-Hawley-Pond-Ln-Hawley_PA"},
+      {name: "Movoto", url: "https://www.movoto.com/pa/hawley/"},
+      {name: "Century 21", url: "https://www.century21.com/real-estate/hawley-pa/"}
+    ]
   },
   {
     id: 12, address: "88 Tobyhanna Shore Dr", city: "Pocono Pines", zipCode: "18350",
@@ -496,7 +575,14 @@ const PROPERTIES = [
     status: "Active", hoaFee: 225, annualTax: 5200, garage: "1-car attached",
     basement: "Unfinished", fireplace: false, fencedYard: false,
     dogSwimAccessible: true, dogAccessNotes: "Gradual sandy/gravel shore suitable for dogs. Lake is calm in the cove. No fence but low-traffic area. Dogs welcome at community beach during off-hours.",
-    shorelineType: "Gradual sandy/gravel", photoCount: 15
+    shorelineType: "Gradual sandy/gravel", photoCount: 15,
+    image: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/88+Tobyhanna+Shore+Dr+Pocono+Pines+PA_rb/"},
+      {name: "Redfin", url: "https://www.redfin.com/PA/Pocono-Pines/88-Tobyhanna-Shore-Dr"},
+      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono+Pines/"},
+      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/"}
+    ]
   }
 ];
 
@@ -583,6 +669,26 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       </a>
     </div>
 
+    <!-- Searching across sites -->
+    <div class="mt-6 animate-fade-in-up stagger-2">
+      <p class="text-xs text-slate-600 mb-2">Searching across all major listing sites:</p>
+      <div class="inline-flex flex-wrap justify-center gap-x-2 gap-y-1 max-w-xl mx-auto">
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Zillow</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Redfin</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Realtor.com</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Trulia</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Homes.com</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">FlexMLS</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Century 21</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Weichert</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Coldwell Banker</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Movoto</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Pocono RE</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Mashvisor</span>
+        <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Howard Hanna</span>
+      </div>
+    </div>
+
     <!-- Preset buttons -->
     <div class="mt-6 flex flex-wrap justify-center gap-2 animate-fade-in-up stagger-3">
       <button onclick="applyPreset('lakefront3')" class="px-4 py-2 rounded-full text-sm glass hover:border-water/30 transition text-slate-300 hover:text-water">
@@ -618,8 +724,8 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
         </div>
         <div class="w-px bg-white/10 hidden sm:block"></div>
         <div class="text-center">
-          <div class="text-2xl font-bold text-water" id="stat-sources">3</div>
-          <div class="text-xs text-slate-500 mt-0.5">Sources</div>
+          <div class="text-2xl font-bold text-water" id="stat-sources">13</div>
+          <div class="text-xs text-slate-500 mt-0.5">Sites Searched</div>
         </div>
       </div>
     </div>
@@ -926,8 +1032,8 @@ function waterTypeBadgeClass(wt) {
 }
 
 function markerColor(wt) {
-  if (wt === 'LAKEFRONT' || wt === 'PONDFRONT') return '#00baff';
-  if (wt === 'CREEKFRONT' || wt === 'RIVERFRONT') return '#3b82f6';
+  if (wt === 'LAKEFRONT' || wt === 'PONDFRONT') return '#0891b2';
+  if (wt === 'CREEKFRONT' || wt === 'RIVERFRONT') return '#2563eb';
   return '#6b7280';
 }
 
@@ -961,32 +1067,36 @@ function createScoreRing(score, size = 52, strokeWidth = 4, label = '') {
 
 function renderPropertyCard(p) {
   const isCompared = compareList.includes(p.id);
+  const sourcesPreview = (p.sources || []).slice(0, 4);
   return `
     <div class="property-card glass rounded-2xl overflow-hidden animate-fade-in" data-id="${p.id}">
-      <!-- Top area with gradient and score -->
-      <div class="relative h-44 bg-gradient-to-br from-navy-600 to-navy-700 p-5 flex flex-col justify-between">
-        <!-- Decorative water lines -->
-        <div class="absolute inset-0 opacity-[0.03]" style="background-image: repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0,186,255,0.3) 20px, rgba(0,186,255,0.3) 21px);"></div>
+      <!-- Photo area -->
+      <div class="relative" style="aspect-ratio: 16/10;">
+        <img src="${p.image}" alt="${p.address}" class="w-full h-full object-cover" loading="lazy">
+        <!-- Dark gradient overlay at bottom -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
 
-        <div class="flex justify-between items-start relative z-10">
-          <div>
-            <span class="text-2xl font-bold">${formatPrice(p.price)}</span>
-            ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/20 text-red-400 rounded-full px-2 py-0.5">Price Drop</span>' : ''}
-          </div>
-          <div class="flex items-center gap-2">
-            ${createScoreRing(p.overallScore, 48, 3)}
-          </div>
-        </div>
-
-        <div class="relative z-10">
-          <span class="inline-block text-xs rounded-full px-2.5 py-1 font-medium ${waterTypeBadgeClass(p.waterType)}">${waterTypeLabel(p.waterType)}</span>
-          ${p.waterBodyName && p.waterBodyName !== 'None' ? `<span class="text-xs text-slate-400 ml-2">${p.waterBodyName}</span>` : ''}
+        <!-- Price overlaid on photo -->
+        <div class="absolute top-4 left-4 z-10">
+          <span class="text-2xl font-bold text-white drop-shadow-lg">${formatPrice(p.price)}</span>
+          ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/80 text-white rounded-full px-2 py-0.5">Price Drop</span>' : ''}
         </div>
 
         <!-- Favorite button -->
-        <button onclick="toggleFavorite(${p.id})" class="absolute top-4 right-4 z-20 p-2 rounded-full hover:bg-white/10 transition" aria-label="Toggle favorite">
-          <i data-lucide="heart" class="w-5 h-5 ${p.isFavorite ? 'fill-red-500 text-red-500' : 'text-slate-500'}"></i>
+        <button onclick="toggleFavorite(${p.id})" class="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/30 hover:bg-black/50 transition" aria-label="Toggle favorite">
+          <i data-lucide="heart" class="w-5 h-5 ${p.isFavorite ? 'fill-red-500 text-red-500' : 'text-white/80'}"></i>
         </button>
+
+        <!-- Score ring overlaid bottom-right -->
+        <div class="absolute bottom-3 right-3 z-10 bg-black/40 rounded-full p-1">
+          ${createScoreRing(p.overallScore, 48, 3)}
+        </div>
+
+        <!-- Water badge overlaid bottom-left -->
+        <div class="absolute bottom-3 left-3 z-10">
+          <span class="inline-block text-xs rounded-full px-2.5 py-1 font-medium ${waterTypeBadgeClass(p.waterType)} backdrop-blur-sm">${waterTypeLabel(p.waterType)}</span>
+          ${p.waterBodyName && p.waterBodyName !== 'None' ? `<span class="text-xs text-white/70 ml-2 drop-shadow">${p.waterBodyName}</span>` : ''}
+        </div>
       </div>
 
       <!-- Card body -->
@@ -1005,9 +1115,14 @@ function renderPropertyCard(p) {
         <!-- Indicators row -->
         <div class="flex items-center gap-3 mt-3 flex-wrap">
           <span class="text-xs text-slate-500">${p.daysOnMarket}d on market</span>
-          <span class="text-xs bg-white/5 rounded-full px-2 py-0.5 text-slate-500">${p.sourceCount} source${p.sourceCount !== 1 ? 's' : ''}</span>
           ${p.dogSwimAccessible ? '<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="dog" class="w-3 h-3"></i>Dog OK</span>' : ''}
           ${p.hasConflicts ? '<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i>Conflicts</span>' : ''}
+        </div>
+
+        <!-- Source sites row -->
+        <div class="flex items-center gap-1.5 mt-3 flex-wrap">
+          ${sourcesPreview.map(s => `<span class="text-[10px] bg-white/5 rounded px-1.5 py-0.5 text-slate-500">${s.name}</span>`).join('')}
+          ${(p.sources || []).length > 4 ? `<span class="text-[10px] text-slate-600">+${p.sources.length - 4}</span>` : ''}
         </div>
 
         <!-- Actions -->
@@ -1288,19 +1403,23 @@ function openDetailModal(id) {
   modal.innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
       <div class="modal-content">
-        <!-- Header -->
-        <div class="relative p-6 bg-gradient-to-br from-navy-600 to-navy-700 border-b border-white/5">
-          <button onclick="closeModal()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition z-10" aria-label="Close">
-            <i data-lucide="x" class="w-5 h-5"></i>
+        <!-- Photo Header -->
+        <div class="relative">
+          <img src="${p.image}" alt="${p.address}" class="w-full object-cover" style="aspect-ratio: 16/9; max-height: 300px;">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+          <button onclick="closeModal()" class="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-black/60 transition z-10" aria-label="Close">
+            <i data-lucide="x" class="w-5 h-5 text-white"></i>
           </button>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-xs rounded-full px-2.5 py-0.5 ${p.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${p.status}</span>
-            <span class="inline-block text-xs rounded-full px-2.5 py-1 font-medium ${waterTypeBadgeClass(p.waterType)}">${waterTypeLabel(p.waterType)}</span>
-          </div>
-          <div class="text-3xl font-bold mt-2">${formatPriceFull(p.price)}</div>
-          <div class="text-slate-400 mt-1">${p.address}, ${p.city}, PA ${p.zipCode}</div>
-          <div class="flex items-center gap-4 mt-3 text-sm text-slate-400">
-            <span>${p.bedrooms} bd</span><span>${p.bathrooms} ba</span><span>${p.sqft.toLocaleString()} sqft</span><span>${p.lotAcres} acres</span>
+          <div class="absolute bottom-4 left-6 right-6 z-10">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs rounded-full px-2.5 py-0.5 ${p.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${p.status}</span>
+              <span class="inline-block text-xs rounded-full px-2.5 py-1 font-medium ${waterTypeBadgeClass(p.waterType)}">${waterTypeLabel(p.waterType)}</span>
+            </div>
+            <div class="text-3xl font-bold mt-2 text-white drop-shadow-lg">${formatPriceFull(p.price)}</div>
+            <div class="text-white/70 mt-1">${p.address}, ${p.city}, PA ${p.zipCode}</div>
+            <div class="flex items-center gap-4 mt-2 text-sm text-white/60">
+              <span>${p.bedrooms} bd</span><span>${p.bathrooms} ba</span><span>${p.sqft.toLocaleString()} sqft</span><span>${p.lotAcres} acres</span>
+            </div>
           </div>
         </div>
 
@@ -1371,15 +1490,24 @@ function openDetailModal(id) {
           <p class="text-sm text-slate-300 leading-relaxed">${p.description}</p>
         </div>
 
-        <!-- Source info -->
+        <!-- View on Source Sites -->
         <div class="p-6">
-          <div class="flex items-center gap-3 flex-wrap">
-            <span class="text-xs text-slate-500">Data from</span>
-            ${['Zillow', 'Realtor.com', 'Redfin'].slice(0, p.sourceCount).map(s =>
-              `<span class="text-xs bg-white/5 rounded-full px-2.5 py-1 text-slate-400">${s}</span>`
-            ).join('')}
-            ${p.hasConflicts ? '<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2.5 py-1 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i>Source conflicts detected</span>' : ''}
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
+            <i data-lucide="external-link" class="w-4 h-4"></i> View on Source Sites
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            ${(p.sources || []).map(s => `
+              <a href="${s.url}" target="_blank" rel="noopener noreferrer"
+                class="flex items-center gap-2 p-3 rounded-xl glass hover:bg-white/10 hover:border-water/20 transition group">
+                <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-[10px] font-bold text-slate-300 shrink-0">${s.name.charAt(0)}</div>
+                <div class="min-w-0">
+                  <div class="text-sm font-medium text-slate-300 group-hover:text-water transition truncate">${s.name}</div>
+                  <div class="text-[10px] text-slate-600">Open listing</div>
+                </div>
+              </a>
+            `).join('')}
           </div>
+          ${p.hasConflicts ? '<div class="mt-3"><span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2.5 py-1 inline-flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i>Source conflicts detected across listings</span></div>' : ''}
         </div>
       </div>
     </div>
@@ -1398,7 +1526,7 @@ function closeModal() {
 function initMap() {
   map = L.map('leaflet-map', { zoomControl: true }).setView([41.15, -75.35], 9);
 
-  L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+  L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/voyager/{z}/{x}/{y}.png', {
     maxZoom: 18
   }).addTo(map);
 
@@ -1426,25 +1554,25 @@ function addMarkers(filter) {
     const marker = L.circleMarker([p.latitude, p.longitude], {
       radius: 10,
       fillColor: color,
-      color: color,
+      color: '#1e293b',
       weight: 2,
-      opacity: 0.9,
-      fillOpacity: 0.5
+      opacity: 0.8,
+      fillOpacity: 0.7
     }).addTo(map);
 
     marker.bindPopup(`
       <div style="min-width: 180px;">
-        <div style="font-weight: 700; font-size: 16px; color: #f1f5f9;">${formatPrice(p.price)}</div>
-        <div style="color: #94a3b8; font-size: 13px; margin-top: 2px;">${p.address}</div>
+        <div style="font-weight: 700; font-size: 16px; color: #1e293b;">${formatPrice(p.price)}</div>
+        <div style="color: #475569; font-size: 13px; margin-top: 2px;">${p.address}</div>
         <div style="color: #64748b; font-size: 12px;">${p.city}, PA</div>
-        <div style="margin-top: 8px; display: flex; gap: 8px; font-size: 12px; color: #94a3b8;">
+        <div style="margin-top: 8px; display: flex; gap: 8px; font-size: 12px; color: #475569;">
           <span>${p.bedrooms}bd/${p.bathrooms}ba</span>
           <span>Score: ${p.overallScore}</span>
         </div>
         <div style="margin-top: 4px;">
-          <span style="font-size: 11px; padding: 2px 8px; border-radius: 99px; background: ${color}22; color: ${color};">${waterTypeLabel(p.waterType)}</span>
+          <span style="font-size: 11px; padding: 2px 8px; border-radius: 99px; background: ${color}18; color: ${color};">${waterTypeLabel(p.waterType)}</span>
         </div>
-        <a href="#search" onclick="scrollToCard(${p.id})" style="display:inline-block;margin-top:8px;font-size:12px;color:#00baff;text-decoration:none;">View Card &rarr;</a>
+        <a href="#search" onclick="scrollToCard(${p.id})" style="display:inline-block;margin-top:8px;font-size:12px;color:#0891b2;text-decoration:none;font-weight:500;">View Card &rarr;</a>
       </div>
     `);
 
@@ -1604,7 +1732,7 @@ function updateHeroStats() {
   document.getElementById('stat-total').textContent = PROPERTIES.length;
   document.getElementById('stat-lakefront').textContent = PROPERTIES.filter(p => p.waterType === 'LAKEFRONT').length;
   document.getElementById('stat-dogfriendly').textContent = PROPERTIES.filter(p => p.dogSwimAccessible).length;
-  document.getElementById('stat-sources').textContent = Math.max(...PROPERTIES.map(p => p.sourceCount));
+  document.getElementById('stat-sources').textContent = 13;
 }
 
 // ========== INIT ==========
