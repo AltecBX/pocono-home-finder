@@ -11270,6 +11270,29 @@ function findNearest(lat, lng, locations) {
   return best ? { ...best, miles: Math.round(bestDist * 10) / 10 } : null;
 }
 
+// Deduplicate properties — keep the entry with the most data for each address
+function deduplicateProperties() {
+  const seen = new Map();
+  PROPERTIES.forEach(p => {
+    const key = (p.address || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!key) return;
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, p);
+    } else {
+      // Keep whichever has more data (higher score, more bedrooms filled in, etc.)
+      const scoreA = (existing.bedrooms > 0 ? 1 : 0) + (existing.bathrooms > 0 ? 1 : 0) + (existing.sqft > 0 ? 1 : 0) + (existing.image ? 1 : 0) + existing.overallScore;
+      const scoreB = (p.bedrooms > 0 ? 1 : 0) + (p.bathrooms > 0 ? 1 : 0) + (p.sqft > 0 ? 1 : 0) + (p.image ? 1 : 0) + p.overallScore;
+      if (scoreB > scoreA) seen.set(key, p);
+    }
+  });
+  // Replace PROPERTIES array contents
+  const unique = [...seen.values()];
+  PROPERTIES.length = 0;
+  unique.forEach((p, i) => { p.id = i + 1; PROPERTIES.push(p); });
+  console.log(`Deduplicated: ${unique.length} unique properties`);
+}
+
 // Enrich properties with distance data on load
 function enrichWithDistances() {
   PROPERTIES.forEach(p => {
@@ -12261,6 +12284,7 @@ function populateLakeFilters() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  deduplicateProperties();
   enrichWithDistances();
   loadFavorites();
   lucide.createIcons();

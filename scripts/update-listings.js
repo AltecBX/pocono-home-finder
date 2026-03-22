@@ -315,6 +315,7 @@ async function main() {
   console.log('=========================================\n');
 
   const allListings = [];
+  const seenAddresses = new Set();
 
   // Step 1: Scrape index pages for each lake
   for (const lake of LAKES) {
@@ -324,13 +325,24 @@ async function main() {
       const listings = parseIndexPage(markdown, lake);
       console.log(`   Found ${listings.length} listings`);
 
-      allListings.push(...listings.map(l => ({ ...l, lakeName: lake.name })));
+      let added = 0;
+      for (const l of listings) {
+        const key = (l.address || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        if (key && !seenAddresses.has(key)) {
+          seenAddresses.add(key);
+          allListings.push({ ...l, lakeName: lake.name });
+          added++;
+        }
+      }
+      if (added < listings.length) {
+        console.log(`   ⚠️ Skipped ${listings.length - added} duplicates`);
+      }
     } catch (err) {
       console.error(`   Error scraping ${lake.name}: ${err.message}`);
     }
   }
 
-  console.log(`\n📊 Total listings to process: ${allListings.length}\n`);
+  console.log(`\n📊 Total unique listings: ${allListings.length}\n`);
 
   if (allListings.length === 0) {
     console.error('No listings found. Aborting update.');
