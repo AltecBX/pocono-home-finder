@@ -84,15 +84,15 @@ const DEFAULT_SOURCES = [
 ];
 
 // Tesla Superchargers near the Poconos (within ~50 miles)
+// Tesla Superchargers near Monroe County (verified from tesla.com/findus)
 const TESLA_SUPERCHARGERS = [
-  { name: 'Mt Pocono Supercharger', lat: 41.1220, lng: -75.3646 },
-  { name: 'Stroudsburg Supercharger', lat: 40.9862, lng: -75.1946 },
-  { name: 'Bartonsville Supercharger', lat: 41.0098, lng: -75.3000 },
-  { name: 'Scranton Supercharger', lat: 41.4090, lng: -75.6624 },
-  { name: 'Wilkes-Barre Supercharger', lat: 41.2459, lng: -75.8813 },
-  { name: 'Tannersville Supercharger', lat: 41.0393, lng: -75.3209 },
-  { name: 'Milford Supercharger', lat: 41.3229, lng: -74.8024 },
-  { name: 'Newton NJ Supercharger', lat: 41.0584, lng: -74.7524 },
+  { name: 'Tannersville Supercharger (Pocono Outlets)', lat: 41.0479, lng: -75.3128 },
+  { name: 'Bartonsville Supercharger (Giant)', lat: 41.0012, lng: -75.2741 },
+  { name: 'Mt Pocono Supercharger (Wawa)', lat: 41.1202, lng: -75.3761 },
+  { name: 'Columbia NJ Supercharger (I-80)', lat: 40.9338, lng: -75.1010 },
+  { name: 'Hickory Run Supercharger (PA Turnpike)', lat: 40.9705, lng: -75.6317 },
+  { name: 'Wilkes-Barre Supercharger', lat: 41.2378, lng: -75.8446 },
+  { name: 'Moosic Supercharger (Shoppes at Montage)', lat: 41.3639, lng: -75.6798 },
 ];
 
 // Major grocery stores near Monroe County (verified locations)
