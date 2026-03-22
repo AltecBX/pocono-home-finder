@@ -2,23 +2,26 @@
 /**
  * Pocono Home Finder — Automated Listing Updater
  *
- * Scrapes LakeHouse.com for ALL Pocono waterfront listings in Monroe County, PA
- * plus Lake Wallenpaupack (Pike County). Covers 30 lake communities.
+ * Scrapes LakeHouse.com directly (no API keys needed) for ALL Pocono waterfront
+ * listings in Monroe County, PA plus Lake Wallenpaupack (Pike County).
+ * Covers 30 lake communities.
+ *
+ * Zero dependencies — uses Node.js built-in fetch + regex HTML parsing.
+ * LakeHouse.com pages are static HTML with embedded JSON-LD structured data.
  *
  * Updates index.html with fresh listing data including:
  *   - Real addresses, prices, beds/baths/sqft
- *   - MLS listing photos
- *   - Exact GPS coordinates
+ *   - MLS listing photos (from JSON-LD + og:image)
+ *   - Exact GPS coordinates (from Google Maps links)
  *   - Real listing descriptions
  *   - Direct links to listing pages
  *
- * Usage: FIRECRAWL_API_KEY=xxx node scripts/update-listings.js
+ * Usage: node scripts/update-listings.js
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
 const INDEX_PATH = path.join(__dirname, '..', 'index.html');
 
 // Helper to build a lake config entry
@@ -90,7 +93,6 @@ function getSourcesForProperty(address, city, zipCode) {
   ];
 }
 
-// Tesla Superchargers near the Poconos (within ~50 miles)
 // Tesla Superchargers near Monroe County (verified from tesla.com/findus)
 const TESLA_SUPERCHARGERS = [
   { name: 'Tannersville Supercharger (Pocono Outlets)', lat: 41.0479, lng: -75.3128 },
@@ -123,7 +125,8 @@ const GROCERY_STORES = [
   { name: 'Target', address: 'Stroudsburg', lat: 41.0095, lng: -75.2160 },
 ];
 
-// Haversine distance in miles
+// ========== UTILITY FUNCTIONS ==========
+
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 3959;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -142,130 +145,196 @@ function findNearest(lat, lng, locations) {
   return { ...best, distance: Math.round(bestDist * 10) / 10 };
 }
 
-async function firecrawlScrape(url) {
-  const resp = await fetch('https://api.firecrawl.dev/v1/scrape', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
-    },
-    body: JSON.stringify({
-      url,
-      formats: ['markdown'],
-    }),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Firecrawl scrape failed (${resp.status}): ${text}`);
-  }
-
-  const data = await resp.json();
-  return data.data?.markdown || '';
+// Simple HTML entity decoder
+function decodeEntities(str) {
+  return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
 }
 
-function parseIndexPage(markdown, lake) {
+// ========== DIRECT HTTP SCRAPING (NO API NEEDED) ==========
+
+async function fetchPage(url, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+        },
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return await resp.text();
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.warn(`   Retry ${attempt}/${retries} for ${url}: ${err.message}`);
+      await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
+  }
+}
+
+// Parse listing index page HTML directly
+function parseIndexPageHTML(html, lake) {
   const listings = [];
-  // Match listing blocks: URL with price, then address heading, then stats, then description
-  const listingPattern = /\$([0-9,]+)\]\((https:\/\/www\.lakehouse\.com\/[a-z0-9-]+-p\d+\.html)\)\s*\n\n## ([^\n]+)\n\n### (\d+)\s+([\d.]+)\s+Sf:\s*(\d+)\s+Yr:\s*(\d+)\s+Acres:\s*([\d.]+)\s*\n\n### ([^\n]+)/g;
 
-  let match;
-  while ((match = listingPattern.exec(markdown)) !== null) {
-    const price = parseInt(match[1].replace(/,/g, ''));
-    const listingUrl = match[2];
-    const address = match[3].trim();
-    const bedrooms = parseInt(match[4]);
-    const bathrooms = parseFloat(match[5]);
-    const sqft = parseInt(match[6]);
-    const yearBuilt = parseInt(match[7]);
-    const lotAcres = parseFloat(match[8]);
-    const description = match[9].replace(/\.\.\.$/, '...').trim();
+  // Extract JSON-LD structured data blocks (most reliable source)
+  // The JSON-LD blocks look like: <script type="application/ld+json">\n{...}\n</script>
+  const jsonLdPattern = /<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/g;
+  let jsonLdMatch;
+  while ((jsonLdMatch = jsonLdPattern.exec(html)) !== null) {
+    try {
+      const data = JSON.parse(jsonLdMatch[1].trim());
+      if (data['@type'] !== 'Product' || !data.offers?.price) continue;
+      const name = data.name || '';
+      const parts = name.split(',').map(s => s.trim());
+      const address = parts[0] || '';
+      const city = parts[1] || lake.city || '';
+      const state = parts[2] || 'Pennsylvania';
+      const zipCode = parts[3] || lake.zipCode || '';
+      const price = parseInt(data.offers.price);
+      const url = data.offers.url || '';
+      const image = data.image || '';
 
-    // Skip if under contract
-    if (description.toUpperCase().includes('UNDER CONTRACT') && !description.includes('kickout')) continue;
+      if (address && price > 0) {
+        listings.push({ address, city, zipCode, price, listingUrl: url, image, sku: data.sku });
+      }
+    } catch (e) { /* skip malformed JSON-LD */ }
+  }
 
-    // Detect price reduction
-    const isReduced = description.toUpperCase().includes('PRICE REDUCED') || description.toUpperCase().includes('PRICE DROP');
+  // Now extract beds/baths/sqft/year/acres/description from the HTML listing blocks
+  // Each listing is in a <div class="item" id="iNNNNNNN">
+  // Split HTML by item blocks for reliable extraction
+  const itemPattern = /<div class="item" id="i(\d+)"[^>]*>([\s\S]*?)(?=<div class="item" id="i|<\/div>\s*<script type="application\/ld\+json">|\s*$)/g;
+  let itemMatch;
+  while ((itemMatch = itemPattern.exec(html)) !== null) {
+    const itemId = itemMatch[1];
+    const block = itemMatch[2];
 
-    // Extract city/zip from URL
-    let city = lake.city;
-    let zipCode = lake.zipCode;
-    const urlCityMatch = listingUrl.match(/-([a-z-]+)-pennsylvania-(\d{5})-/);
-    if (urlCityMatch) {
-      if (!city) city = urlCityMatch[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      if (!zipCode) zipCode = urlCityMatch[2];
+    // Find matching listing from JSON-LD by SKU
+    const listing = listings.find(l => l.sku === itemId);
+    if (!listing) continue;
+
+    // Extract beds
+    const bedsMatch = block.match(/title="(\d+)\s+Bedroom/);
+    listing.bedrooms = bedsMatch ? parseInt(bedsMatch[1]) : 0;
+
+    // Extract baths
+    const bathsMatch = block.match(/title="([\d.]+)\s+Bathroom/);
+    listing.bathrooms = bathsMatch ? parseFloat(bathsMatch[1]) : 0;
+
+    // Extract sqft
+    const sqftMatch = block.match(/Sf:\s*([\d,]+)/);
+    listing.sqft = sqftMatch ? parseInt(sqftMatch[1].replace(/,/g, '')) : 0;
+
+    // Extract year built
+    const yearMatch = block.match(/Yr:\s*(\d{4})/);
+    listing.yearBuilt = yearMatch ? parseInt(yearMatch[1]) : 0;
+
+    // Extract lot acres
+    const acresMatch = block.match(/Acres:\s*([\d.]+)/);
+    listing.lotAcres = acresMatch ? parseFloat(acresMatch[1]) : 0;
+
+    // Extract description
+    const descMatch = block.match(/class="item-details-i"[^>]*>\s*<h3[^>]*>\s*([\s\S]*?)\s*<\/h3>/);
+    listing.description = descMatch ? decodeEntities(descMatch[1].replace(/\n/g, ' ').replace(/<[^>]+>/g, '').trim()) : '';
+
+    // Extract image from data-src (lazy loaded)
+    if (!listing.image || listing.image.includes('lazyload')) {
+      const imgMatch = block.match(/data-src="(https:\/\/images\.lakehouse\.com\/files\/medium\/[^"]+)"/);
+      if (imgMatch) listing.image = imgMatch[0].replace('data-src="', '').replace('"', '');
     }
 
-    listings.push({
-      address,
-      city,
-      zipCode,
-      price,
-      bedrooms,
-      bathrooms,
-      sqft,
-      lotAcres,
-      yearBuilt,
-      description,
-      listingUrl,
-      waterBodyName: lake.waterBodyName,
-      hoaFee: lake.hoaFee,
-      isReduced,
-      motorboats: lake.motorboats,
-    });
+    // Detect under contract
+    if (listing.description.toUpperCase().includes('UNDER CONTRACT') && !listing.description.includes('kickout')) {
+      listing.skip = true;
+    }
+
+    // Detect price reduction
+    listing.isReduced = listing.description.toUpperCase().includes('PRICE REDUCED') ||
+                        listing.description.toUpperCase().includes('PRICE DROP');
+
+    // Fill in lake data
+    listing.waterBodyName = lake.waterBodyName;
+    listing.hoaFee = lake.hoaFee || 0;
+    listing.motorboats = lake.motorboats || false;
+    if (!listing.city || listing.city === '') listing.city = lake.city || '';
+    if (!listing.zipCode || listing.zipCode === '') listing.zipCode = lake.zipCode || '';
+
+    // Extract city/zip from listing URL if missing
+    if ((!listing.city || !listing.zipCode) && listing.listingUrl) {
+      const urlMatch = listing.listingUrl.match(/-([a-z-]+)-pennsylvania-(\d{5})-/);
+      if (urlMatch) {
+        if (!listing.city) listing.city = urlMatch[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        if (!listing.zipCode) listing.zipCode = urlMatch[2];
+      }
+    }
   }
 
-  return listings;
+  // Return only complete listings (skip under contract, skip missing data)
+  return listings.filter(l => !l.skip && l.bedrooms !== undefined && l.address);
 }
 
+// Enrich individual listing page for GPS coordinates
 async function enrichListing(listing) {
-  // Scrape individual listing page for photo and GPS coordinates
   try {
-    const md = await firecrawlScrape(listing.listingUrl);
+    const html = await fetchPage(listing.listingUrl);
 
-    // Extract photo
-    const photoMatch = md.match(/https:\/\/images\.lakehouse\.com\/files\/medium\/[^)\s]+\.jpg/);
-    if (photoMatch) listing.image = photoMatch[0];
-
-    // Extract GPS coordinates from Google Maps link
-    const coordMatch = md.match(/q=([\d.-]+),\+?([\d.-]+)/);
+    // Extract GPS from Google Maps link: q=41.15718460,+-75.56371307
+    const coordMatch = html.match(/q=([\d.-]+),\s*\+?([\d.-]+)/);
     if (coordMatch) {
       listing.latitude = parseFloat(coordMatch[1]);
       listing.longitude = parseFloat(coordMatch[2]);
     }
 
-    // Extract fuller description if available
-    const descMatch = md.match(/### ([A-Z][^\n]{50,})/);
-    if (descMatch) {
-      listing.description = descMatch[1].replace(/\.\.\.$/, '...').trim();
+    // Extract og:image if we don't have a good image yet
+    if (!listing.image || listing.image.includes('lazyload.gif')) {
+      const ogMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+      if (ogMatch) listing.image = ogMatch[1];
     }
 
-    // Extract listing agent/source info
-    const agentMatch = md.match(/Listing Site\]\((https:\/\/www\.realtor\.com[^)]+)\)/);
-    if (agentMatch) listing.realtorUrl = agentMatch[1];
+    // Extract fuller description if available
+    const descBlock = html.match(/class="item-details-i"[^>]*>\s*<h3[^>]*>([\s\S]*?)<\/h3>/);
+    if (descBlock) {
+      const fullDesc = decodeEntities(descBlock[1].replace(/<[^>]+>/g, '').replace(/\n/g, ' ').trim());
+      if (fullDesc.length > (listing.description || '').length) {
+        listing.description = fullDesc;
+      }
+    }
+
+    // Extract Realtor.com listing link
+    const realtorMatch = html.match(/href="(https:\/\/www\.realtor\.com\/realestateandhomes-detail\/[^"]+)"/);
+    if (realtorMatch) listing.realtorUrl = realtorMatch[1];
+
+    // Extract photo count from swiper slides
+    const slideMatches = html.match(/class="swiper-slide"/g);
+    if (slideMatches) listing.photoCount = slideMatches.length;
 
   } catch (err) {
-    console.warn(`  Warning: Could not enrich ${listing.address}: ${err.message}`);
+    console.warn(`   Warning: Could not enrich ${listing.address}: ${err.message}`);
   }
-
   return listing;
 }
 
+// ========== PROPERTY JS GENERATOR ==========
+
 function generatePropertyJS(listing, id) {
-  const isLakefront = listing.description?.toLowerCase().includes('lakefront') ||
-                      listing.description?.toLowerCase().includes('lake front') ||
+  const isLakefront = (listing.description || '').toLowerCase().includes('lakefront') ||
+                      (listing.description || '').toLowerCase().includes('lake front') ||
                       listing.address.toLowerCase().includes('lake shore') ||
                       listing.address.toLowerCase().includes('lakeshore') ||
                       listing.address.toLowerCase().includes('lakeside');
 
   const waterType = isLakefront ? 'LAKEFRONT' : 'LAKE_ACCESS';
 
-  // Scoring heuristics
-  const waterScore = isLakefront ? 85 + Math.floor(Math.random() * 10) : 50 + Math.floor(Math.random() * 15);
-  const overallScore = isLakefront ? 78 + Math.floor(Math.random() * 15) : 65 + Math.floor(Math.random() * 15);
-  const dogScore = isLakefront && !listing.motorboats ? 75 + Math.floor(Math.random() * 15) : 40 + Math.floor(Math.random() * 30);
-  const privacyScore = 60 + Math.floor(Math.random() * 30);
-  const valueScore = listing.price < 500000 ? 80 + Math.floor(Math.random() * 10) : 60 + Math.floor(Math.random() * 20);
+  // Scoring heuristics (seeded by address hash for consistency between runs)
+  const hash = listing.address.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+  const pseudoRand = (seed, range) => Math.abs((hash * seed) % range);
+
+  const waterScore = isLakefront ? 85 + pseudoRand(7, 10) : 50 + pseudoRand(7, 15);
+  const overallScore = isLakefront ? 78 + pseudoRand(13, 15) : 65 + pseudoRand(13, 15);
+  const dogScore = isLakefront && !listing.motorboats ? 75 + pseudoRand(17, 15) : 40 + pseudoRand(17, 30);
+  const privacyScore = 60 + pseudoRand(23, 30);
+  const valueScore = listing.price < 500000 ? 80 + pseudoRand(29, 10) : 60 + pseudoRand(29, 20);
 
   const dogAccessible = isLakefront && dogScore >= 65;
   const dogNotes = dogAccessible
@@ -281,25 +350,36 @@ function generatePropertyJS(listing, id) {
   ];
 
   const image = listing.image || FALLBACK_PHOTOS[id % FALLBACK_PHOTOS.length];
-  const lat = listing.latitude || (41.1 + Math.random() * 0.4);
-  const lng = listing.longitude || (-75.6 + Math.random() * 0.4);
+  const lat = listing.latitude || (41.1 + pseudoRand(31, 400) / 1000);
+  const lng = listing.longitude || (-75.6 + pseudoRand(37, 400) / 1000);
+
+  // Days on market: hash-based for consistency
+  const daysOnMarket = 5 + pseudoRand(41, 45);
 
   // Calculate distances to nearest amenities
   const nearestTesla = findNearest(lat, lng, TESLA_SUPERCHARGERS);
   const nearestGrocery = findNearest(lat, lng, GROCERY_STORES);
 
+  const photoCount = listing.photoCount || (10 + pseudoRand(43, 20));
+
+  // Escape strings for safe JS output
+  const safeDesc = JSON.stringify(listing.description || '');
+  const safeAddress = listing.address.replace(/"/g, '\\"');
+  const safeCity = (listing.city || '').replace(/"/g, '\\"');
+  const safeDogNotes = JSON.stringify(dogNotes);
+
   return `  {
-    id: ${id}, address: "${listing.address}", city: "${listing.city}", zipCode: "${listing.zipCode}",
-    price: ${listing.price}, ${listing.isReduced ? `previousPrice: ${Math.round(listing.price * 1.08)}, ` : ''}bedrooms: ${listing.bedrooms}, bathrooms: ${listing.bathrooms}, sqft: ${listing.sqft}, lotAcres: ${listing.lotAcres}, yearBuilt: ${listing.yearBuilt},
+    id: ${id}, address: "${safeAddress}", city: "${safeCity}", zipCode: "${listing.zipCode || ''}",
+    price: ${listing.price}, ${listing.isReduced ? `previousPrice: ${Math.round(listing.price * 1.08)}, ` : ''}bedrooms: ${listing.bedrooms || 0}, bathrooms: ${listing.bathrooms || 0}, sqft: ${listing.sqft || 0}, lotAcres: ${listing.lotAcres || 0}, yearBuilt: ${listing.yearBuilt || 0},
     waterType: "${waterType}", waterBodyName: "${listing.waterBodyName}",
     overallScore: ${overallScore}, waterAccessScore: ${waterScore}, dogSwimScore: ${dogScore}, privacyScore: ${privacyScore}, valueScore: ${valueScore},
-    daysOnMarket: ${Math.floor(Math.random() * 45) + 5}, sourceCount: ${sources.length}, hasConflicts: false, isFavorite: false,
-    description: ${JSON.stringify(listing.description)},
+    daysOnMarket: ${daysOnMarket}, sourceCount: ${sources.length}, hasConflicts: false, isFavorite: false,
+    description: ${safeDesc},
     latitude: ${lat.toFixed(8)}, longitude: ${lng.toFixed(8)},
-    status: "${listing.isReduced ? 'Price Reduced' : 'Active'}", hoaFee: ${listing.hoaFee}, annualTax: ${Math.round(listing.price * 0.012)}, garage: "See listing",
+    status: "${listing.isReduced ? 'Price Reduced' : 'Active'}", hoaFee: ${listing.hoaFee || 0}, annualTax: ${Math.round(listing.price * 0.012)}, garage: "See listing",
     basement: "See listing", fireplace: true, fencedYard: false,
-    dogSwimAccessible: ${dogAccessible}, dogAccessNotes: ${JSON.stringify(dogNotes)},
-    shorelineType: "${isLakefront ? 'Natural lakefront' : 'Community beach only'}", photoCount: ${10 + Math.floor(Math.random() * 20)},
+    dogSwimAccessible: ${dogAccessible}, dogAccessNotes: ${safeDogNotes},
+    shorelineType: "${isLakefront ? 'Natural lakefront' : 'Community beach only'}", photoCount: ${photoCount},
     nearestTesla: { name: ${JSON.stringify(nearestTesla.name)}, miles: ${nearestTesla.distance} },
     nearestGrocery: { name: ${JSON.stringify(nearestGrocery.name + ' — ' + (nearestGrocery.address || ''))}, miles: ${nearestGrocery.distance} },
     image: "${image}",
@@ -307,14 +387,12 @@ function generatePropertyJS(listing, id) {
   }`;
 }
 
-async function main() {
-  if (!FIRECRAWL_API_KEY) {
-    console.error('Error: FIRECRAWL_API_KEY environment variable is required');
-    process.exit(1);
-  }
+// ========== MAIN ==========
 
-  console.log('🏠 Pocono Home Finder — Listing Updater');
-  console.log('=========================================\n');
+async function main() {
+  console.log('🏠 Pocono Home Finder — Listing Updater (Direct Scrape)');
+  console.log('========================================================');
+  console.log('   No API keys needed — scraping LakeHouse.com directly\n');
 
   const allListings = [];
   const seenAddresses = new Set();
@@ -323,8 +401,8 @@ async function main() {
   for (const lake of LAKES) {
     console.log(`📍 Scraping ${lake.name}...`);
     try {
-      const markdown = await firecrawlScrape(lake.indexUrl);
-      const listings = parseIndexPage(markdown, lake);
+      const html = await fetchPage(lake.indexUrl);
+      const listings = parseIndexPageHTML(html, lake);
       console.log(`   Found ${listings.length} listings`);
 
       let added = 0;
@@ -342,6 +420,9 @@ async function main() {
     } catch (err) {
       console.error(`   Error scraping ${lake.name}: ${err.message}`);
     }
+
+    // Small delay between lakes to be polite
+    await new Promise(r => setTimeout(r, 500));
   }
 
   console.log(`\n📊 Total unique listings: ${allListings.length}\n`);
@@ -351,16 +432,16 @@ async function main() {
     process.exit(1);
   }
 
-  // Step 2: Enrich each listing with photo + GPS (2 at a time for concurrency limit)
-  console.log('🔍 Enriching listings with photos and coordinates...');
-  for (let i = 0; i < allListings.length; i += 2) {
-    const batch = allListings.slice(i, i + 2);
+  // Step 2: Enrich each listing with GPS + better photos (3 at a time)
+  console.log('🔍 Enriching listings with GPS coordinates...');
+  for (let i = 0; i < allListings.length; i += 3) {
+    const batch = allListings.slice(i, i + 3);
     await Promise.all(batch.map(async (listing) => {
-      console.log(`   ${listing.address}...`);
+      console.log(`   [${i + 1}/${allListings.length}] ${listing.address}...`);
       await enrichListing(listing);
     }));
-    // Small delay between batches to respect rate limits
-    if (i + 2 < allListings.length) await new Promise(r => setTimeout(r, 1000));
+    // Polite delay between batches
+    if (i + 3 < allListings.length) await new Promise(r => setTimeout(r, 800));
   }
 
   // Step 3: Generate JavaScript
@@ -375,7 +456,6 @@ async function main() {
 
   // Replace the PROPERTIES array
   const startMarker = 'const PROPERTIES = [';
-  const endMarker = '];';
   const startIdx = html.indexOf(startMarker);
   if (startIdx === -1) {
     console.error('Could not find PROPERTIES array in index.html');
@@ -413,7 +493,7 @@ async function main() {
   console.log('   Listings by lake:');
   for (const lake of LAKES) {
     const count = allListings.filter(l => l.lakeName === lake.name).length;
-    console.log(`   - ${lake.name}: ${count}`);
+    if (count > 0) console.log(`   - ${lake.name}: ${count}`);
   }
 }
 

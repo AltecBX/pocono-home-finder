@@ -20,8 +20,6 @@ jobs:
           node-version: '22'
 
       - name: Scrape and update listings
-        env:
-          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
         run: node scripts/update-listings.js
 
       - name: Check for changes
@@ -37,6 +35,6 @@ jobs:
           git add index.html
           git commit -m "Auto-update listings $(date +'%Y-%m-%d')
 
-          Automated daily refresh of Pocono waterfront listings from MLS data.
-          Sources: LakeHouse.com, Zillow, Redfin, Realtor.com"
+          Automated daily refresh of Pocono waterfront listings.
+          Source: LakeHouse.com (direct scrape, no API keys needed)"
           git push
