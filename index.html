@@ -22919,6 +22919,8 @@ function openDetailModal(id) {
   const p = PROPERTIES.find(pr => pr.id === id);
   if (!p) return;
   addToRecentlyViewed(id);
+  carouselIndex = 0;
+  carouselTotal = (p.photos && p.photos.length > 1) ? p.photos.length : 1;
 
   const modal = document.getElementById('modal-container');
   modal.innerHTML = `
@@ -22928,15 +22930,32 @@ function openDetailModal(id) {
         <div class="sm:hidden flex justify-center py-2" style="padding-top: max(8px, env(safe-area-inset-top, 0px));">
           <div class="w-10 h-1 rounded-full bg-white/20"></div>
         </div>
-        <!-- Photo Header -->
-        <div class="relative">
-          <img src="${p.image}" alt="${p.address}" class="w-full object-cover" style="aspect-ratio: 16/9; max-height: 300px;">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-          <div class="absolute right-4 z-10 flex gap-2" style="top: calc(env(safe-area-inset-top, 0px) + 16px);">
-            <button id="share-btn" onclick="shareProperty(PROPERTIES.find(pr=>pr.id===${p.id}))" class="p-2 rounded-full bg-black/40 hover:bg-black/60 transition" aria-label="Share">
+        <!-- Photo Carousel Header -->
+        <div class="relative" id="modal-photo-carousel">
+          <div class="relative overflow-hidden" style="aspect-ratio: 16/9; max-height: 340px;">
+            <div id="carousel-track" class="flex transition-transform duration-300 ease-out h-full" style="touch-action: pan-y;">
+              ${(p.photos && p.photos.length > 1 ? p.photos : [p.image]).map((photo, i) => `
+                <img src="${i === 0 ? photo : ''}" data-src="${photo}" alt="${p.address} photo ${i+1}" class="w-full h-full object-cover flex-shrink-0" style="min-width:100%;" ${i === 0 ? '' : 'loading="lazy"'}>
+              `).join('')}
+            </div>
+          </div>
+          ${(p.photos && p.photos.length > 1) ? `
+          <button onclick="carouselPrev()" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-sm transition" aria-label="Previous photo">
+            <i data-lucide="chevron-left" class="w-5 h-5 text-white"></i>
+          </button>
+          <button onclick="carouselNext()" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-sm transition" aria-label="Next photo">
+            <i data-lucide="chevron-right" class="w-5 h-5 text-white"></i>
+          </button>
+          <div class="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-black/50 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full">
+            <span id="carousel-counter">1</span> / ${p.photos.length}
+          </div>
+          ` : ''}
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
+          <div class="absolute right-4 z-20 flex gap-2" style="top: calc(env(safe-area-inset-top, 0px) + 16px);">
+            <button id="share-btn" onclick="shareProperty(PROPERTIES.find(pr=>pr.id===${p.id}))" class="p-2 rounded-full bg-black/40 hover:bg-black/60 transition pointer-events-auto" aria-label="Share">
               <i data-lucide="share-2" class="w-5 h-5 text-white"></i>
             </button>
-            <button onclick="closeModal()" class="p-2 rounded-full bg-black/40 hover:bg-black/60 transition" aria-label="Close">
+            <button onclick="closeModal()" class="p-2 rounded-full bg-black/40 hover:bg-black/60 transition pointer-events-auto" aria-label="Close">
               <i data-lucide="x" class="w-5 h-5 text-white"></i>
             </button>
           </div>
@@ -23145,6 +23164,64 @@ function closeModal() {
   document.getElementById('modal-container').innerHTML = '';
   document.body.style.overflow = '';
 }
+
+// ========== PHOTO CAROUSEL ==========
+let carouselIndex = 0;
+let carouselTotal = 0;
+
+function carouselNext() {
+  if (carouselIndex >= carouselTotal - 1) return;
+  carouselIndex++;
+  updateCarousel();
+}
+
+function carouselPrev() {
+  if (carouselIndex <= 0) return;
+  carouselIndex--;
+  updateCarousel();
+}
+
+function updateCarousel() {
+  const track = document.getElementById('carousel-track');
+  if (!track) return;
+  track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  const counter = document.getElementById('carousel-counter');
+  if (counter) counter.textContent = carouselIndex + 1;
+  // Lazy load: preload current, previous, and next 2 images
+  const imgs = track.querySelectorAll('img');
+  imgs.forEach((img, i) => {
+    if (i >= carouselIndex - 1 && i <= carouselIndex + 2 && img.dataset.src && !img.getAttribute('src')) {
+      img.src = img.dataset.src;
+    }
+  });
+}
+
+// Swipe support for mobile carousel
+document.addEventListener('touchstart', function(e) {
+  const carousel = document.getElementById('modal-photo-carousel');
+  if (!carousel || !carousel.contains(e.target)) return;
+  carousel._touchStartX = e.touches[0].clientX;
+  carousel._touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener('touchend', function(e) {
+  const carousel = document.getElementById('modal-photo-carousel');
+  if (!carousel || carousel._touchStartX == null) return;
+  const dx = e.changedTouches[0].clientX - carousel._touchStartX;
+  const dy = e.changedTouches[0].clientY - carousel._touchStartY;
+  carousel._touchStartX = null;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    if (dx < 0) carouselNext();
+    else carouselPrev();
+  }
+}, { passive: true });
+
+// Keyboard support for carousel
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('carousel-track')) return;
+  if (e.key === 'ArrowLeft') carouselPrev();
+  else if (e.key === 'ArrowRight') carouselNext();
+});
 
 // ========== MAP ==========
 

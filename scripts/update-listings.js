@@ -236,13 +236,18 @@ async function scrapeRedfin() {
       // Build listing URL
       const listingUrl = home.url ? `https://www.redfin.com${home.url}` : '';
 
-      // Get photo
+      // Get all photos
       let image = '';
+      const photos = [];
       if (home.photos && home.photos.length > 0) {
-        const photo = home.photos[0];
-        if (typeof photo === 'string') image = photo;
-        else if (photo.photoUrls && photo.photoUrls.fullScreenPhotoUrl) image = photo.photoUrls.fullScreenPhotoUrl;
-        else if (photo.photoUrls && photo.photoUrls.nonFullScreenPhotoUrl) image = photo.photoUrls.nonFullScreenPhotoUrl;
+        for (const photo of home.photos) {
+          let url = '';
+          if (typeof photo === 'string') url = photo;
+          else if (photo.photoUrls && photo.photoUrls.fullScreenPhotoUrl) url = photo.photoUrls.fullScreenPhotoUrl;
+          else if (photo.photoUrls && photo.photoUrls.nonFullScreenPhotoUrl) url = photo.photoUrls.nonFullScreenPhotoUrl;
+          if (url) photos.push(url);
+        }
+        image = photos[0] || '';
       }
 
       // Helper to extract plain number from Redfin's {value: N} or plain N
@@ -280,6 +285,7 @@ async function scrapeRedfin() {
         motorboats: false,
         description: String(remarks || '').slice(0, 500),
         image: image,
+        photos: photos.slice(0, 20),
         listingUrl: listingUrl,
         mlsId: str(home.mlsId),
         daysOnMarket: num(home.dom) || num(home.timeOnRedfin),
@@ -411,6 +417,7 @@ async function scrapeZillow() {
         motorboats: false,
         description: String(result.hdpData?.homeInfo?.description || '').slice(0, 500),
         image: result.imgSrc || result.image || '',
+        photos: (result.carouselPhotos || []).map(p => p.url || p).filter(Boolean).slice(0, 20),
         listingUrl: detailUrl,
         daysOnMarket: result.hdpData?.homeInfo?.daysOnZillow || 0,
         isReduced: (result.hdpData?.homeInfo?.priceChange || 0) < 0,
@@ -701,9 +708,27 @@ async function enrichListing(listing) {
     const realtorMatch = html.match(/href="(https:\/\/www\.realtor\.com\/realestateandhomes-detail\/[^"]+)"/);
     if (realtorMatch) listing.realtorUrl = realtorMatch[1];
 
-    // Extract photo count from swiper slides
+    // Extract all photo URLs from swiper slides
+    const photoRegex = /class="swiper-slide"[^>]*>[\s\S]*?(?:src|data-src)="(https:\/\/images\.lakehouse\.com\/files\/[^"]+)"/g;
+    const allPhotos = [];
+    let photoMatch;
+    while ((photoMatch = photoRegex.exec(html)) !== null) {
+      // Convert to medium size for consistent quality
+      const url = photoMatch[1].replace('/small/', '/medium/').replace('/large/', '/medium/');
+      if (!allPhotos.includes(url)) allPhotos.push(url);
+    }
+    // Also try og:image and any other image URLs from the page
+    const imgRegex = /(?:src|data-src)="(https:\/\/images\.lakehouse\.com\/files\/(?:medium|large)\/[^"]+)"/g;
+    while ((photoMatch = imgRegex.exec(html)) !== null) {
+      const url = photoMatch[1].replace('/large/', '/medium/');
+      if (!allPhotos.includes(url)) allPhotos.push(url);
+    }
+    if (allPhotos.length > 0) {
+      listing.photos = allPhotos.slice(0, 20);
+      listing.image = listing.photos[0];
+    }
     const slideMatches = html.match(/class="swiper-slide"/g);
-    if (slideMatches) listing.photoCount = slideMatches.length;
+    if (slideMatches) listing.photoCount = Math.max(slideMatches.length, allPhotos.length);
 
   } catch (err) {
     console.warn(`   Warning: Could not enrich ${listing.address}: ${err.message}`);
@@ -801,6 +826,7 @@ function generatePropertyJS(listing, id) {
     nearestTesla: { name: ${JSON.stringify(nearestTesla.name)}, miles: ${nearestTesla.distance} },
     nearestGrocery: { name: ${JSON.stringify(nearestGrocery.name + ' — ' + (nearestGrocery.address || ''))}, miles: ${nearestGrocery.distance} },
     image: "${image}",
+    photos: ${JSON.stringify((listing.photos || [image]).filter(Boolean).slice(0, 20))},
     sources: ${JSON.stringify(sources, null, 6).replace(/\n/g, '\n    ')}
   }`;
 }
