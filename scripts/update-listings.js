@@ -83,6 +83,52 @@ const DEFAULT_SOURCES = [
   { name: 'Zillow', url: 'https://www.zillow.com/monroe-county-pa/waterfront/' },
 ];
 
+// Tesla Superchargers near the Poconos (within ~50 miles)
+const TESLA_SUPERCHARGERS = [
+  { name: 'Mt Pocono Supercharger', lat: 41.1220, lng: -75.3646 },
+  { name: 'Stroudsburg Supercharger', lat: 40.9862, lng: -75.1946 },
+  { name: 'Bartonsville Supercharger', lat: 41.0098, lng: -75.3000 },
+  { name: 'Scranton Supercharger', lat: 41.4090, lng: -75.6624 },
+  { name: 'Wilkes-Barre Supercharger', lat: 41.2459, lng: -75.8813 },
+  { name: 'Tannersville Supercharger', lat: 41.0393, lng: -75.3209 },
+  { name: 'Milford Supercharger', lat: 41.3229, lng: -74.8024 },
+  { name: 'Newton NJ Supercharger', lat: 41.0584, lng: -74.7524 },
+];
+
+// Major grocery stores / Walmart near Monroe County
+const GROCERY_STORES = [
+  { name: 'Walmart Supercenter', address: 'East Stroudsburg', lat: 41.0016, lng: -75.1808 },
+  { name: 'Walmart Supercenter', address: 'Bartonsville', lat: 41.0121, lng: -75.3046 },
+  { name: 'Giant Food', address: 'East Stroudsburg', lat: 40.9941, lng: -75.1856 },
+  { name: 'ShopRite', address: 'East Stroudsburg', lat: 41.0026, lng: -75.1906 },
+  { name: 'Weis Markets', address: 'Brodheadsville', lat: 40.9236, lng: -75.3939 },
+  { name: 'Weis Markets', address: 'East Stroudsburg', lat: 41.0053, lng: -75.1832 },
+  { name: 'ALDI', address: 'East Stroudsburg', lat: 40.9987, lng: -75.1939 },
+  { name: 'ALDI', address: 'Bartonsville', lat: 41.0159, lng: -75.2903 },
+  { name: 'Costco', address: 'East Stroudsburg', lat: 41.0008, lng: -75.1760 },
+  { name: 'Price Chopper', address: 'Brodheadsville', lat: 40.9312, lng: -75.3916 },
+  { name: 'ShopRite', address: 'Tobyhanna', lat: 41.1829, lng: -75.4207 },
+];
+
+// Haversine distance in miles
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng/2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function findNearest(lat, lng, locations) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const loc of locations) {
+    const d = haversine(lat, lng, loc.lat, loc.lng);
+    if (d < bestDist) { bestDist = d; best = loc; }
+  }
+  return { ...best, distance: Math.round(bestDist * 10) / 10 };
+}
+
 async function firecrawlScrape(url) {
   const resp = await fetch('https://api.firecrawl.dev/v1/scrape', {
     method: 'POST',
@@ -225,6 +271,10 @@ function generatePropertyJS(listing, id) {
   const lat = listing.latitude || (41.1 + Math.random() * 0.4);
   const lng = listing.longitude || (-75.6 + Math.random() * 0.4);
 
+  // Calculate distances to nearest amenities
+  const nearestTesla = findNearest(lat, lng, TESLA_SUPERCHARGERS);
+  const nearestGrocery = findNearest(lat, lng, GROCERY_STORES);
+
   return `  {
     id: ${id}, address: "${listing.address}", city: "${listing.city}", zipCode: "${listing.zipCode}",
     price: ${listing.price}, ${listing.isReduced ? `previousPrice: ${Math.round(listing.price * 1.08)}, ` : ''}bedrooms: ${listing.bedrooms}, bathrooms: ${listing.bathrooms}, sqft: ${listing.sqft}, lotAcres: ${listing.lotAcres}, yearBuilt: ${listing.yearBuilt},
@@ -237,6 +287,8 @@ function generatePropertyJS(listing, id) {
     basement: "See listing", fireplace: true, fencedYard: false,
     dogSwimAccessible: ${dogAccessible}, dogAccessNotes: ${JSON.stringify(dogNotes)},
     shorelineType: "${isLakefront ? 'Natural lakefront' : 'Community beach only'}", photoCount: ${10 + Math.floor(Math.random() * 20)},
+    nearestTesla: { name: ${JSON.stringify(nearestTesla.name)}, miles: ${nearestTesla.distance} },
+    nearestGrocery: { name: ${JSON.stringify(nearestGrocery.name + ' — ' + (nearestGrocery.address || ''))}, miles: ${nearestGrocery.distance} },
     image: "${image}",
     sources: ${JSON.stringify(sources, null, 6).replace(/\n/g, '\n    ')}
   }`;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pocono Home Finder — Waterfront Property Search</title>
+<title>Pocono Lakehouse Search — Jerry & Theresa's 2nd Home</title>
 
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -37,45 +37,63 @@ tailwind.config = {
 <style>
   /* ========== CSS VARIABLES & BASE ========== */
   :root {
-    --bg-primary: #0b1120;
-    --bg-card: #1a2332;
-    --bg-elevated: #1f2d3f;
-    --text-primary: #f1f5f9;
+    --bg-primary: #090f1a;
+    --bg-card: #111827;
+    --bg-elevated: #1a2332;
+    --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
-    --accent-water: #00baff;
-    --accent-brand: #0c8de9;
-    --border-subtle: rgba(148, 163, 184, 0.08);
+    --accent-water: #38bdf8;
+    --accent-brand: #0ea5e9;
+    --border-subtle: rgba(148, 163, 184, 0.06);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.011em;
   }
 
   /* ========== SCROLLBAR ========== */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg-primary); }
-  ::-webkit-scrollbar-thumb { background: #2a3a4e; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #3a4a5e; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.15); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.25); }
+
+  /* ========== APPLE-STYLE TRANSITIONS ========== */
+  select, button, a, .property-card {
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .property-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(56, 189, 248, 0.08);
+  }
+  select {
+    cursor: pointer;
+  }
+  select:hover {
+    border-color: rgba(56, 189, 248, 0.25);
+  }
 
   /* ========== GLASS CARD ========== */
   .glass {
-    background: rgba(26, 35, 50, 0.7);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border-subtle);
+    background: rgba(17, 24, 39, 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(148, 163, 184, 0.06);
   }
   .glass-strong {
-    background: rgba(26, 35, 50, 0.9);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(148, 163, 184, 0.12);
+    background: rgba(9, 15, 26, 0.92);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
   /* ========== ANIMATIONS ========== */
@@ -144,7 +162,7 @@ tailwind.config = {
 
   /* ========== GRADIENT TEXT ========== */
   .gradient-text {
-    background: linear-gradient(135deg, #f1f5f9, #00baff, #0c8de9);
+    background: linear-gradient(135deg, #f8fafc 0%, #38bdf8 50%, #0ea5e9 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -10703,7 +10721,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <!-- Logo -->
     <a href="#hero" class="flex items-center gap-2 text-lg font-bold tracking-tight">
       <i data-lucide="waves" class="w-6 h-6 text-water"></i>
-      <span class="gradient-text">Pocono Home Finder</span>
+      <span class="gradient-text">Pocono Lakehouse Search</span>
     </a>
     <!-- Desktop Nav -->
     <nav class="hidden md:flex items-center gap-8">
@@ -10751,11 +10769,12 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
   <div class="hero-glow glow-3"></div>
 
   <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center py-20">
+    <p class="text-sm tracking-[0.2em] uppercase text-water/70 font-medium animate-fade-in-up mb-4">Jerry & Theresa</p>
     <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight gradient-text animate-fade-in-up">
-      Search Once.<br>Compare Everywhere.
+      Find Our Perfect<br>Pocono Lakehouse
     </h1>
     <p class="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto animate-fade-in-up stagger-1">
-      Aggregate every Pocono waterfront listing in one place. Smart scoring, dog-friendly water access analysis, and multi-source deduplication.
+      Every lake property in Monroe County, PA in one place. Real MLS data, updated daily, so we never miss a listing.
     </p>
 
     <!-- Decorative search bar -->
@@ -11111,10 +11130,10 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
   <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center">
     <div class="flex items-center justify-center gap-2 mb-3">
       <i data-lucide="waves" class="w-5 h-5 text-water"></i>
-      <span class="font-semibold gradient-text">Pocono Home Finder</span>
+      <span class="font-semibold gradient-text">Pocono Lakehouse Search</span>
     </div>
     <p class="text-slate-600 text-sm">Built for finding the perfect Pocono waterfront home</p>
-    <p class="text-slate-700 text-xs mt-2">Demo site with mock data</p>
+    <p class="text-slate-700 text-xs mt-2">Data sourced from LakeHouse.com &bull; Updated daily</p>
   </div>
 </footer>
 
@@ -11236,7 +11255,12 @@ function renderPropertyCard(p) {
         <div class="flex items-center gap-3 mt-3 flex-wrap">
           <span class="text-xs text-slate-500">${p.daysOnMarket}d on market</span>
           ${p.dogSwimAccessible ? '<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="dog" class="w-3 h-3"></i>Dog OK</span>' : ''}
-          ${p.hasConflicts ? '<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i>Conflicts</span>' : ''}
+        </div>
+
+        <!-- Distance badges -->
+        <div class="flex items-center gap-3 mt-2.5 text-[11px] text-slate-500">
+          ${p.nearestTesla ? `<span class="flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-red-400"></i>${p.nearestTesla.miles} mi</span>` : ''}
+          ${p.nearestGrocery ? `<span class="flex items-center gap-1"><i data-lucide="shopping-cart" class="w-3 h-3 text-blue-400"></i>${p.nearestGrocery.miles} mi</span>` : ''}
         </div>
 
         <!-- Source sites row -->
@@ -11315,6 +11339,7 @@ function applyFilters() {
 
   const filtered = getFilteredProperties();
   renderCards(filtered);
+  updateMapMarkers();
   updateActiveFilterCount();
 }
 
@@ -11365,6 +11390,7 @@ function applyPreset(preset) {
     ? PROPERTIES.filter(p => p.status === 'Price Reduced').sort((a, b) => b.overallScore - a.overallScore)
     : getFilteredProperties();
   renderCards(filtered);
+  updateMapMarkers();
   document.getElementById('search').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -11616,6 +11642,38 @@ function openDetailModal(id) {
           <p class="text-sm text-slate-300 leading-relaxed">${p.description}</p>
         </div>
 
+        <!-- Nearby Amenities -->
+        ${(p.nearestTesla || p.nearestGrocery) ? `
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
+            <i data-lucide="map-pin" class="w-4 h-4"></i> Nearby Amenities
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ${p.nearestTesla ? `
+            <div class="glass rounded-xl p-4 flex items-start gap-3">
+              <div class="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+                <i data-lucide="zap" class="w-5 h-5 text-red-400"></i>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-slate-200">Tesla Supercharger</div>
+                <div class="text-xs text-slate-400 mt-0.5">${p.nearestTesla.name}</div>
+                <div class="text-sm font-semibold text-red-400 mt-1">${p.nearestTesla.miles} miles away</div>
+              </div>
+            </div>` : ''}
+            ${p.nearestGrocery ? `
+            <div class="glass rounded-xl p-4 flex items-start gap-3">
+              <div class="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                <i data-lucide="shopping-cart" class="w-5 h-5 text-blue-400"></i>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-slate-200">Nearest Grocery</div>
+                <div class="text-xs text-slate-400 mt-0.5">${p.nearestGrocery.name}</div>
+                <div class="text-sm font-semibold text-blue-400 mt-1">${p.nearestGrocery.miles} miles away</div>
+              </div>
+            </div>` : ''}
+          </div>
+        </div>` : ''}
+
         <!-- View on Source Sites -->
         <div class="p-6">
           <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
@@ -11658,18 +11716,18 @@ function initMap() {
     attribution: '&copy; Google Maps'
   }).addTo(map);
 
-  addMarkers('all');
+  addMarkers(PROPERTIES);
 }
 
-function addMarkers(filter) {
+function updateMapMarkers() {
+  if (!map) return;
+  addMarkers(getFilteredProperties());
+}
+
+function addMarkers(props) {
   // Clear existing
   markers.forEach(m => map.removeLayer(m));
   markers = [];
-
-  let props = PROPERTIES;
-  if (filter !== 'all') {
-    props = props.filter(p => p.waterBodyName === filter);
-  }
 
   props.forEach(p => {
     const color = markerColor(p.waterType);
@@ -11713,7 +11771,13 @@ function filterMap(filter) {
       btn.classList.remove('text-slate-400');
     }
   });
-  addMarkers(filter);
+  // Sync the lake filter dropdown with the map button
+  document.getElementById('filter-lake').value = filter;
+  activeFilters.lake = filter;
+  const filtered = getFilteredProperties();
+  renderCards(filtered);
+  addMarkers(filtered);
+  updateActiveFilterCount();
 }
 
 function scrollToCard(id) {
@@ -11789,10 +11853,11 @@ document.getElementById('hamburger-btn').addEventListener('click', () => {
 
 function runTypingAnimation() {
   const phrases = [
-    'Lakefront homes with dog-friendly water access...',
-    'Pocono Lake 3+ bedrooms under $500K...',
-    'Waterfront with private dock and fenced yard...',
-    'Creek or river property near Stroudsburg...',
+    'Lakefront homes where the dogs can swim...',
+    '3+ bedrooms under $600K on Arrowhead Lake...',
+    'Lake Naomi waterfront with private dock...',
+    'Lake Wallenpaupack with Tesla charger nearby...',
+    'Dog-friendly lakefront under $500K...',
   ];
   const el = document.getElementById('typing-text');
   let phraseIdx = 0;
