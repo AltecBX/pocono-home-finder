@@ -708,24 +708,25 @@ async function enrichListing(listing) {
     const realtorMatch = html.match(/href="(https:\/\/www\.realtor\.com\/realestateandhomes-detail\/[^"]+)"/);
     if (realtorMatch) listing.realtorUrl = realtorMatch[1];
 
-    // Extract all photo URLs from swiper slides
-    const photoRegex = /class="swiper-slide"[^>]*>[\s\S]*?(?:src|data-src)="(https:\/\/images\.lakehouse\.com\/files\/[^"]+)"/g;
+    // Extract all photo URLs — LakeHouse uses CSS background-image style, not src attributes
     const allPhotos = [];
     let photoMatch;
-    while ((photoMatch = photoRegex.exec(html)) !== null) {
-      // Convert to medium size for consistent quality
+    // Match CSS: url(https://images.lakehouse.com/files/medium/...)
+    const bgRegex = /url\((https?:\/\/[^)]*lakehouse\.com\/files\/[^)]+)\)/g;
+    while ((photoMatch = bgRegex.exec(html)) !== null) {
       const url = photoMatch[1].replace('/small/', '/medium/').replace('/large/', '/medium/');
       if (!allPhotos.includes(url)) allPhotos.push(url);
     }
-    // Also try og:image and any other image URLs from the page
-    const imgRegex = /(?:src|data-src)="(https:\/\/images\.lakehouse\.com\/files\/(?:medium|large)\/[^"]+)"/g;
-    while ((photoMatch = imgRegex.exec(html)) !== null) {
-      const url = photoMatch[1].replace('/large/', '/medium/');
+    // Also match src/data-src attributes (backup)
+    const srcRegex = /(?:src|data-src)="(https?:\/\/[^"]*lakehouse\.com\/files\/[^"]+)"/g;
+    while ((photoMatch = srcRegex.exec(html)) !== null) {
+      const url = photoMatch[1].replace('/small/', '/medium/').replace('/large/', '/medium/');
       if (!allPhotos.includes(url)) allPhotos.push(url);
     }
     if (allPhotos.length > 0) {
       listing.photos = allPhotos.slice(0, 20);
       listing.image = listing.photos[0];
+      listing.photoCount = allPhotos.length;
     }
     const slideMatches = html.match(/class="swiper-slide"/g);
     if (slideMatches) listing.photoCount = Math.max(slideMatches.length, allPhotos.length);

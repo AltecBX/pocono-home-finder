@@ -22016,6 +22016,11 @@ function getLakeMarketHeat(lakeName) {
 
 // Estimated Airbnb income (based on Pocono lake area averages)
 function estimateAirbnbIncome(p) {
+  // Don't estimate for vacant land or properties with no bedrooms
+  if (!p.bedrooms || p.bedrooms <= 0) return null;
+  // Check if community allows STR
+  const comm = COMMUNITY_DATA[p.waterBodyName];
+  if (comm && comm.strOk === false) return null;
   // Pocono lakefront Airbnb averages: ~$200-350/night for 2-3bd, $300-500 for 4+bd
   // Occupancy: ~55-65% for well-managed lakefront
   let nightlyRate = 150;
@@ -23037,11 +23042,14 @@ function openDetailModal(id) {
           </div>
           ${(() => {
             const airbnb = estimateAirbnbIncome(p);
+            if (!airbnb) return '';
+            const comm = COMMUNITY_DATA[p.waterBodyName];
+            const strNote = comm && comm.strOk === 'partial' ? ' <span class="text-amber-400">(check township rules)</span>' : '';
             return `
             <div class="glass rounded-xl p-4 mt-3">
               <div class="flex items-center justify-between mb-2">
                 <div class="text-[10px] text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <i data-lucide="calendar" class="w-3 h-3"></i> Airbnb Income Estimate
+                  <i data-lucide="calendar" class="w-3 h-3"></i> Airbnb Income Estimate${strNote}
                 </div>
                 <span class="text-[10px] bg-emerald-500/10 text-emerald-400 rounded px-2 py-0.5">${airbnb.occupancy}% occupancy</span>
               </div>
