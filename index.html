@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pocono Home Finder — Waterfront Property Search</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        navy: {
+          900: '#0b1120',
+          800: '#111827',
+          700: '#1a2332',
+          600: '#1f2d3f',
+          500: '#2a3a4e',
+        },
+        water: '#00baff',
+        brand: '#0c8de9',
+      }
+    }
+  }
+}
+</script>
+
+<style>
+  /* ========== CSS VARIABLES & BASE ========== */
+  :root {
+    --bg-primary: #0b1120;
+    --bg-card: #1a2332;
+    --bg-elevated: #1f2d3f;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-water: #00baff;
+    --accent-brand: #0c8de9;
+    --border-subtle: rgba(148, 163, 184, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ========== SCROLLBAR ========== */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: #2a3a4e; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4a5e; }
+
+  /* ========== GLASS CARD ========== */
+  .glass {
+    background: rgba(26, 35, 50, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-subtle);
+  }
+  .glass-strong {
+    background: rgba(26, 35, 50, 0.9);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  /* ========== ANIMATIONS ========== */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.05); }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes slideDown {
+    from { transform: translateY(0); }
+    to { transform: translateY(100%); }
+  }
+  @keyframes drawRing {
+    from { stroke-dashoffset: var(--circumference); }
+    to { stroke-dashoffset: var(--dash-offset); }
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+    opacity: 0;
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+
+  /* ========== HERO AMBIENT GLOW ========== */
+  .hero-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    animation: pulse-glow 6s ease-in-out infinite;
+  }
+  .glow-1 {
+    width: 400px; height: 400px;
+    background: rgba(0, 186, 255, 0.15);
+    top: -100px; left: 10%;
+    animation-delay: 0s;
+  }
+  .glow-2 {
+    width: 300px; height: 300px;
+    background: rgba(12, 141, 233, 0.12);
+    top: 50px; right: 15%;
+    animation-delay: 2s;
+  }
+  .glow-3 {
+    width: 250px; height: 250px;
+    background: rgba(0, 186, 255, 0.08);
+    bottom: -50px; left: 40%;
+    animation-delay: 4s;
+  }
+
+  /* ========== GRADIENT TEXT ========== */
+  .gradient-text {
+    background: linear-gradient(135deg, #f1f5f9, #00baff, #0c8de9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ========== SCORE RING ========== */
+  .score-ring-animated circle.progress {
+    animation: drawRing 1s ease-out forwards;
+    stroke-dashoffset: var(--circumference);
+  }
+
+  /* ========== PROPERTY CARD ========== */
+  .property-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .property-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 186, 255, 0.08);
+  }
+
+  /* ========== BADGE COLORS ========== */
+  .badge-lakefront { background: rgba(0, 186, 255, 0.15); color: #00baff; border: 1px solid rgba(0, 186, 255, 0.3); }
+  .badge-pondfront { background: rgba(20, 184, 166, 0.15); color: #14b8a6; border: 1px solid rgba(20, 184, 166, 0.3); }
+  .badge-creekfront { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+  .badge-riverfront { background: rgba(99, 102, 241, 0.15); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.3); }
+  .badge-lake_access { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .badge-water_nearby { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+  /* ========== MODAL ========== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease-out;
+  }
+  .modal-content {
+    background: var(--bg-primary);
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 16px;
+    width: min(95vw, 720px);
+    border: 1px solid var(--border-subtle);
+    animation: fadeInUp 0.3s ease-out;
+  }
+  @media (max-width: 640px) {
+    .modal-content {
+      width: 100vw;
+      max-height: 100vh;
+      height: 100vh;
+      border-radius: 0;
+      animation: slideUp 0.3s ease-out;
+    }
+    .modal-overlay {
+      align-items: flex-end;
+    }
+  }
+
+  /* ========== MOBILE FILTER PANEL ========== */
+  .mobile-filter-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 900;
+    background: var(--bg-primary);
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 16px 16px 0 0;
+    max-height: 80vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+  .mobile-filter-panel.open {
+    transform: translateY(0);
+  }
+  .mobile-filter-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 899;
+    display: none;
+  }
+  .mobile-filter-backdrop.open {
+    display: block;
+  }
+
+  /* ========== MOBILE NAV ========== */
+  .mobile-menu {
+    position: fixed;
+    top: 0; right: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-primary);
+    border-left: 1px solid var(--border-subtle);
+    z-index: 1100;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    padding: 80px 24px 24px;
+  }
+  .mobile-menu.open { transform: translateX(0); }
+  .mobile-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1099;
+    display: none;
+  }
+  .mobile-menu-backdrop.open { display: block; }
+
+  /* ========== LEAFLET OVERRIDES ========== */
+  .leaflet-container { background: #0b1120; }
+  .leaflet-popup-content-wrapper {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+  }
+  .leaflet-popup-tip { background: var(--bg-card) !important; }
+  .leaflet-popup-content { margin: 12px 16px !important; font-size: 14px; }
+  .leaflet-popup-close-button { color: var(--text-secondary) !important; font-size: 20px !important; }
+  .leaflet-control-zoom a {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-subtle) !important;
+  }
+  .leaflet-control-attribution { display: none !important; }
+
+  /* ========== COMPARE TABLE ========== */
+  .compare-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .compare-table th:first-child,
+  .compare-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--bg-card);
+  }
+
+  /* ========== TOGGLE SWITCH ========== */
+  .toggle-switch {
+    width: 44px; height: 24px;
+    background: #2a3a4e;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.active { background: var(--accent-water); }
+  .toggle-switch::after {
+    content: '';
+    width: 18px; height: 18px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+  }
+  .toggle-switch.active::after { transform: translateX(20px); }
+
+  /* ========== SECTION VISIBILITY ========== */
+  .section-hidden { opacity: 0; transform: translateY(30px); }
+  .section-visible { opacity: 1; transform: translateY(0); transition: opacity 0.6s ease, transform 0.6s ease; }
+
+  /* ========== SEARCH BAR ANIMATION ========== */
+  @keyframes typingCursor {
+    0%, 100% { border-right-color: var(--accent-water); }
+    50% { border-right-color: transparent; }
+  }
+  .typing-cursor {
+    border-right: 2px solid var(--accent-water);
+    animation: typingCursor 1s step-end infinite;
+    padding-right: 4px;
+  }
+
+  /* ========== MISC ========== */
+  .water-gradient-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-water), var(--accent-brand), transparent);
+  }
+  button, a { -webkit-tap-highlight-color: transparent; }
+</style>
+</head>
+
+<body>
+
+<!-- ================================================================== -->
+<!-- MOCK DATA                                                          -->
+<!-- ================================================================== -->
+<script>
+const PROPERTIES = [
+  {
+    id: 1, address: "147 Lakeside Dr", city: "Hawley", zipCode: "18428",
+    price: 749000, bedrooms: 4, bathrooms: 3, sqft: 2800, lotAcres: 0.85, yearBuilt: 1998,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Wallenpaupack",
+    overallScore: 88, waterAccessScore: 92, dogSwimScore: 85, privacyScore: 80, valueScore: 75,
+    daysOnMarket: 14, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Stunning lakefront retreat on Lake Wallenpaupack with private dock and sandy beach. Panoramic water views from the wraparound deck. Updated kitchen with granite counters. Finished lower level walks out to the waterfront. Perfect for year-round living or a vacation home.",
+    latitude: 41.4750, longitude: -75.1820,
+    status: "Active", hoaFee: 0, annualTax: 8200, garage: "2-car attached",
+    basement: "Finished walkout", fireplace: true, fencedYard: true,
+    dogSwimAccessible: true, dogAccessNotes: "Private sandy beach with gradual entry. Fenced yard leads directly to shoreline. Excellent for dogs.",
+    shorelineType: "Sandy beach", photoCount: 24
+  },
+  {
+    id: 2, address: "23 Pine Cove Ln", city: "Pocono Pines", zipCode: "18350",
+    price: 385000, bedrooms: 3, bathrooms: 2, sqft: 1850, lotAcres: 0.45, yearBuilt: 2005,
+    waterType: "PONDFRONT", waterBodyName: "Stillwater Pond",
+    overallScore: 82, waterAccessScore: 78, dogSwimScore: 90, privacyScore: 85, valueScore: 88,
+    daysOnMarket: 28, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "Charming pondfront home with gradual shoreline perfect for dogs and families. Open floor plan with vaulted ceilings. Large deck overlooks the water. Private setting with mature trees. Community amenities nearby.",
+    latitude: 41.1120, longitude: -75.4310,
+    status: "Active", hoaFee: 150, annualTax: 5400, garage: "1-car detached",
+    basement: "Unfinished", fireplace: true, fencedYard: true,
+    dogSwimAccessible: true, dogAccessNotes: "Gradual muddy shore with easy water entry for dogs. Fenced yard. Pond is calm and shallow near shore — ideal for swimming dogs.",
+    shorelineType: "Gradual natural", photoCount: 16
+  },
+  {
+    id: 3, address: "89 Harmony Way", city: "Lake Harmony", zipCode: "18624",
+    price: 499000, bedrooms: 3, bathrooms: 2.5, sqft: 2200, lotAcres: 0.35, yearBuilt: 2010,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Harmony",
+    overallScore: 85, waterAccessScore: 88, dogSwimScore: 70, privacyScore: 65, valueScore: 80,
+    daysOnMarket: 7, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Modern lakefront home on beautiful Lake Harmony. Community dock and beach access. Open concept living with floor-to-ceiling windows facing the lake. Chef's kitchen, hardwood floors throughout. Walk to Split Rock Resort amenities.",
+    latitude: 41.0560, longitude: -75.6110,
+    status: "Active", hoaFee: 285, annualTax: 6800, garage: "2-car attached",
+    basement: "Finished", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Community beach allows dogs during off-peak hours. Rocky shoreline near property requires supervision. No private beach.",
+    shorelineType: "Rocky with community beach", photoCount: 20
+  },
+  {
+    id: 4, address: "312 Creek Hollow Rd", city: "Stroudsburg", zipCode: "18360",
+    price: 289000, bedrooms: 4, bathrooms: 2, sqft: 2100, lotAcres: 1.2, yearBuilt: 1985,
+    waterType: "CREEKFRONT", waterBodyName: "Brodhead Creek",
+    overallScore: 78, waterAccessScore: 72, dogSwimScore: 82, privacyScore: 88, valueScore: 92,
+    daysOnMarket: 45, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "Spacious creekfront home on over an acre with Brodhead Creek frontage. Great for fly fishing and wading. Updated bathrooms, new roof 2022. Large yard perfect for pets. Excellent value for the square footage and water access.",
+    latitude: 41.0050, longitude: -75.1940,
+    status: "Active", hoaFee: 0, annualTax: 4200, garage: "2-car detached",
+    basement: "Partial", fireplace: true, fencedYard: true,
+    dogSwimAccessible: true, dogAccessNotes: "Creek has shallow wading areas perfect for dogs. Large fenced yard with direct creek access path. Seasonal water levels vary.",
+    shorelineType: "Rocky creek bed", photoCount: 12
+  },
+  {
+    id: 5, address: "1820 River Rd", city: "Milford", zipCode: "18337",
+    price: 895000, bedrooms: 5, bathrooms: 3, sqft: 3400, lotAcres: 2.1, yearBuilt: 2001,
+    waterType: "RIVERFRONT", waterBodyName: "Delaware River",
+    overallScore: 83, waterAccessScore: 80, dogSwimScore: 65, privacyScore: 90, valueScore: 70,
+    daysOnMarket: 21, sourceCount: 3, hasConflicts: true, isFavorite: false,
+    description: "Premium riverfront estate on the Delaware River with over 2 acres of privacy. Soaring great room with stone fireplace. Gourmet kitchen, en-suite primary bedroom. Multiple decks for entertaining. Kayak and canoe launch on property.",
+    latitude: 41.3220, longitude: -74.8020,
+    status: "Active", hoaFee: 0, annualTax: 11500, garage: "3-car attached",
+    basement: "Finished walkout", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "River access via gentle slope. Current can be strong — supervision required. Calm eddies near shore suitable for confident swimmers. No fence near water.",
+    shorelineType: "Natural riverbank", photoCount: 30
+  },
+  {
+    id: 6, address: "445 Naomi Pines Dr", city: "Pocono Lake", zipCode: "18347",
+    price: 365000, bedrooms: 3, bathrooms: 2, sqft: 1700, lotAcres: 0.3, yearBuilt: 2008,
+    waterType: "LAKE_ACCESS", waterBodyName: "Lake Naomi",
+    overallScore: 72, waterAccessScore: 55, dogSwimScore: 40, privacyScore: 60, valueScore: 78,
+    daysOnMarket: 35, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "Well-maintained home in the desirable Lake Naomi community. Access to community lake beach, pool, tennis, and clubhouse. Open floor plan with modern finishes. No direct waterfront — community beach is a 5-minute drive.",
+    latitude: 41.1250, longitude: -75.4780,
+    status: "Active", hoaFee: 420, annualTax: 5100, garage: "1-car attached",
+    basement: "Unfinished", fireplace: false, fencedYard: false,
+    dogSwimAccessible: false, dogAccessNotes: "Community beach does NOT allow dogs. No private water access. Nearest dog-friendly water is 15 min drive.",
+    shorelineType: "Community beach only", photoCount: 14
+  },
+  {
+    id: 7, address: "67 Pond View Ct", city: "Canadensis", zipCode: "18325",
+    price: 245000, bedrooms: 3, bathrooms: 2, sqft: 1500, lotAcres: 0.25, yearBuilt: 1990,
+    waterType: "WATER_NEARBY", waterBodyName: "None",
+    overallScore: 30, waterAccessScore: 10, dogSwimScore: 5, privacyScore: 45, valueScore: 55,
+    daysOnMarket: 90, sourceCount: 1, hasConflicts: true, isFavorite: false,
+    description: "Cozy Pocono retreat with distant pond views. Listed as 'waterfront' but the pond is across the road on neighboring property with no access rights. Good starter home but water access claims are misleading.",
+    latitude: 41.0780, longitude: -75.2710,
+    status: "Price Reduced", hoaFee: 75, annualTax: 3800, garage: "None",
+    basement: "Crawl space", fireplace: false, fencedYard: false,
+    dogSwimAccessible: false, dogAccessNotes: "WARNING: Despite listing claims, there is NO water access. The pond is on neighboring private property across the road. Misleading listing.",
+    shorelineType: "No access", photoCount: 8
+  },
+  {
+    id: 8, address: "201 Arrowhead Blvd", city: "Pocono Lake", zipCode: "18347",
+    price: 329000, bedrooms: 3, bathrooms: 2, sqft: 1600, lotAcres: 0.28, yearBuilt: 2003,
+    waterType: "LAKE_ACCESS", waterBodyName: "Arrowhead Lake",
+    overallScore: 68, waterAccessScore: 50, dogSwimScore: 35, privacyScore: 55, valueScore: 74,
+    daysOnMarket: 42, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "Comfortable home in Arrowhead Lake community with access to lake beach, pool, and ski hill. Updated kitchen and bathrooms. Community lake access only — no direct waterfront. Active HOA with many family-friendly events.",
+    latitude: 41.1050, longitude: -75.4550,
+    status: "Active", hoaFee: 380, annualTax: 4800, garage: "1-car attached",
+    basement: "Unfinished", fireplace: true, fencedYard: false,
+    dogSwimAccessible: false, dogAccessNotes: "Community beach restricts pets. No private water access on property. Seasonal creek nearby but not suitable for swimming.",
+    shorelineType: "Community beach only", photoCount: 11
+  },
+  {
+    id: 9, address: "156 Lakeshore Ter", city: "Pocono Lake", zipCode: "18347",
+    price: 599000, bedrooms: 4, bathrooms: 3, sqft: 2600, lotAcres: 0.6, yearBuilt: 2012,
+    waterType: "LAKEFRONT", waterBodyName: "Pocono Lake",
+    overallScore: 85, waterAccessScore: 90, dogSwimScore: 88, privacyScore: 78, valueScore: 76,
+    daysOnMarket: 10, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Beautiful lakefront home on Pocono Lake with private sandy beach and dock. Modern open floor plan, gourmet kitchen, and spa-like primary suite. Covered porch overlooks the lake. Year-round community with excellent amenities.",
+    latitude: 41.1180, longitude: -75.4420,
+    status: "Active", hoaFee: 200, annualTax: 7500, garage: "2-car attached",
+    basement: "Finished", fireplace: true, fencedYard: true,
+    dogSwimAccessible: true, dogAccessNotes: "Private sandy beach with very gradual entry — perfect for dogs. Fenced yard connects to beach. Calm lake waters ideal for swimming.",
+    shorelineType: "Sandy beach", photoCount: 22
+  },
+  {
+    id: 10, address: "78 Promised Land Rd", city: "Greentown", zipCode: "18426",
+    price: 425000, bedrooms: 4, bathrooms: 3, sqft: 2400, lotAcres: 0.75, yearBuilt: 1995,
+    waterType: "LAKEFRONT", waterBodyName: "Promised Land Lake",
+    overallScore: 80, waterAccessScore: 76, dogSwimScore: 72, privacyScore: 82, valueScore: 84,
+    daysOnMarket: 30, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "Lakefront home near Promised Land State Park with deeded lake access and dock rights. Spacious layout with updated kitchen. Stone fireplace, hardwood floors. Private wooded setting with lake views. Near hiking trails and state park.",
+    latitude: 41.3100, longitude: -75.2350,
+    status: "Active", hoaFee: 0, annualTax: 5800, garage: "2-car detached",
+    basement: "Partial", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Deeded lake access with small beach area. Dogs allowed. Gradual entry with some rocky patches. Adjacent to dog-friendly state park trails.",
+    shorelineType: "Mixed natural", photoCount: 18
+  },
+  {
+    id: 11, address: "934 Hawley Pond Ln", city: "Hawley", zipCode: "18428",
+    price: 335000, bedrooms: 3, bathrooms: 2, sqft: 1750, lotAcres: 1.5, yearBuilt: 1992,
+    waterType: "PONDFRONT", waterBodyName: "Private Pond",
+    overallScore: 76, waterAccessScore: 74, dogSwimScore: 88, privacyScore: 92, valueScore: 86,
+    daysOnMarket: 55, sourceCount: 1, hasConflicts: false, isFavorite: false,
+    description: "Private retreat with your own pond on 1.5 acres. Stocked fishing pond with dock. Cozy cabin-style home with updated interior. Complete privacy surrounded by mature forest. Perfect for nature lovers and their pets.",
+    latitude: 41.4650, longitude: -75.1550,
+    status: "Active", hoaFee: 0, annualTax: 4500, garage: "1-car detached",
+    basement: "Crawl space", fireplace: true, fencedYard: true,
+    dogSwimAccessible: true, dogAccessNotes: "Private pond with muddy but gradual shoreline. Fully fenced property. Dogs can swim freely. Calm, shallow water — ideal for all dog sizes.",
+    shorelineType: "Natural muddy shore", photoCount: 10
+  },
+  {
+    id: 12, address: "88 Tobyhanna Shore Dr", city: "Pocono Pines", zipCode: "18350",
+    price: 379000, bedrooms: 3, bathrooms: 2, sqft: 1900, lotAcres: 0.4, yearBuilt: 2000,
+    waterType: "LAKEFRONT", waterBodyName: "Tobyhanna Lake",
+    overallScore: 79, waterAccessScore: 75, dogSwimScore: 78, privacyScore: 68, valueScore: 82,
+    daysOnMarket: 18, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "Lakefront home on Tobyhanna Lake with gradual shoreline and dock. Open layout with lake views from main living areas. Updated kitchen, new HVAC. Community with pool and clubhouse. Near Tobyhanna State Park.",
+    latitude: 41.1020, longitude: -75.3920,
+    status: "Active", hoaFee: 225, annualTax: 5200, garage: "1-car attached",
+    basement: "Unfinished", fireplace: false, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Gradual sandy/gravel shore suitable for dogs. Lake is calm in the cove. No fence but low-traffic area. Dogs welcome at community beach during off-hours.",
+    shorelineType: "Gradual sandy/gravel", photoCount: 15
+  }
+];
+
+// ========== STATE ==========
+let favorites = JSON.parse(localStorage.getItem('phf-favorites') || '[]');
+let compareList = JSON.parse(localStorage.getItem('phf-compare') || '[]');
+let activeFilters = { waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false };
+let map = null;
+let markers = [];
+
+// Apply saved favorites
+PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
+</script>
+
+<!-- ================================================================== -->
+<!-- HEADER / NAV                                                       -->
+<!-- ================================================================== -->
+<header id="header" class="fixed top-0 left-0 right-0 z-50 glass-strong">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+    <!-- Logo -->
+    <a href="#hero" class="flex items-center gap-2 text-lg font-bold tracking-tight">
+      <i data-lucide="waves" class="w-6 h-6 text-water"></i>
+      <span class="gradient-text">Pocono Home Finder</span>
+    </a>
+    <!-- Desktop Nav -->
+    <nav class="hidden md:flex items-center gap-8">
+      <a href="#search" class="text-sm text-slate-300 hover:text-water transition-colors">Search</a>
+      <a href="#map-section" class="text-sm text-slate-300 hover:text-water transition-colors">Map</a>
+      <a href="#dashboard" class="text-sm text-slate-300 hover:text-water transition-colors">Dashboard</a>
+      <a href="#compare" class="text-sm text-slate-300 hover:text-water transition-colors">Compare</a>
+    </nav>
+    <!-- Mobile Hamburger -->
+    <button id="hamburger-btn" class="md:hidden p-2 rounded-lg hover:bg-white/5 transition" aria-label="Menu">
+      <i data-lucide="menu" class="w-6 h-6"></i>
+    </button>
+  </div>
+</header>
+
+<!-- Mobile Menu -->
+<div id="mobile-menu-backdrop" class="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
+<div id="mobile-menu" class="mobile-menu">
+  <button onclick="closeMobileMenu()" class="absolute top-5 right-5 p-2 rounded-lg hover:bg-white/5">
+    <i data-lucide="x" class="w-6 h-6"></i>
+  </button>
+  <nav class="flex flex-col gap-6">
+    <a href="#search" onclick="closeMobileMenu()" class="text-lg text-slate-200 hover:text-water transition flex items-center gap-3">
+      <i data-lucide="search" class="w-5 h-5"></i> Search
+    </a>
+    <a href="#map-section" onclick="closeMobileMenu()" class="text-lg text-slate-200 hover:text-water transition flex items-center gap-3">
+      <i data-lucide="map" class="w-5 h-5"></i> Map
+    </a>
+    <a href="#dashboard" onclick="closeMobileMenu()" class="text-lg text-slate-200 hover:text-water transition flex items-center gap-3">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+    </a>
+    <a href="#compare" onclick="closeMobileMenu()" class="text-lg text-slate-200 hover:text-water transition flex items-center gap-3">
+      <i data-lucide="columns-2" class="w-5 h-5"></i> Compare
+    </a>
+  </nav>
+</div>
+
+<!-- ================================================================== -->
+<!-- HERO SECTION                                                       -->
+<!-- ================================================================== -->
+<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+  <!-- Ambient glow orbs -->
+  <div class="hero-glow glow-1"></div>
+  <div class="hero-glow glow-2"></div>
+  <div class="hero-glow glow-3"></div>
+
+  <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center py-20">
+    <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight gradient-text animate-fade-in-up">
+      Search Once.<br>Compare Everywhere.
+    </h1>
+    <p class="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto animate-fade-in-up stagger-1">
+      Aggregate every Pocono waterfront listing in one place. Smart scoring, dog-friendly water access analysis, and multi-source deduplication.
+    </p>
+
+    <!-- Decorative search bar -->
+    <div class="mt-10 animate-fade-in-up stagger-2">
+      <a href="#search" class="inline-flex items-center gap-3 glass rounded-full px-6 py-4 w-full max-w-lg hover:border-water/30 transition-colors group">
+        <i data-lucide="search" class="w-5 h-5 text-water"></i>
+        <span id="typing-text" class="text-slate-500 typing-cursor text-left flex-1"></span>
+        <span class="text-xs text-slate-600 hidden sm:inline bg-white/5 rounded px-2 py-1">Enter</span>
+      </a>
+    </div>
+
+    <!-- Preset buttons -->
+    <div class="mt-6 flex flex-wrap justify-center gap-2 animate-fade-in-up stagger-3">
+      <button onclick="applyPreset('lakefront3')" class="px-4 py-2 rounded-full text-sm glass hover:border-water/30 transition text-slate-300 hover:text-water">
+        <i data-lucide="home" class="w-3.5 h-3.5 inline mr-1"></i> Lakefront 3+ Bed
+      </button>
+      <button onclick="applyPreset('dogFriendly')" class="px-4 py-2 rounded-full text-sm glass hover:border-water/30 transition text-slate-300 hover:text-water">
+        <i data-lucide="dog" class="w-3.5 h-3.5 inline mr-1"></i> Dog-Friendly Water
+      </button>
+      <button onclick="applyPreset('bestValue')" class="px-4 py-2 rounded-full text-sm glass hover:border-water/30 transition text-slate-300 hover:text-water">
+        <i data-lucide="trending-up" class="w-3.5 h-3.5 inline mr-1"></i> Best Value
+      </button>
+      <button onclick="applyPreset('priceDrop')" class="px-4 py-2 rounded-full text-sm glass hover:border-water/30 transition text-slate-300 hover:text-water">
+        <i data-lucide="arrow-down-circle" class="w-3.5 h-3.5 inline mr-1"></i> Price Drops
+      </button>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="mt-10 animate-fade-in-up stagger-4">
+      <div class="inline-flex flex-wrap justify-center gap-4 sm:gap-8 glass rounded-2xl px-6 sm:px-8 py-4">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-water" id="stat-total">12</div>
+          <div class="text-xs text-slate-500 mt-0.5">Properties</div>
+        </div>
+        <div class="w-px bg-white/10 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-water" id="stat-lakefront">5</div>
+          <div class="text-xs text-slate-500 mt-0.5">Lakefront</div>
+        </div>
+        <div class="w-px bg-white/10 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-water" id="stat-dogfriendly">7</div>
+          <div class="text-xs text-slate-500 mt-0.5">Dog-Friendly</div>
+        </div>
+        <div class="w-px bg-white/10 hidden sm:block"></div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-water" id="stat-sources">3</div>
+          <div class="text-xs text-slate-500 mt-0.5">Sources</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll down indicator -->
+    <div class="mt-16 animate-fade-in-up stagger-4">
+      <a href="#search" class="inline-flex flex-col items-center gap-1 text-slate-600 hover:text-water transition">
+        <span class="text-xs">Explore Properties</span>
+        <i data-lucide="chevron-down" class="w-5 h-5 animate-bounce"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- SEARCH RESULTS SECTION                                             -->
+<!-- ================================================================== -->
+<section id="search" class="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6">
+  <!-- Section header -->
+  <div class="flex items-center gap-3 mb-8">
+    <i data-lucide="search" class="w-6 h-6 text-water"></i>
+    <h2 class="text-2xl sm:text-3xl font-bold">Property Search</h2>
+    <span id="result-count" class="ml-2 text-sm text-slate-500 bg-white/5 rounded-full px-3 py-1">12 results</span>
+  </div>
+
+  <!-- Desktop Filter Bar -->
+  <div class="hidden sm:flex flex-wrap items-center gap-3 mb-8 glass rounded-xl p-4">
+    <!-- Water type -->
+    <select id="filter-water" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none min-w-[140px]">
+      <option value="all">All Water Types</option>
+      <option value="LAKEFRONT">Lakefront</option>
+      <option value="PONDFRONT">Pondfront</option>
+      <option value="CREEKFRONT">Creekfront</option>
+      <option value="RIVERFRONT">Riverfront</option>
+      <option value="LAKE_ACCESS">Community Access</option>
+    </select>
+    <!-- Min beds -->
+    <select id="filter-beds" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none">
+      <option value="0">Any Beds</option>
+      <option value="3">3+ Beds</option>
+      <option value="4">4+ Beds</option>
+    </select>
+    <!-- Max price -->
+    <select id="filter-price" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none">
+      <option value="999999999">Any Price</option>
+      <option value="300000">Under $300K</option>
+      <option value="400000">Under $400K</option>
+      <option value="500000">Under $500K</option>
+      <option value="750000">Under $750K</option>
+    </select>
+    <!-- Sort -->
+    <select id="filter-sort" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none">
+      <option value="score">Best Match</option>
+      <option value="price-asc">Price: Low to High</option>
+      <option value="price-desc">Price: High to Low</option>
+      <option value="water">Best Water Access</option>
+    </select>
+    <!-- Dog friendly toggle -->
+    <div class="flex items-center gap-2 ml-auto">
+      <i data-lucide="dog" class="w-4 h-4 text-slate-400"></i>
+      <span class="text-sm text-slate-400">Dog-Friendly</span>
+      <div id="filter-dog-toggle" class="toggle-switch" onclick="toggleDogFilter()"></div>
+    </div>
+  </div>
+
+  <!-- Mobile Filter Button -->
+  <div class="sm:hidden mb-6 flex items-center gap-2">
+    <button id="mobile-filter-btn" onclick="openMobileFilters()" class="glass rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-slate-300 flex-1">
+      <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+      <span>Filters</span>
+      <span id="active-filter-count" class="hidden bg-water/20 text-water text-xs rounded-full px-2 py-0.5 ml-auto"></span>
+    </button>
+    <select id="filter-sort-mobile" onchange="document.getElementById('filter-sort').value=this.value;applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-xl px-3 py-3 border border-white/10">
+      <option value="score">Best Match</option>
+      <option value="price-asc">Price Low</option>
+      <option value="price-desc">Price High</option>
+      <option value="water">Water Access</option>
+    </select>
+  </div>
+
+  <!-- Property Cards Grid -->
+  <div id="property-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+    <!-- Cards rendered by JS -->
+  </div>
+
+  <!-- No results -->
+  <div id="no-results" class="hidden text-center py-20">
+    <i data-lucide="search-x" class="w-12 h-12 text-slate-600 mx-auto mb-4"></i>
+    <p class="text-slate-500 text-lg">No properties match your filters</p>
+    <button onclick="resetFilters()" class="mt-4 text-water text-sm hover:underline">Clear all filters</button>
+  </div>
+</section>
+
+<!-- Mobile Filter Panel -->
+<div id="mobile-filter-backdrop" class="mobile-filter-backdrop" onclick="closeMobileFilters()"></div>
+<div id="mobile-filter-panel" class="mobile-filter-panel">
+  <div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-semibold">Filters</h3>
+      <button onclick="closeMobileFilters()" class="p-2 rounded-lg hover:bg-white/5">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="space-y-5">
+      <div>
+        <label class="text-sm text-slate-400 block mb-2">Water Type</label>
+        <select id="mf-water" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
+          <option value="all">All Water Types</option>
+          <option value="LAKEFRONT">Lakefront</option>
+          <option value="PONDFRONT">Pondfront</option>
+          <option value="CREEKFRONT">Creekfront</option>
+          <option value="RIVERFRONT">Riverfront</option>
+          <option value="LAKE_ACCESS">Community Access</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm text-slate-400 block mb-2">Minimum Bedrooms</label>
+        <select id="mf-beds" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
+          <option value="0">Any</option>
+          <option value="3">3+ Beds</option>
+          <option value="4">4+ Beds</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm text-slate-400 block mb-2">Maximum Price</label>
+        <select id="mf-price" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
+          <option value="999999999">Any Price</option>
+          <option value="300000">Under $300K</option>
+          <option value="400000">Under $400K</option>
+          <option value="500000">Under $500K</option>
+          <option value="750000">Under $750K</option>
+        </select>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="dog" class="w-4 h-4 text-slate-400"></i>
+          <span class="text-sm text-slate-300">Dog-Friendly Water Only</span>
+        </div>
+        <div id="mf-dog-toggle" class="toggle-switch" onclick="this.classList.toggle('active')"></div>
+      </div>
+    </div>
+    <div class="mt-8 flex gap-3">
+      <button onclick="resetFilters();closeMobileFilters()" class="flex-1 py-3 rounded-xl text-sm text-slate-400 glass">Reset</button>
+      <button onclick="applyMobileFilters()" class="flex-1 py-3 rounded-xl text-sm text-white bg-water font-medium">Apply Filters</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- MAP SECTION                                                        -->
+<!-- ================================================================== -->
+<section id="map-section" class="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6">
+  <div class="flex items-center gap-3 mb-6">
+    <i data-lucide="map" class="w-6 h-6 text-water"></i>
+    <h2 class="text-2xl sm:text-3xl font-bold">Map View</h2>
+  </div>
+
+  <!-- Map filter buttons -->
+  <div class="flex flex-wrap gap-2 mb-4">
+    <button onclick="filterMap('all')" class="map-filter-btn active px-3 py-1.5 rounded-full text-xs glass text-water border-water/30" data-filter="all">All</button>
+    <button onclick="filterMap('LAKEFRONT')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="LAKEFRONT">Lakefront</button>
+    <button onclick="filterMap('PONDFRONT')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="PONDFRONT">Pondfront</button>
+    <button onclick="filterMap('CREEKFRONT')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="CREEKFRONT">Creek/River</button>
+    <button onclick="filterMap('LAKE_ACCESS')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="LAKE_ACCESS">Community</button>
+  </div>
+
+  <div class="glass rounded-2xl overflow-hidden" style="height: 500px;">
+    <div id="leaflet-map" style="height: 100%; width: 100%;"></div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- COMPARE SECTION                                                    -->
+<!-- ================================================================== -->
+<section id="compare" class="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6">
+  <div class="flex items-center gap-3 mb-8">
+    <i data-lucide="columns-2" class="w-6 h-6 text-water"></i>
+    <h2 class="text-2xl sm:text-3xl font-bold">Compare Properties</h2>
+    <span id="compare-count" class="text-sm text-slate-500 bg-white/5 rounded-full px-3 py-1">0 selected</span>
+  </div>
+
+  <div id="compare-empty" class="glass rounded-2xl p-12 text-center">
+    <i data-lucide="git-compare" class="w-12 h-12 text-slate-600 mx-auto mb-4"></i>
+    <p class="text-slate-500">Select properties from the search results above to compare them side by side</p>
+    <p class="text-slate-600 text-sm mt-2">Use the checkboxes on each property card</p>
+  </div>
+
+  <div id="compare-table-container" class="hidden">
+    <div class="compare-table-wrap glass rounded-2xl">
+      <table id="compare-table" class="compare-table w-full text-sm">
+        <!-- Rendered by JS -->
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- DASHBOARD SECTION                                                  -->
+<!-- ================================================================== -->
+<section id="dashboard" class="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6">
+  <div class="flex items-center gap-3 mb-8">
+    <i data-lucide="layout-dashboard" class="w-6 h-6 text-water"></i>
+    <h2 class="text-2xl sm:text-3xl font-bold">Your Dashboard</h2>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+    <div class="glass rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-water">12</div>
+      <div class="text-xs text-slate-500 mt-1">Total Properties</div>
+    </div>
+    <div class="glass rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-cyan-400">5</div>
+      <div class="text-xs text-slate-500 mt-1">Lakefront</div>
+    </div>
+    <div class="glass rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-emerald-400" id="dash-dogfriendly">7</div>
+      <div class="text-xs text-slate-500 mt-1">Dog-Friendly</div>
+    </div>
+    <div class="glass rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-amber-400" id="dash-avgscore">75</div>
+      <div class="text-xs text-slate-500 mt-1">Avg Score</div>
+    </div>
+  </div>
+
+  <!-- Top Picks -->
+  <div class="mb-10">
+    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i> Top Picks
+    </h3>
+    <div id="dash-top-picks" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+  </div>
+
+  <!-- Best Dog Water -->
+  <div class="mb-10">
+    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <i data-lucide="dog" class="w-5 h-5 text-emerald-400"></i> Best Dog Water Access
+    </h3>
+    <div id="dash-dog" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+  </div>
+
+  <!-- Best Value -->
+  <div class="mb-10">
+    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <i data-lucide="badge-dollar-sign" class="w-5 h-5 text-green-400"></i> Best Value
+    </h3>
+    <div id="dash-value" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+  </div>
+
+  <!-- Needs Review -->
+  <div>
+    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i> Needs Review
+    </h3>
+    <div id="dash-review" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- FOOTER                                                             -->
+<!-- ================================================================== -->
+<footer class="pb-12 pt-8">
+  <div class="water-gradient-line mb-8"></div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+    <div class="flex items-center justify-center gap-2 mb-3">
+      <i data-lucide="waves" class="w-5 h-5 text-water"></i>
+      <span class="font-semibold gradient-text">Pocono Home Finder</span>
+    </div>
+    <p class="text-slate-600 text-sm">Built for finding the perfect Pocono waterfront home</p>
+    <p class="text-slate-700 text-xs mt-2">Demo site with mock data</p>
+  </div>
+</footer>
+
+<!-- ================================================================== -->
+<!-- MODAL CONTAINER                                                    -->
+<!-- ================================================================== -->
+<div id="modal-container"></div>
+
+<!-- ================================================================== -->
+<!-- JAVASCRIPT                                                         -->
+<!-- ================================================================== -->
+<script>
+// ========== UTILITY FUNCTIONS ==========
+
+function formatPrice(p) {
+  if (p >= 1000000) return '$' + (p / 1000000).toFixed(1) + 'M';
+  return '$' + (p / 1000).toFixed(0) + 'K';
+}
+
+function formatPriceFull(p) {
+  return '$' + p.toLocaleString();
+}
+
+function waterTypeLabel(wt) {
+  const labels = {
+    LAKEFRONT: 'Lakefront', PONDFRONT: 'Pondfront', CREEKFRONT: 'Creekfront',
+    RIVERFRONT: 'Riverfront', LAKE_ACCESS: 'Community Access', WATER_NEARBY: 'Water Nearby'
+  };
+  return labels[wt] || wt;
+}
+
+function waterTypeBadgeClass(wt) {
+  return 'badge-' + wt.toLowerCase();
+}
+
+function markerColor(wt) {
+  if (wt === 'LAKEFRONT' || wt === 'PONDFRONT') return '#00baff';
+  if (wt === 'CREEKFRONT' || wt === 'RIVERFRONT') return '#3b82f6';
+  return '#6b7280';
+}
+
+function scoreColor(score) {
+  if (score >= 80) return '#10b981';
+  if (score >= 60) return '#f59e0b';
+  if (score >= 40) return '#f97316';
+  return '#ef4444';
+}
+
+function createScoreRing(score, size = 52, strokeWidth = 4, label = '') {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+  const color = scoreColor(score);
+  return `
+    <div class="relative inline-flex flex-col items-center">
+      <svg width="${size}" height="${size}" class="score-ring-animated">
+        <circle cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${strokeWidth}"/>
+        <circle class="progress" cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"
+          stroke-linecap="round" stroke-dasharray="${circumference}" style="--circumference:${circumference};--dash-offset:${offset};stroke-dashoffset:${offset};transform:rotate(-90deg);transform-origin:center;"
+        />
+        <text x="${size/2}" y="${size/2}" text-anchor="middle" dominant-baseline="central" fill="${color}" font-size="${size > 48 ? 14 : 11}" font-weight="700">${score}</text>
+      </svg>
+      ${label ? `<span class="text-[10px] text-slate-500 mt-1">${label}</span>` : ''}
+    </div>
+  `;
+}
+
+// ========== PROPERTY CARD RENDERING ==========
+
+function renderPropertyCard(p) {
+  const isCompared = compareList.includes(p.id);
+  return `
+    <div class="property-card glass rounded-2xl overflow-hidden animate-fade-in" data-id="${p.id}">
+      <!-- Top area with gradient and score -->
+      <div class="relative h-44 bg-gradient-to-br from-navy-600 to-navy-700 p-5 flex flex-col justify-between">
+        <!-- Decorative water lines -->
+        <div class="absolute inset-0 opacity-[0.03]" style="background-image: repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0,186,255,0.3) 20px, rgba(0,186,255,0.3) 21px);"></div>
+
+        <div class="flex justify-between items-start relative z-10">
+          <div>
+            <span class="text-2xl font-bold">${formatPrice(p.price)}</span>
+            ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/20 text-red-400 rounded-full px-2 py-0.5">Price Drop</span>' : ''}
+          </div>
+          <div class="flex items-center gap-2">
+            ${createScoreRing(p.overallScore, 48, 3)}
+          </div>
+        </div>
+
+        <div class="relative z-10">
+          <span class="inline-block text-xs rounded-full px-2.5 py-1 font-medium ${waterTypeBadgeClass(p.waterType)}">${waterTypeLabel(p.waterType)}</span>
+          ${p.waterBodyName && p.waterBodyName !== 'None' ? `<span class="text-xs text-slate-400 ml-2">${p.waterBodyName}</span>` : ''}
+        </div>
+
+        <!-- Favorite button -->
+        <button onclick="toggleFavorite(${p.id})" class="absolute top-4 right-4 z-20 p-2 rounded-full hover:bg-white/10 transition" aria-label="Toggle favorite">
+          <i data-lucide="heart" class="w-5 h-5 ${p.isFavorite ? 'fill-red-500 text-red-500' : 'text-slate-500'}"></i>
+        </button>
+      </div>
+
+      <!-- Card body -->
+      <div class="p-5">
+        <h3 class="font-semibold text-[15px] leading-tight">${p.address}</h3>
+        <p class="text-sm text-slate-500 mt-0.5">${p.city}, PA ${p.zipCode}</p>
+
+        <!-- Stats row -->
+        <div class="flex items-center gap-4 mt-4 text-sm text-slate-400">
+          <span class="flex items-center gap-1"><i data-lucide="bed-double" class="w-3.5 h-3.5"></i>${p.bedrooms} bd</span>
+          <span class="flex items-center gap-1"><i data-lucide="bath" class="w-3.5 h-3.5"></i>${p.bathrooms} ba</span>
+          <span class="flex items-center gap-1"><i data-lucide="maximize" class="w-3.5 h-3.5"></i>${p.sqft.toLocaleString()}</span>
+          <span class="flex items-center gap-1"><i data-lucide="trees" class="w-3.5 h-3.5"></i>${p.lotAcres} ac</span>
+        </div>
+
+        <!-- Indicators row -->
+        <div class="flex items-center gap-3 mt-3 flex-wrap">
+          <span class="text-xs text-slate-500">${p.daysOnMarket}d on market</span>
+          <span class="text-xs bg-white/5 rounded-full px-2 py-0.5 text-slate-500">${p.sourceCount} source${p.sourceCount !== 1 ? 's' : ''}</span>
+          ${p.dogSwimAccessible ? '<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="dog" class="w-3 h-3"></i>Dog OK</span>' : ''}
+          ${p.hasConflicts ? '<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i>Conflicts</span>' : ''}
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2 mt-5">
+          <button onclick="openDetailModal(${p.id})" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-water/10 text-water hover:bg-water/20 transition text-center">
+            View Details
+          </button>
+          <label class="flex items-center gap-2 py-2.5 px-3 rounded-xl glass cursor-pointer hover:bg-white/5 transition">
+            <input type="checkbox" class="compare-cb accent-water w-4 h-4" data-id="${p.id}" ${isCompared ? 'checked' : ''} onchange="toggleCompare(${p.id}, this.checked)">
+            <span class="text-xs text-slate-400">Compare</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCards(properties) {
+  const grid = document.getElementById('property-grid');
+  const noResults = document.getElementById('no-results');
+  const count = document.getElementById('result-count');
+
+  if (properties.length === 0) {
+    grid.innerHTML = '';
+    noResults.classList.remove('hidden');
+    count.textContent = '0 results';
+    return;
+  }
+
+  noResults.classList.add('hidden');
+  count.textContent = properties.length + ' result' + (properties.length !== 1 ? 's' : '');
+  grid.innerHTML = properties.map(renderPropertyCard).join('');
+  lucide.createIcons();
+}
+
+// ========== FILTERING & SORTING ==========
+
+function getFilteredProperties() {
+  let filtered = [...PROPERTIES];
+  const f = activeFilters;
+
+  if (f.waterType !== 'all') {
+    if (f.waterType === 'CREEKFRONT') {
+      filtered = filtered.filter(p => p.waterType === 'CREEKFRONT' || p.waterType === 'RIVERFRONT');
+    } else if (f.waterType === 'LAKE_ACCESS') {
+      filtered = filtered.filter(p => p.waterType === 'LAKE_ACCESS' || p.waterType === 'WATER_NEARBY');
+    } else {
+      filtered = filtered.filter(p => p.waterType === f.waterType);
+    }
+  }
+  if (f.minBeds > 0) filtered = filtered.filter(p => p.bedrooms >= f.minBeds);
+  if (f.maxPrice < 999999999) filtered = filtered.filter(p => p.price <= f.maxPrice);
+  if (f.dogFriendly) filtered = filtered.filter(p => p.dogSwimAccessible);
+
+  switch (f.sort) {
+    case 'price-asc': filtered.sort((a, b) => a.price - b.price); break;
+    case 'price-desc': filtered.sort((a, b) => b.price - a.price); break;
+    case 'water': filtered.sort((a, b) => b.waterAccessScore - a.waterAccessScore); break;
+    default: filtered.sort((a, b) => b.overallScore - a.overallScore);
+  }
+  return filtered;
+}
+
+function applyFilters() {
+  activeFilters.waterType = document.getElementById('filter-water').value;
+  activeFilters.minBeds = parseInt(document.getElementById('filter-beds').value);
+  activeFilters.maxPrice = parseInt(document.getElementById('filter-price').value);
+  activeFilters.sort = document.getElementById('filter-sort').value;
+
+  const filtered = getFilteredProperties();
+  renderCards(filtered);
+  updateActiveFilterCount();
+}
+
+function toggleDogFilter() {
+  const toggle = document.getElementById('filter-dog-toggle');
+  toggle.classList.toggle('active');
+  activeFilters.dogFriendly = toggle.classList.contains('active');
+  applyFilters();
+}
+
+function resetFilters() {
+  activeFilters = { waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false };
+  document.getElementById('filter-water').value = 'all';
+  document.getElementById('filter-beds').value = '0';
+  document.getElementById('filter-price').value = '999999999';
+  document.getElementById('filter-sort').value = 'score';
+  document.getElementById('filter-sort-mobile').value = 'score';
+  document.getElementById('filter-dog-toggle').classList.remove('active');
+  applyFilters();
+}
+
+function applyPreset(preset) {
+  resetFilters();
+  switch (preset) {
+    case 'lakefront3':
+      document.getElementById('filter-water').value = 'LAKEFRONT';
+      document.getElementById('filter-beds').value = '3';
+      activeFilters.waterType = 'LAKEFRONT';
+      activeFilters.minBeds = 3;
+      break;
+    case 'dogFriendly':
+      document.getElementById('filter-dog-toggle').classList.add('active');
+      activeFilters.dogFriendly = true;
+      break;
+    case 'bestValue':
+      document.getElementById('filter-sort').value = 'price-asc';
+      document.getElementById('filter-sort-mobile').value = 'price-asc';
+      activeFilters.sort = 'price-asc';
+      break;
+    case 'priceDrop':
+      // Filter to price-reduced properties
+      activeFilters.waterType = 'all';
+      break;
+  }
+  const filtered = preset === 'priceDrop'
+    ? PROPERTIES.filter(p => p.status === 'Price Reduced').sort((a, b) => b.overallScore - a.overallScore)
+    : getFilteredProperties();
+  renderCards(filtered);
+  document.getElementById('search').scrollIntoView({ behavior: 'smooth' });
+}
+
+function updateActiveFilterCount() {
+  let count = 0;
+  if (activeFilters.waterType !== 'all') count++;
+  if (activeFilters.minBeds > 0) count++;
+  if (activeFilters.maxPrice < 999999999) count++;
+  if (activeFilters.dogFriendly) count++;
+  const badge = document.getElementById('active-filter-count');
+  if (count > 0) {
+    badge.textContent = count;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+// ========== MOBILE FILTERS ==========
+
+function openMobileFilters() {
+  document.getElementById('mobile-filter-panel').classList.add('open');
+  document.getElementById('mobile-filter-backdrop').classList.add('open');
+  // Sync values
+  document.getElementById('mf-water').value = activeFilters.waterType;
+  document.getElementById('mf-beds').value = activeFilters.minBeds.toString();
+  document.getElementById('mf-price').value = activeFilters.maxPrice === Infinity ? '999999999' : activeFilters.maxPrice.toString();
+  const mfDog = document.getElementById('mf-dog-toggle');
+  if (activeFilters.dogFriendly) mfDog.classList.add('active');
+  else mfDog.classList.remove('active');
+  lucide.createIcons();
+}
+
+function closeMobileFilters() {
+  document.getElementById('mobile-filter-panel').classList.remove('open');
+  document.getElementById('mobile-filter-backdrop').classList.remove('open');
+}
+
+function applyMobileFilters() {
+  document.getElementById('filter-water').value = document.getElementById('mf-water').value;
+  document.getElementById('filter-beds').value = document.getElementById('mf-beds').value;
+  document.getElementById('filter-price').value = document.getElementById('mf-price').value;
+  activeFilters.dogFriendly = document.getElementById('mf-dog-toggle').classList.contains('active');
+  if (activeFilters.dogFriendly) document.getElementById('filter-dog-toggle').classList.add('active');
+  else document.getElementById('filter-dog-toggle').classList.remove('active');
+  applyFilters();
+  closeMobileFilters();
+}
+
+// ========== FAVORITES ==========
+
+function toggleFavorite(id) {
+  const prop = PROPERTIES.find(p => p.id === id);
+  if (!prop) return;
+  prop.isFavorite = !prop.isFavorite;
+  if (prop.isFavorite) { if (!favorites.includes(id)) favorites.push(id); }
+  else { favorites = favorites.filter(f => f !== id); }
+  localStorage.setItem('phf-favorites', JSON.stringify(favorites));
+  renderCards(getFilteredProperties());
+}
+
+// ========== COMPARE ==========
+
+function toggleCompare(id, checked) {
+  if (checked) {
+    if (!compareList.includes(id)) compareList.push(id);
+  } else {
+    compareList = compareList.filter(c => c !== id);
+  }
+  localStorage.setItem('phf-compare', JSON.stringify(compareList));
+  updateCompareSection();
+  // Sync checkboxes
+  document.querySelectorAll('.compare-cb').forEach(cb => {
+    cb.checked = compareList.includes(parseInt(cb.dataset.id));
+  });
+  document.getElementById('compare-count').textContent = compareList.length + ' selected';
+}
+
+function updateCompareSection() {
+  const empty = document.getElementById('compare-empty');
+  const container = document.getElementById('compare-table-container');
+
+  if (compareList.length === 0) {
+    empty.classList.remove('hidden');
+    container.classList.add('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  container.classList.remove('hidden');
+
+  const props = compareList.map(id => PROPERTIES.find(p => p.id === id)).filter(Boolean);
+
+  const rows = [
+    { label: 'Price', values: props.map(p => formatPriceFull(p.price)), key: 'price', lower: true },
+    { label: 'Beds', values: props.map(p => p.bedrooms.toString()), key: 'bedrooms', lower: false },
+    { label: 'Baths', values: props.map(p => p.bathrooms.toString()), key: 'bathrooms', lower: false },
+    { label: 'Sq Ft', values: props.map(p => p.sqft.toLocaleString()), key: 'sqft', lower: false },
+    { label: 'Lot (ac)', values: props.map(p => p.lotAcres.toString()), key: 'lotAcres', lower: false },
+    { label: 'Tax/yr', values: props.map(p => '$' + p.annualTax.toLocaleString()), key: 'annualTax', lower: true },
+    { label: 'HOA/mo', values: props.map(p => p.hoaFee > 0 ? '$' + p.hoaFee : 'None'), key: 'hoaFee', lower: true },
+    { label: 'Water Type', values: props.map(p => waterTypeLabel(p.waterType)), key: null },
+    { label: 'Dog Swim', values: props.map(p => p.dogSwimAccessible ? 'Yes' : 'No'), key: 'dogSwimAccessible', lower: false },
+    { label: 'Overall Score', values: props.map(p => p.overallScore.toString()), key: 'overallScore', lower: false },
+    { label: 'Privacy', values: props.map(p => p.privacyScore.toString()), key: 'privacyScore', lower: false },
+    { label: 'Value Score', values: props.map(p => p.valueScore.toString()), key: 'valueScore', lower: false },
+  ];
+
+  // Find best per row
+  rows.forEach(row => {
+    if (!row.key) { row.bestIdx = -1; return; }
+    const nums = props.map(p => typeof p[row.key] === 'boolean' ? (p[row.key] ? 1 : 0) : p[row.key]);
+    if (row.lower) {
+      row.bestIdx = nums.indexOf(Math.min(...nums));
+    } else {
+      row.bestIdx = nums.indexOf(Math.max(...nums));
+    }
+  });
+
+  let html = '<thead><tr>';
+  html += '<th class="text-left text-xs text-slate-500 font-medium p-3 min-w-[100px]">Feature</th>';
+  props.forEach(p => {
+    html += `<th class="text-center p-3 min-w-[160px]">
+      <div class="text-sm font-semibold">${formatPrice(p.price)}</div>
+      <div class="text-xs text-slate-500">${p.address}</div>
+      <button onclick="removeFromCompare(${p.id})" class="text-xs text-red-400 hover:text-red-300 mt-1 inline-flex items-center gap-1">
+        <i data-lucide="x" class="w-3 h-3"></i> Remove
+      </button>
+    </th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(row => {
+    html += '<tr class="border-t border-white/5">';
+    html += `<td class="p-3 text-xs text-slate-400 font-medium">${row.label}</td>`;
+    row.values.forEach((val, i) => {
+      const isBest = i === row.bestIdx;
+      html += `<td class="p-3 text-center text-sm ${isBest ? 'text-emerald-400 font-semibold' : 'text-slate-300'}">${val}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  document.getElementById('compare-table').innerHTML = html;
+  lucide.createIcons();
+}
+
+function removeFromCompare(id) {
+  toggleCompare(id, false);
+}
+
+// ========== DETAIL MODAL ==========
+
+function openDetailModal(id) {
+  const p = PROPERTIES.find(pr => pr.id === id);
+  if (!p) return;
+
+  const modal = document.getElementById('modal-container');
+  modal.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal-content">
+        <!-- Header -->
+        <div class="relative p-6 bg-gradient-to-br from-navy-600 to-navy-700 border-b border-white/5">
+          <button onclick="closeModal()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition z-10" aria-label="Close">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs rounded-full px-2.5 py-0.5 ${p.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${p.status}</span>
+            <span class="inline-block text-xs rounded-full px-2.5 py-1 font-medium ${waterTypeBadgeClass(p.waterType)}">${waterTypeLabel(p.waterType)}</span>
+          </div>
+          <div class="text-3xl font-bold mt-2">${formatPriceFull(p.price)}</div>
+          <div class="text-slate-400 mt-1">${p.address}, ${p.city}, PA ${p.zipCode}</div>
+          <div class="flex items-center gap-4 mt-3 text-sm text-slate-400">
+            <span>${p.bedrooms} bd</span><span>${p.bathrooms} ba</span><span>${p.sqft.toLocaleString()} sqft</span><span>${p.lotAcres} acres</span>
+          </div>
+        </div>
+
+        <!-- Score Dashboard -->
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4">Scores</h4>
+          <div class="flex justify-around flex-wrap gap-4">
+            ${createScoreRing(p.overallScore, 60, 4, 'Overall')}
+            ${createScoreRing(p.waterAccessScore, 60, 4, 'Water')}
+            ${createScoreRing(p.dogSwimScore, 60, 4, 'Dog Swim')}
+            ${createScoreRing(p.privacyScore, 60, 4, 'Privacy')}
+            ${createScoreRing(p.valueScore, 60, 4, 'Value')}
+          </div>
+        </div>
+
+        <!-- Water Intelligence -->
+        <div class="p-6 border-b border-white/5">
+          <div class="border-l-2 border-water pl-4">
+            <h4 class="text-xs text-water uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+              <i data-lucide="droplets" class="w-4 h-4"></i> Water Intelligence
+            </h4>
+            <div class="space-y-3 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-slate-500 min-w-[100px]">Water Body:</span>
+                <span>${p.waterBodyName || 'None'}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-slate-500 min-w-[100px]">Shoreline:</span>
+                <span>${p.shorelineType}</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="text-slate-500 min-w-[100px] shrink-0">Dog Access:</span>
+                <span class="${p.dogSwimAccessible ? 'text-emerald-400' : 'text-red-400'}">${p.dogAccessNotes}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-slate-500 min-w-[100px]">Confidence:</span>
+                <div class="flex gap-1">
+                  ${[1,2,3].map(i => `<div class="w-6 h-1.5 rounded-full ${i <= p.sourceCount ? 'bg-water' : 'bg-white/10'}"></div>`).join('')}
+                </div>
+                <span class="text-xs text-slate-500">${p.sourceCount} source${p.sourceCount > 1 ? 's' : ''}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Property Details -->
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4">Property Details</h4>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Bedrooms</span><span class="font-medium">${p.bedrooms}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Bathrooms</span><span class="font-medium">${p.bathrooms}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Sq Ft</span><span class="font-medium">${p.sqft.toLocaleString()}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Lot</span><span class="font-medium">${p.lotAcres} acres</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Year Built</span><span class="font-medium">${p.yearBuilt}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Garage</span><span class="font-medium">${p.garage}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Basement</span><span class="font-medium">${p.basement}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Fireplace</span><span class="font-medium">${p.fireplace ? 'Yes' : 'No'}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Fenced Yard</span><span class="font-medium">${p.fencedYard ? 'Yes' : 'No'}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Annual Tax</span><span class="font-medium">$${p.annualTax.toLocaleString()}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">HOA</span><span class="font-medium">${p.hoaFee > 0 ? '$' + p.hoaFee + '/mo' : 'None'}</span></div>
+            <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Photos</span><span class="font-medium">${p.photoCount}</span></div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">Description</h4>
+          <p class="text-sm text-slate-300 leading-relaxed">${p.description}</p>
+        </div>
+
+        <!-- Source info -->
+        <div class="p-6">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="text-xs text-slate-500">Data from</span>
+            ${['Zillow', 'Realtor.com', 'Redfin'].slice(0, p.sourceCount).map(s =>
+              `<span class="text-xs bg-white/5 rounded-full px-2.5 py-1 text-slate-400">${s}</span>`
+            ).join('')}
+            ${p.hasConflicts ? '<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2.5 py-1 flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i>Source conflicts detected</span>' : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.style.overflow = 'hidden';
+  lucide.createIcons();
+}
+
+function closeModal() {
+  document.getElementById('modal-container').innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+// ========== MAP ==========
+
+function initMap() {
+  map = L.map('leaflet-map', { zoomControl: true }).setView([41.15, -75.35], 9);
+
+  L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+    maxZoom: 18
+  }).addTo(map);
+
+  addMarkers('all');
+}
+
+function addMarkers(filter) {
+  // Clear existing
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  let props = PROPERTIES;
+  if (filter !== 'all') {
+    if (filter === 'CREEKFRONT') {
+      props = props.filter(p => p.waterType === 'CREEKFRONT' || p.waterType === 'RIVERFRONT');
+    } else if (filter === 'LAKE_ACCESS') {
+      props = props.filter(p => p.waterType === 'LAKE_ACCESS' || p.waterType === 'WATER_NEARBY');
+    } else {
+      props = props.filter(p => p.waterType === filter);
+    }
+  }
+
+  props.forEach(p => {
+    const color = markerColor(p.waterType);
+    const marker = L.circleMarker([p.latitude, p.longitude], {
+      radius: 10,
+      fillColor: color,
+      color: color,
+      weight: 2,
+      opacity: 0.9,
+      fillOpacity: 0.5
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <div style="min-width: 180px;">
+        <div style="font-weight: 700; font-size: 16px; color: #f1f5f9;">${formatPrice(p.price)}</div>
+        <div style="color: #94a3b8; font-size: 13px; margin-top: 2px;">${p.address}</div>
+        <div style="color: #64748b; font-size: 12px;">${p.city}, PA</div>
+        <div style="margin-top: 8px; display: flex; gap: 8px; font-size: 12px; color: #94a3b8;">
+          <span>${p.bedrooms}bd/${p.bathrooms}ba</span>
+          <span>Score: ${p.overallScore}</span>
+        </div>
+        <div style="margin-top: 4px;">
+          <span style="font-size: 11px; padding: 2px 8px; border-radius: 99px; background: ${color}22; color: ${color};">${waterTypeLabel(p.waterType)}</span>
+        </div>
+        <a href="#search" onclick="scrollToCard(${p.id})" style="display:inline-block;margin-top:8px;font-size:12px;color:#00baff;text-decoration:none;">View Card &rarr;</a>
+      </div>
+    `);
+
+    markers.push(marker);
+  });
+}
+
+function filterMap(filter) {
+  document.querySelectorAll('.map-filter-btn').forEach(btn => {
+    btn.classList.remove('text-water');
+    btn.classList.remove('border-water/30');
+    btn.classList.add('text-slate-400');
+    if (btn.dataset.filter === filter) {
+      btn.classList.add('text-water');
+      btn.classList.add('border-water/30');
+      btn.classList.remove('text-slate-400');
+    }
+  });
+  addMarkers(filter);
+}
+
+function scrollToCard(id) {
+  const card = document.querySelector(`.property-card[data-id="${id}"]`);
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.style.boxShadow = '0 0 0 2px #00baff';
+    setTimeout(() => { card.style.boxShadow = ''; }, 2000);
+  }
+}
+
+// ========== DASHBOARD ==========
+
+function renderDashboard() {
+  // Avg score
+  const avg = Math.round(PROPERTIES.reduce((sum, p) => sum + p.overallScore, 0) / PROPERTIES.length);
+  document.getElementById('dash-avgscore').textContent = avg;
+  document.getElementById('dash-dogfriendly').textContent = PROPERTIES.filter(p => p.dogSwimAccessible).length;
+
+  // Top picks
+  const topPicks = [...PROPERTIES].sort((a, b) => b.overallScore - a.overallScore).slice(0, 4);
+  document.getElementById('dash-top-picks').innerHTML = topPicks.map(miniCard).join('');
+
+  // Best dog
+  const dogBest = [...PROPERTIES].sort((a, b) => b.dogSwimScore - a.dogSwimScore).slice(0, 3);
+  document.getElementById('dash-dog').innerHTML = dogBest.map(miniCard).join('');
+
+  // Best value
+  const valueBest = [...PROPERTIES].sort((a, b) => b.valueScore - a.valueScore).slice(0, 3);
+  document.getElementById('dash-value').innerHTML = valueBest.map(miniCard).join('');
+
+  // Needs review
+  const review = PROPERTIES.filter(p => p.hasConflicts || p.overallScore < 50);
+  document.getElementById('dash-review').innerHTML = review.length > 0
+    ? review.map(miniCard).join('')
+    : '<p class="text-slate-600 text-sm col-span-3">No properties need review</p>';
+
+  lucide.createIcons();
+}
+
+function miniCard(p) {
+  return `
+    <div class="glass rounded-xl p-4 cursor-pointer hover:border-water/20 transition property-card" onclick="openDetailModal(${p.id})">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-bold">${formatPrice(p.price)}</span>
+        ${createScoreRing(p.overallScore, 36, 3)}
+      </div>
+      <div class="text-sm text-slate-300">${p.address}</div>
+      <div class="text-xs text-slate-500">${p.city} &middot; ${p.bedrooms}bd/${p.bathrooms}ba</div>
+      <div class="mt-2">
+        <span class="text-xs rounded-full px-2 py-0.5 ${waterTypeBadgeClass(p.waterType)}">${waterTypeLabel(p.waterType)}</span>
+        ${p.dogSwimAccessible ? '<span class="text-xs text-emerald-400 ml-2">Dog OK</span>' : ''}
+        ${p.hasConflicts ? '<span class="text-xs text-red-400 ml-2">Conflicts</span>' : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ========== MOBILE MENU ==========
+
+function closeMobileMenu() {
+  document.getElementById('mobile-menu').classList.remove('open');
+  document.getElementById('mobile-menu-backdrop').classList.remove('open');
+}
+
+document.getElementById('hamburger-btn').addEventListener('click', () => {
+  document.getElementById('mobile-menu').classList.add('open');
+  document.getElementById('mobile-menu-backdrop').classList.add('open');
+  lucide.createIcons();
+});
+
+// ========== TYPING ANIMATION ==========
+
+function runTypingAnimation() {
+  const phrases = [
+    'Lakefront homes with dog-friendly water access...',
+    'Pocono Lake 3+ bedrooms under $500K...',
+    'Waterfront with private dock and fenced yard...',
+    'Creek or river property near Stroudsburg...',
+  ];
+  const el = document.getElementById('typing-text');
+  let phraseIdx = 0;
+  let charIdx = 0;
+  let deleting = false;
+
+  function tick() {
+    const phrase = phrases[phraseIdx];
+    if (!deleting) {
+      el.textContent = phrase.slice(0, charIdx + 1);
+      charIdx++;
+      if (charIdx === phrase.length) {
+        setTimeout(() => { deleting = true; tick(); }, 2500);
+        return;
+      }
+      setTimeout(tick, 40 + Math.random() * 30);
+    } else {
+      el.textContent = phrase.slice(0, charIdx);
+      charIdx--;
+      if (charIdx === 0) {
+        deleting = false;
+        phraseIdx = (phraseIdx + 1) % phrases.length;
+        setTimeout(tick, 400);
+        return;
+      }
+      setTimeout(tick, 20);
+    }
+  }
+  tick();
+}
+
+// ========== SCROLL REVEAL ==========
+
+function initScrollReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('section-visible');
+        entry.target.classList.remove('section-hidden');
+      }
+    });
+  }, { threshold: 0.05 });
+
+  document.querySelectorAll('section').forEach(sec => {
+    if (sec.id !== 'hero') {
+      sec.classList.add('section-hidden');
+      observer.observe(sec);
+    }
+  });
+}
+
+// ========== KEYBOARD SHORTCUT (ESC to close modal) ==========
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ========== HERO STATS ==========
+function updateHeroStats() {
+  document.getElementById('stat-total').textContent = PROPERTIES.length;
+  document.getElementById('stat-lakefront').textContent = PROPERTIES.filter(p => p.waterType === 'LAKEFRONT').length;
+  document.getElementById('stat-dogfriendly').textContent = PROPERTIES.filter(p => p.dogSwimAccessible).length;
+  document.getElementById('stat-sources').textContent = Math.max(...PROPERTIES.map(p => p.sourceCount));
+}
+
+// ========== INIT ==========
+
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+  renderCards(getFilteredProperties());
+  initMap();
+  renderDashboard();
+  updateCompareSection();
+  runTypingAnimation();
+  initScrollReveal();
+  updateHeroStats();
+
+  // Invalidate map size after a beat (Leaflet quirk)
+  setTimeout(() => { if (map) map.invalidateSize(); }, 500);
+});
+</script>
+
+</body>
+</html>
