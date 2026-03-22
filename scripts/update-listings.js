@@ -245,27 +245,48 @@ async function scrapeRedfin() {
         else if (photo.photoUrls && photo.photoUrls.nonFullScreenPhotoUrl) image = photo.photoUrls.nonFullScreenPhotoUrl;
       }
 
+      // Helper to extract plain number from Redfin's {value: N} or plain N
+      const num = (v) => {
+        if (v == null) return 0;
+        if (typeof v === 'number') return v;
+        if (typeof v === 'object' && v.value != null) return Number(v.value) || 0;
+        return Number(v) || 0;
+      };
+      const str = (v) => {
+        if (v == null) return '';
+        if (typeof v === 'string') return v;
+        if (typeof v === 'object' && v.value != null) return String(v.value);
+        return String(v);
+      };
+
+      const sqft = num(home.sqFt);
+      const lotSqft = num(home.lotSize);
+      const lotAcres = lotSqft > 0 ? Math.round(lotSqft / 43560 * 100) / 100 : 0;
+
       listings.push({
-        address: address,
-        city: home.city || '',
-        zipCode: home.zip || '',
-        price: typeof price === 'number' ? price : parseInt(price),
-        bedrooms: home.beds || 0,
-        bathrooms: home.baths || 0,
-        sqft: home.sqFt?.value || home.sqFt || 0,
-        lotAcres: home.lotSize?.value ? Math.round(home.lotSize.value / 43560 * 100) / 100 : 0,
-        yearBuilt: home.yearBuilt || 0,
+        address: str(address),
+        city: str(home.city),
+        zipCode: str(home.zip),
+        price: num(price),
+        bedrooms: num(home.beds),
+        bathrooms: num(home.baths),
+        sqft: sqft,
+        lotAcres: lotAcres,
+        yearBuilt: num(home.yearBuilt),
         latitude: lat,
         longitude: lng,
         waterBodyName: matchedLake,
-        hoaFee: home.hoa?.value || home.hoa || 0,
+        hoaFee: num(home.hoa),
         motorboats: false,
-        description: remarks.slice(0, 500),
+        description: String(remarks || '').slice(0, 500),
         image: image,
         listingUrl: listingUrl,
-        mlsId: home.mlsId || '',
-        daysOnMarket: home.dom || home.timeOnRedfin?.value || 0,
-        isReduced: (home.sashes || []).some(s => typeof s === 'string' ? s.includes('PRICE_DROP') : (s?.sashType || s?.sashTypeId || '').toString().includes('PRICE_DROP')),
+        mlsId: str(home.mlsId),
+        daysOnMarket: num(home.dom) || num(home.timeOnRedfin),
+        isReduced: (home.sashes || []).some(s => {
+          const t = typeof s === 'string' ? s : String(s?.sashType || s?.sashTypeId || '');
+          return t.includes('PRICE_DROP');
+        }),
         photoCount: (home.photos || []).length,
         source: 'Redfin',
         redfin: true,
@@ -566,8 +587,25 @@ async function enrichListing(listing) {
 // ========== PROPERTY JS GENERATOR ==========
 
 function generatePropertyJS(listing, id) {
-  const addr = String(listing.address || '');
-  const desc = String(listing.description || '');
+  // Ensure all fields are primitive types (not objects like Redfin's {value: N})
+  const ensureNum = (v) => { if (v == null) return 0; if (typeof v === 'object') return Number(v.value || 0) || 0; return Number(v) || 0; };
+  const ensureStr = (v) => { if (v == null) return ''; if (typeof v === 'object') return String(v.value || ''); return String(v); };
+  listing.bedrooms = ensureNum(listing.bedrooms);
+  listing.bathrooms = ensureNum(listing.bathrooms);
+  listing.sqft = ensureNum(listing.sqft);
+  listing.lotAcres = ensureNum(listing.lotAcres);
+  listing.yearBuilt = ensureNum(listing.yearBuilt);
+  listing.price = ensureNum(listing.price);
+  listing.hoaFee = ensureNum(listing.hoaFee);
+  listing.daysOnMarket = ensureNum(listing.daysOnMarket);
+  listing.photoCount = ensureNum(listing.photoCount);
+  listing.address = ensureStr(listing.address);
+  listing.city = ensureStr(listing.city);
+  listing.zipCode = ensureStr(listing.zipCode);
+  listing.description = ensureStr(listing.description);
+
+  const addr = listing.address;
+  const desc = listing.description;
   const isLakefront = desc.toLowerCase().includes('lakefront') ||
                       desc.toLowerCase().includes('lake front') ||
                       addr.toLowerCase().includes('lake shore') ||
