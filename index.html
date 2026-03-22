@@ -11201,6 +11201,157 @@ function createScoreRing(score, size = 52, strokeWidth = 4, label = '') {
   `;
 }
 
+// ========== CLIENT-SIDE DISTANCE CALCULATION ==========
+
+const NEARBY_TESLA = [
+  { name: 'Tannersville (Pocono Outlets)', lat: 41.0479, lng: -75.3128 },
+  { name: 'Bartonsville (Giant)', lat: 41.0012, lng: -75.2741 },
+  { name: 'Mt Pocono (Wawa)', lat: 41.1202, lng: -75.3761 },
+  { name: 'Columbia NJ (I-80)', lat: 40.9338, lng: -75.1010 },
+  { name: 'Hickory Run (PA Turnpike)', lat: 40.9705, lng: -75.6317 },
+  { name: 'Wilkes-Barre', lat: 41.2378, lng: -75.8446 },
+  { name: 'Moosic (Shoppes at Montage)', lat: 41.3639, lng: -75.6798 },
+];
+
+const NEARBY_GROCERY = [
+  { name: 'Walmart', address: 'Mount Pocono', lat: 41.1220, lng: -75.3646 },
+  { name: 'Walmart', address: 'East Stroudsburg', lat: 41.0016, lng: -75.1808 },
+  { name: 'ShopRite', address: 'Mount Pocono', lat: 41.1285, lng: -75.3590 },
+  { name: 'ShopRite', address: 'Brodheadsville', lat: 40.9270, lng: -75.3940 },
+  { name: 'ShopRite', address: 'Stroudsburg', lat: 41.0050, lng: -75.2200 },
+  { name: 'Giant', address: 'East Stroudsburg', lat: 40.9941, lng: -75.1856 },
+  { name: 'Giant', address: 'Bartonsville', lat: 41.0121, lng: -75.3046 },
+  { name: 'Weis Markets', address: 'Mount Pocono', lat: 41.1200, lng: -75.3600 },
+  { name: 'Weis Markets', address: 'Tannersville', lat: 41.0393, lng: -75.3209 },
+  { name: 'ALDI', address: 'Stroudsburg', lat: 41.0060, lng: -75.1940 },
+  { name: 'ALDI', address: 'Pocono Summit', lat: 41.1050, lng: -75.4100 },
+  { name: "BJ's Wholesale", address: 'Stroudsburg', lat: 41.0100, lng: -75.2150 },
+  { name: 'Target', address: 'Stroudsburg', lat: 41.0095, lng: -75.2160 },
+];
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng/2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function findNearest(lat, lng, locations) {
+  let best = null, bestDist = Infinity;
+  for (const loc of locations) {
+    const d = haversine(lat, lng, loc.lat, loc.lng);
+    if (d < bestDist) { bestDist = d; best = loc; }
+  }
+  return best ? { ...best, miles: Math.round(bestDist * 10) / 10 } : null;
+}
+
+// Enrich properties with distance data on load
+function enrichWithDistances() {
+  PROPERTIES.forEach(p => {
+    if (!p.nearestTesla && p.latitude && p.longitude) {
+      p.nearestTesla = findNearest(p.latitude, p.longitude, NEARBY_TESLA);
+    }
+    if (!p.nearestGrocery && p.latitude && p.longitude) {
+      const g = findNearest(p.latitude, p.longitude, NEARBY_GROCERY);
+      if (g) g.name = g.name + ' — ' + g.address;
+      p.nearestGrocery = g;
+    }
+  });
+}
+
+// ========== MORTGAGE CALCULATOR ==========
+
+function calcMortgage(price, downPct = 20, rate = 6.8, years = 30) {
+  const down = price * (downPct / 100);
+  const principal = price - down;
+  const monthlyRate = (rate / 100) / 12;
+  const n = years * 12;
+  const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, n)) / (Math.pow(1 + monthlyRate, n) - 1);
+  return { payment: Math.round(payment), down: Math.round(down), principal: Math.round(principal) };
+}
+
+function renderMortgageSection(p) {
+  const m = calcMortgage(p.price);
+  const monthlyTax = Math.round(p.annualTax / 12);
+  const monthlyHOA = p.hoaFee || 0;
+  const totalMonthly = m.payment + monthlyTax + monthlyHOA;
+  return `
+    <div class="p-6 border-b border-white/5">
+      <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
+        <i data-lucide="calculator" class="w-4 h-4"></i> Monthly Cost Estimate
+      </h4>
+      <div class="glass rounded-xl p-4">
+        <div class="text-2xl font-bold text-water">$${totalMonthly.toLocaleString()}<span class="text-sm font-normal text-slate-500">/mo</span></div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-sm">
+          <div>
+            <div class="text-slate-500 text-xs">Mortgage</div>
+            <div class="font-medium">$${m.payment.toLocaleString()}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-xs">Property Tax</div>
+            <div class="font-medium">$${monthlyTax.toLocaleString()}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-xs">HOA</div>
+            <div class="font-medium">${monthlyHOA > 0 ? '$' + monthlyHOA.toLocaleString() : '—'}</div>
+          </div>
+        </div>
+        <div class="text-[10px] text-slate-600 mt-3">Based on 20% down, 6.8% rate, 30yr fixed. Down payment: $${m.down.toLocaleString()}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ========== FAVORITES PERSISTENCE ==========
+
+function loadFavorites() {
+  try {
+    const saved = localStorage.getItem('pocono-favorites');
+    if (saved) {
+      const ids = JSON.parse(saved);
+      PROPERTIES.forEach(p => { p.isFavorite = ids.includes(p.id); });
+    }
+  } catch(e) {}
+}
+
+function saveFavorites() {
+  const ids = PROPERTIES.filter(p => p.isFavorite).map(p => p.id);
+  localStorage.setItem('pocono-favorites', JSON.stringify(ids));
+}
+
+function toggleFavoriteAndSave(id) {
+  toggleFavorite(id);
+  saveFavorites();
+}
+
+// ========== RECENTLY VIEWED ==========
+
+function getRecentlyViewed() {
+  try { return JSON.parse(localStorage.getItem('pocono-recent') || '[]'); } catch(e) { return []; }
+}
+
+function addToRecentlyViewed(id) {
+  let recent = getRecentlyViewed().filter(r => r !== id);
+  recent.unshift(id);
+  if (recent.length > 10) recent = recent.slice(0, 10);
+  localStorage.setItem('pocono-recent', JSON.stringify(recent));
+}
+
+// ========== SHARE PROPERTY ==========
+
+function shareProperty(p) {
+  const text = `Check out this ${p.bedrooms}bd/${p.bathrooms}ba home at ${p.address}, ${p.city} for ${formatPriceFull(p.price)}! ${p.waterBodyName} — ${waterTypeLabel(p.waterType)}`;
+  if (navigator.share) {
+    navigator.share({ title: p.address, text, url: window.location.href });
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('share-btn');
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Share'; }, 2000); }
+    });
+  }
+}
+
 // ========== PROPERTY CARD RENDERING ==========
 
 function renderPropertyCard(p) {
@@ -11550,6 +11701,7 @@ function removeFromCompare(id) {
 function openDetailModal(id) {
   const p = PROPERTIES.find(pr => pr.id === id);
   if (!p) return;
+  addToRecentlyViewed(id);
 
   const modal = document.getElementById('modal-container');
   modal.innerHTML = `
@@ -11559,9 +11711,14 @@ function openDetailModal(id) {
         <div class="relative">
           <img src="${p.image}" alt="${p.address}" class="w-full object-cover" style="aspect-ratio: 16/9; max-height: 300px;">
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-          <button onclick="closeModal()" class="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-black/60 transition z-10" aria-label="Close">
-            <i data-lucide="x" class="w-5 h-5 text-white"></i>
-          </button>
+          <div class="absolute top-4 right-4 z-10 flex gap-2">
+            <button id="share-btn" onclick="shareProperty(PROPERTIES.find(pr=>pr.id===${p.id}))" class="p-2 rounded-full bg-black/40 hover:bg-black/60 transition" aria-label="Share">
+              <i data-lucide="share-2" class="w-5 h-5 text-white"></i>
+            </button>
+            <button onclick="closeModal()" class="p-2 rounded-full bg-black/40 hover:bg-black/60 transition" aria-label="Close">
+              <i data-lucide="x" class="w-5 h-5 text-white"></i>
+            </button>
+          </div>
           <div class="absolute bottom-4 left-6 right-6 z-10">
             <div class="flex items-center gap-2 mb-1">
               <span class="text-xs rounded-full px-2.5 py-0.5 ${p.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${p.status}</span>
@@ -11635,6 +11792,9 @@ function openDetailModal(id) {
             <div class="glass rounded-lg p-3"><span class="text-slate-500 text-xs block">Photos</span><span class="font-medium">${p.photoCount}</span></div>
           </div>
         </div>
+
+        <!-- Monthly Cost Estimate -->
+        ${renderMortgageSection(p)}
 
         <!-- Description -->
         <div class="p-6 border-b border-white/5">
@@ -11947,6 +12107,8 @@ function populateLakeFilters() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  enrichWithDistances();
+  loadFavorites();
   lucide.createIcons();
   populateLakeFilters();
   renderCards(getFilteredProperties());
