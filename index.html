@@ -18026,16 +18026,18 @@ async function fetchPoconoWeather() {
       forecastTooltip += `${dayNames[date.getDay()]}: ${Math.round(d.temperature_2m_max[i])}°/${Math.round(d.temperature_2m_min[i])}° ${dayW.desc} (${d.precipitation_probability_max[i]}% precip)\\n`;
     }
 
+    const hi = Math.round(d.temperature_2m_max[0]);
+    const lo = Math.round(d.temperature_2m_min[0]);
+
     const el = document.getElementById('pocono-weather');
     el.title = forecastTooltip;
     el.innerHTML = `
       <i data-lucide="${w.icon}" class="w-4 h-4 ${w.color}"></i>
       <span class="font-semibold text-slate-200">${temp}°</span>
-      <span class="text-slate-500 text-xs hidden sm:inline">${w.desc}</span>
+      <span class="text-slate-500 text-xs">${w.desc}</span>
+      <span class="text-slate-600 text-[10px]">H:${hi}° L:${lo}°</span>
       ${advisory}
     `;
-    lucide.createIcons({ attrs: { class: '' } });
-    // Re-create all icons to pick up the new weather icon
     lucide.createIcons();
   } catch (e) {
     console.warn('Weather fetch failed:', e);
