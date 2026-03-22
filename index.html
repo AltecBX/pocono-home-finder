@@ -10727,6 +10727,10 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <i data-lucide="waves" class="w-6 h-6 text-water"></i>
       <span class="gradient-text">Pocono Lakehouse Search</span>
     </a>
+    <!-- Weather Widget -->
+    <div id="pocono-weather" class="flex items-center gap-2 text-sm" title="Current weather in the Poconos">
+      <span class="text-slate-500 text-xs">Loading...</span>
+    </div>
     <!-- Desktop Nav -->
     <nav class="hidden md:flex items-center gap-8">
       <a href="#search" class="text-sm text-slate-300 hover:text-water transition-colors">Search</a>
@@ -12501,6 +12505,71 @@ document.getElementById('hamburger-btn').addEventListener('click', () => {
   lucide.createIcons();
 });
 
+// ========== POCONO WEATHER WIDGET ==========
+
+async function fetchPoconoWeather() {
+  try {
+    // Mt Pocono, PA coordinates (center of Pocono region)
+    const lat = 41.122, lng = -75.364;
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York&forecast_days=3`);
+    const data = await res.json();
+    const c = data.current;
+    const d = data.daily;
+
+    // WMO weather code to icon/description
+    const weatherInfo = (code) => {
+      if (code <= 1) return { icon: 'sun', desc: 'Clear', color: 'text-amber-400' };
+      if (code <= 3) return { icon: 'cloud', desc: 'Cloudy', color: 'text-slate-400' };
+      if (code <= 48) return { icon: 'cloud-fog', desc: 'Foggy', color: 'text-slate-400' };
+      if (code <= 55) return { icon: 'cloud-drizzle', desc: 'Drizzle', color: 'text-blue-400' };
+      if (code <= 65) return { icon: 'cloud-rain', desc: 'Rain', color: 'text-blue-400' };
+      if (code <= 67) return { icon: 'cloud-rain', desc: 'Freezing Rain', color: 'text-cyan-400' };
+      if (code <= 75) return { icon: 'cloud-snow', desc: 'Snow', color: 'text-cyan-300' };
+      if (code <= 77) return { icon: 'cloud-snow', desc: 'Snow Grains', color: 'text-cyan-300' };
+      if (code <= 82) return { icon: 'cloud-rain-wind', desc: 'Showers', color: 'text-blue-400' };
+      if (code <= 86) return { icon: 'cloud-snow', desc: 'Snow Showers', color: 'text-cyan-300' };
+      if (code <= 95) return { icon: 'cloud-lightning', desc: 'Thunderstorm', color: 'text-yellow-400' };
+      return { icon: 'cloud-lightning', desc: 'Severe Storm', color: 'text-red-400' };
+    };
+
+    const w = weatherInfo(c.weather_code);
+    const temp = Math.round(c.temperature_2m);
+    const feelsLike = Math.round(c.apparent_temperature);
+    const wind = Math.round(c.wind_speed_10m);
+
+    // Drive advisory
+    let advisory = '';
+    if ([56,57,66,67].includes(c.weather_code)) advisory = '<span class="text-[10px] text-red-400 font-medium ml-1">Icy roads!</span>';
+    else if (c.weather_code >= 71 && c.weather_code <= 77) advisory = '<span class="text-[10px] text-cyan-400 font-medium ml-1">Snowing</span>';
+    else if (c.weather_code >= 95) advisory = '<span class="text-[10px] text-yellow-400 font-medium ml-1">Storms</span>';
+
+    // 3-day forecast for tooltip
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let forecastTooltip = 'Pocono Weather — Mt Pocono, PA\\n';
+    forecastTooltip += `Now: ${temp}°F ${w.desc}, feels like ${feelsLike}°F, wind ${wind}mph\\n`;
+    for (let i = 0; i < 3; i++) {
+      const date = new Date(d.time[i] + 'T12:00:00');
+      const dayW = weatherInfo(d.weather_code[i]);
+      forecastTooltip += `${dayNames[date.getDay()]}: ${Math.round(d.temperature_2m_max[i])}°/${Math.round(d.temperature_2m_min[i])}° ${dayW.desc} (${d.precipitation_probability_max[i]}% precip)\\n`;
+    }
+
+    const el = document.getElementById('pocono-weather');
+    el.title = forecastTooltip;
+    el.innerHTML = `
+      <i data-lucide="${w.icon}" class="w-4 h-4 ${w.color}"></i>
+      <span class="font-semibold text-slate-200">${temp}°</span>
+      <span class="text-slate-500 text-xs hidden sm:inline">${w.desc}</span>
+      ${advisory}
+    `;
+    lucide.createIcons({ attrs: { class: '' } });
+    // Re-create all icons to pick up the new weather icon
+    lucide.createIcons();
+  } catch (e) {
+    console.warn('Weather fetch failed:', e);
+    document.getElementById('pocono-weather').innerHTML = '';
+  }
+}
+
 // ========== TYPING ANIMATION ==========
 
 function runTypingAnimation() {
@@ -12615,6 +12684,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Invalidate map size after a beat (Leaflet quirk)
   setTimeout(() => { if (map) map.invalidateSize(); }, 500);
+
+  // Weather
+  fetchPoconoWeather();
 
   // Price drop detection
   const drops = trackPrices();
