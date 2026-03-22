@@ -2,8 +2,10 @@ name: Update Pocono Listings
 
 on:
   schedule:
-    # Run daily at 7:00 AM ET (11:00 UTC)
+    # Run at 7:00 AM ET (11:00 UTC)
     - cron: '0 11 * * *'
+    # Run at 6:00 PM ET (22:00 UTC)
+    - cron: '0 22 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
