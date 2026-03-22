@@ -17191,7 +17191,7 @@ function shareProperty(p) {
   const propertyUrl = `${baseUrl}?property=${p.id}`;
   const text = `Check out this ${p.bedrooms}bd/${p.bathrooms}ba home at ${p.address}, ${p.city} for ${formatPriceFull(p.price)}! ${p.waterBodyName} — ${waterTypeLabel(p.waterType)}`;
   if (navigator.share) {
-    navigator.share({ title: `${p.address} — ${formatPriceFull(p.price)}`, text, url: propertyUrl });
+    navigator.share({ title: `${p.address} — ${formatPriceFull(p.price)}`, url: propertyUrl });
   } else {
     navigator.clipboard.writeText(`${text}\n${propertyUrl}`).then(() => {
       const btn = document.getElementById('share-btn');
