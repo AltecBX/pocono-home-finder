@@ -10733,6 +10733,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <a href="#map-section" class="text-sm text-slate-300 hover:text-water transition-colors">Map</a>
       <a href="#dashboard" class="text-sm text-slate-300 hover:text-water transition-colors">Dashboard</a>
       <a href="#compare" class="text-sm text-slate-300 hover:text-water transition-colors">Compare</a>
+      <a href="#trips" class="text-sm text-slate-300 hover:text-water transition-colors">Trips</a>
     </nav>
     <!-- Mobile Hamburger -->
     <button id="hamburger-btn" class="md:hidden p-2 rounded-lg hover:bg-white/5 transition" aria-label="Menu">
@@ -10759,6 +10760,9 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     </a>
     <a href="#compare" onclick="closeMobileMenu()" class="text-lg text-slate-200 hover:text-water transition flex items-center gap-3">
       <i data-lucide="columns-2" class="w-5 h-5"></i> Compare
+    </a>
+    <a href="#trips" onclick="closeMobileMenu()" class="text-lg text-slate-200 hover:text-water transition flex items-center gap-3">
+      <i data-lucide="map-pin" class="w-5 h-5"></i> Trip Planner
     </a>
   </nav>
 </div>
@@ -11075,6 +11079,26 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 </section>
 
 <!-- ================================================================== -->
+<!-- WEEKEND TRIP PLANNER                                               -->
+<!-- ================================================================== -->
+<section id="trips" class="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6">
+  <div class="flex items-center gap-3 mb-2">
+    <i data-lucide="map-pin" class="w-6 h-6 text-water"></i>
+    <h2 class="text-2xl sm:text-3xl font-bold">Weekend Trip Planner</h2>
+  </div>
+  <p class="text-slate-500 text-sm mb-6">Favorite properties you want to visit, then plan efficient viewing trips grouped by area. Each trip includes a Google Maps route from Yonkers and back.</p>
+  <button onclick="generateTripPlan()" class="inline-flex items-center gap-2 bg-water/10 text-water hover:bg-water/20 px-4 py-2.5 rounded-xl text-sm font-medium transition mb-6">
+    <i data-lucide="route" class="w-4 h-4"></i> Generate Trip Plan
+  </button>
+  <div id="trip-planner-content">
+    <div class="glass rounded-2xl p-12 text-center">
+      <i data-lucide="heart" class="w-12 h-12 text-slate-600 mx-auto mb-4"></i>
+      <p class="text-slate-500">Favorite the properties you want to visit, then click "Generate Trip Plan" to organize your viewing trips.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
 <!-- DASHBOARD SECTION                                                  -->
 <!-- ================================================================== -->
 <section id="dashboard" class="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6">
@@ -11350,14 +11374,24 @@ function renderMortgageSection(p) {
   const m = calcMortgage(p.price);
   const monthlyTax = Math.round(p.annualTax / 12);
   const monthlyHOA = p.hoaFee || 0;
-  const totalMonthly = m.payment + monthlyTax + monthlyHOA;
+  // Insurance estimate: ~0.35% of home value/yr for 2nd home in PA
+  const monthlyInsurance = Math.round(p.price * 0.0035 / 12);
+  // Winter maintenance: snow removal, heating, winterization ~$250/mo avg
+  const monthlyMaintenance = 250;
+  // Round-trip Tesla charging cost from Yonkers (~150mi each way, ~30kWh/100mi, $0.35/kWh Supercharger avg)
+  const commuteRoundTrip = p.commute ? Math.round(p.commute.miles * 2 * 0.30 * 0.35) : 0;
+  // Assume 4 weekend trips/month
+  const monthlyCommuteCost = commuteRoundTrip * 4;
+  const coreMonthly = m.payment + monthlyTax + monthlyHOA;
+  const totalMonthly = coreMonthly + monthlyInsurance + monthlyMaintenance + monthlyCommuteCost;
   return `
     <div class="p-6 border-b border-white/5">
       <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
-        <i data-lucide="calculator" class="w-4 h-4"></i> Monthly Cost Estimate
+        <i data-lucide="calculator" class="w-4 h-4"></i> True Cost of Ownership
       </h4>
       <div class="glass rounded-xl p-4">
-        <div class="text-2xl font-bold text-water">$${totalMonthly.toLocaleString()}<span class="text-sm font-normal text-slate-500">/mo</span></div>
+        <div class="text-2xl font-bold text-water">$${totalMonthly.toLocaleString()}<span class="text-sm font-normal text-slate-500">/mo total</span></div>
+        <div class="text-xs text-slate-500 mt-1">Core: $${coreMonthly.toLocaleString()}/mo + Running costs: $${(monthlyInsurance + monthlyMaintenance + monthlyCommuteCost).toLocaleString()}/mo</div>
         <div class="grid grid-cols-3 gap-3 mt-4 text-sm">
           <div>
             <div class="text-slate-500 text-xs">Mortgage</div>
@@ -11371,11 +11405,178 @@ function renderMortgageSection(p) {
             <div class="text-slate-500 text-xs">HOA</div>
             <div class="font-medium">${monthlyHOA > 0 ? '$' + monthlyHOA.toLocaleString() : '—'}</div>
           </div>
+          <div>
+            <div class="text-slate-500 text-xs">Insurance</div>
+            <div class="font-medium">$${monthlyInsurance.toLocaleString()}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-xs">Maintenance</div>
+            <div class="font-medium">$${monthlyMaintenance.toLocaleString()}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 text-xs">Commute (4x/mo)</div>
+            <div class="font-medium flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-red-400"></i>$${monthlyCommuteCost.toLocaleString()}</div>
+          </div>
         </div>
-        <div class="text-[10px] text-slate-600 mt-3">Based on 20% down, 6.8% rate, 30yr fixed. Down payment: $${m.down.toLocaleString()}</div>
+        <div class="text-[10px] text-slate-600 mt-3">20% down ($${m.down.toLocaleString()}), 6.8% rate, 30yr. Insurance est. 0.35%/yr. Maintenance ~$250/mo (heat, snow, upkeep). Commute: 4 weekend round trips via Tesla Supercharger.</div>
       </div>
     </div>
   `;
+}
+
+// ========== PROPERTY NOTES ==========
+
+function getPropertyNotes(id) {
+  try {
+    const notes = JSON.parse(localStorage.getItem('pocono-notes') || '{}');
+    return notes[id] || '';
+  } catch { return ''; }
+}
+
+function savePropertyNote(id) {
+  const textarea = document.getElementById('property-note-' + id);
+  if (!textarea) return;
+  try {
+    const notes = JSON.parse(localStorage.getItem('pocono-notes') || '{}');
+    const text = textarea.value.trim();
+    if (text) { notes[id] = text; } else { delete notes[id]; }
+    localStorage.setItem('pocono-notes', JSON.stringify(notes));
+    // Show saved indicator
+    const btn = document.getElementById('note-save-btn-' + id);
+    if (btn) { btn.textContent = 'Saved!'; setTimeout(() => { btn.textContent = 'Save Note'; }, 1500); }
+  } catch {}
+}
+
+function renderNotesSection(p) {
+  const existingNote = getPropertyNotes(p.id);
+  return `
+    <div class="p-6 border-b border-white/5">
+      <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+        <i data-lucide="notebook-pen" class="w-4 h-4"></i> Your Notes
+        <span class="text-[10px] text-slate-600 font-normal ml-auto">Private — saved on this device</span>
+      </h4>
+      <textarea id="property-note-${p.id}" placeholder="Jot down your thoughts... 'Kitchen felt small', 'Loved the dock and sunset view', 'Ask about septic system'..." class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-slate-300 placeholder-slate-600 resize-y focus:border-water/30 focus:outline-none transition" rows="3" style="min-height:80px">${existingNote}</textarea>
+      <div class="flex items-center justify-between mt-2">
+        <span class="text-[10px] text-slate-600">${existingNote ? 'You have notes saved for this property' : 'No notes yet'}</span>
+        <button id="note-save-btn-${p.id}" onclick="savePropertyNote(${p.id})" class="text-xs bg-water/10 text-water hover:bg-water/20 px-3 py-1.5 rounded-lg transition">Save Note</button>
+      </div>
+    </div>
+  `;
+}
+
+// ========== PRICE DROP TRACKER ==========
+
+function trackPrices() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('pocono-price-history') || '{}');
+    const today = new Date().toISOString().split('T')[0];
+    let drops = [];
+    PROPERTIES.forEach(p => {
+      const key = (p.address || '').trim().toLowerCase();
+      if (!key) return;
+      if (!saved[key]) {
+        saved[key] = { price: p.price, firstSeen: today, history: [{ date: today, price: p.price }] };
+      } else {
+        const last = saved[key].price;
+        if (p.price !== last) {
+          saved[key].history.push({ date: today, price: p.price });
+          if (p.price < last) {
+            drops.push({ property: p, oldPrice: last, newPrice: p.price, drop: last - p.price });
+          }
+          saved[key].price = p.price;
+        }
+      }
+    });
+    localStorage.setItem('pocono-price-history', JSON.stringify(saved));
+    return drops;
+  } catch { return []; }
+}
+
+function showPriceDropAlerts(drops) {
+  if (!drops || drops.length === 0) return;
+  const alertBar = document.createElement('div');
+  alertBar.id = 'price-drop-alert';
+  alertBar.className = 'fixed top-0 left-0 right-0 z-[1100] bg-gradient-to-r from-emerald-900/95 to-emerald-800/95 backdrop-blur-xl border-b border-emerald-500/20 px-4 py-3 text-center animate-fade-in-up';
+  alertBar.style.paddingTop = 'max(12px, env(safe-area-inset-top, 0px))';
+  const plural = drops.length > 1 ? 'properties' : 'property';
+  const topDrop = drops.sort((a, b) => b.drop - a.drop)[0];
+  alertBar.innerHTML = `
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-3 flex-wrap">
+      <span class="inline-flex items-center gap-1.5 text-emerald-400 font-semibold text-sm"><i data-lucide="trending-down" class="w-4 h-4"></i> Price Drop Alert!</span>
+      <span class="text-emerald-200 text-sm">${drops.length} ${plural} dropped since your last visit. ${topDrop.property.address} dropped <strong>$${topDrop.drop.toLocaleString()}</strong></span>
+      <button onclick="openDetailModal(${topDrop.property.id});document.getElementById('price-drop-alert').remove()" class="text-xs bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 px-3 py-1 rounded-full transition">View</button>
+      <button onclick="document.getElementById('price-drop-alert').remove()" class="text-emerald-500/60 hover:text-emerald-300 transition ml-2"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+  `;
+  document.body.appendChild(alertBar);
+  lucide.createIcons();
+}
+
+// ========== WEEKEND TRIP PLANNER ==========
+
+function generateTripPlan() {
+  const favProps = PROPERTIES.filter(p => p.isFavorite);
+  if (favProps.length === 0) {
+    document.getElementById('trip-planner-content').innerHTML = '<p class="text-slate-500 text-sm text-center py-8">Favorite some properties first, then come back to plan your viewing trips.</p>';
+    return;
+  }
+
+  // Cluster favorites by proximity (simple greedy clustering, ~10 mile radius)
+  const clusters = [];
+  const used = new Set();
+  favProps.forEach(p => {
+    if (used.has(p.id)) return;
+    const cluster = [p];
+    used.add(p.id);
+    favProps.forEach(q => {
+      if (used.has(q.id)) return;
+      if (p.latitude && q.latitude && haversine(p.latitude, p.longitude, q.latitude, q.longitude) < 10) {
+        cluster.push(q);
+        used.add(q.id);
+      }
+    });
+    clusters.push(cluster);
+  });
+
+  let html = '';
+  clusters.forEach((cluster, i) => {
+    const lakeNames = [...new Set(cluster.map(p => p.waterBodyName))].join(', ');
+    // Build Google Maps multi-stop route from Yonkers
+    let routeUrl = `https://www.google.com/maps/dir/${encodeURIComponent(HOME_LOCATION.address)}`;
+    cluster.forEach(p => { routeUrl += `/${p.latitude},${p.longitude}`; });
+    routeUrl += `/${encodeURIComponent(HOME_LOCATION.address)}`; // Return home
+
+    html += `
+      <div class="glass rounded-xl p-4 mb-3">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h5 class="text-sm font-semibold text-slate-200">Trip ${i + 1}: ${lakeNames}</h5>
+            <span class="text-xs text-slate-500">${cluster.length} ${cluster.length === 1 ? 'property' : 'properties'} to view</span>
+          </div>
+          <a href="${routeUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs bg-water/10 text-water hover:bg-water/20 px-3 py-1.5 rounded-lg transition no-underline">
+            <i data-lucide="navigation" class="w-3 h-3"></i> Open Route
+          </a>
+        </div>
+        <div class="space-y-2">
+          ${cluster.map((p, j) => `
+            <div class="flex items-center gap-3 text-sm cursor-pointer hover:bg-white/5 rounded-lg p-2 -mx-2 transition" onclick="openDetailModal(${p.id})">
+              <span class="w-6 h-6 rounded-full bg-water/10 text-water text-xs flex items-center justify-center font-bold shrink-0">${j + 1}</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-slate-300 truncate">${p.address}</div>
+                <div class="text-xs text-slate-500">${formatPrice(p.price)} · ${p.bedrooms}bd/${p.bathrooms}ba · ${p.waterBodyName}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="mt-3 text-[10px] text-slate-600 flex items-center gap-1">
+          <i data-lucide="clock" class="w-3 h-3"></i> Est. round trip from Yonkers: ~${cluster[0].commute ? Math.round(cluster[0].commute.minutes * 2 / 60 * 10) / 10 + ' hrs driving + viewing time' : 'calculate on map'}
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('trip-planner-content').innerHTML = html;
+  lucide.createIcons();
 }
 
 // ========== FAVORITES PERSISTENCE ==========
@@ -11518,6 +11719,7 @@ function renderPropertyCard(p) {
           <button onclick="openDetailModal(${p.id})" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-water/10 text-water hover:bg-water/20 transition text-center">
             View Details
           </button>
+          ${getPropertyNotes(p.id) ? '<span class="flex items-center justify-center w-10 h-10 rounded-xl glass text-amber-400" title="You have notes on this property"><i data-lucide="notebook-pen" class="w-4 h-4"></i></span>' : ''}
           <label class="flex items-center gap-2 py-2.5 px-3 rounded-xl glass cursor-pointer hover:bg-white/5 transition">
             <input type="checkbox" class="compare-cb accent-water w-4 h-4" data-id="${p.id}" ${isCompared ? 'checked' : ''} onchange="toggleCompare(${p.id}, this.checked)">
             <span class="text-xs text-slate-400">Compare</span>
@@ -11785,14 +11987,20 @@ function updateCompareSection() {
 
   const rows = [
     { label: 'Price', values: props.map(p => formatPriceFull(p.price)), key: 'price', lower: true },
+    { label: '$/sqft', values: props.map(p => p.sqft > 0 ? '$' + Math.round(p.price / p.sqft) : '—'), key: null, lower: true, nums: props.map(p => p.sqft > 0 ? p.price / p.sqft : 99999) },
     { label: 'Beds', values: props.map(p => p.bedrooms.toString()), key: 'bedrooms', lower: false },
     { label: 'Baths', values: props.map(p => p.bathrooms.toString()), key: 'bathrooms', lower: false },
     { label: 'Sq Ft', values: props.map(p => p.sqft.toLocaleString()), key: 'sqft', lower: false },
     { label: 'Lot (ac)', values: props.map(p => p.lotAcres.toString()), key: 'lotAcres', lower: false },
     { label: 'Tax/yr', values: props.map(p => '$' + p.annualTax.toLocaleString()), key: 'annualTax', lower: true },
     { label: 'HOA/mo', values: props.map(p => p.hoaFee > 0 ? '$' + p.hoaFee : 'None'), key: 'hoaFee', lower: true },
+    { label: 'Monthly Cost', values: props.map(p => { const m = calcMortgage(p.price); return '$' + (m.payment + Math.round(p.annualTax/12) + (p.hoaFee||0)).toLocaleString(); }), key: null, lower: true, nums: props.map(p => { const m = calcMortgage(p.price); return m.payment + Math.round(p.annualTax/12) + (p.hoaFee||0); }) },
+    { label: 'Commute', values: props.map(p => p.commute ? p.commute.timeStr : '—'), key: null, lower: true, nums: props.map(p => p.commute?.minutes || 999) },
     { label: 'Water Type', values: props.map(p => waterTypeLabel(p.waterType)), key: null },
+    { label: 'Lake', values: props.map(p => p.waterBodyName || '—'), key: null },
     { label: 'Dog Swim', values: props.map(p => p.dogSwimAccessible ? 'Yes' : 'No'), key: 'dogSwimAccessible', lower: false },
+    { label: 'Tesla SC', values: props.map(p => p.nearestTesla ? p.nearestTesla.miles + ' mi' : '—'), key: null, lower: true, nums: props.map(p => p.nearestTesla?.miles || 999) },
+    { label: 'Grocery', values: props.map(p => p.nearestGrocery ? p.nearestGrocery.miles + ' mi' : '—'), key: null, lower: true, nums: props.map(p => p.nearestGrocery?.miles || 999) },
     { label: 'Overall Score', values: props.map(p => p.overallScore.toString()), key: 'overallScore', lower: false },
     { label: 'Privacy', values: props.map(p => p.privacyScore.toString()), key: 'privacyScore', lower: false },
     { label: 'Value Score', values: props.map(p => p.valueScore.toString()), key: 'valueScore', lower: false },
@@ -11800,8 +12008,8 @@ function updateCompareSection() {
 
   // Find best per row
   rows.forEach(row => {
-    if (!row.key) { row.bestIdx = -1; return; }
-    const nums = props.map(p => typeof p[row.key] === 'boolean' ? (p[row.key] ? 1 : 0) : p[row.key]);
+    if (!row.key && !row.nums) { row.bestIdx = -1; return; }
+    const nums = row.nums || props.map(p => typeof p[row.key] === 'boolean' ? (p[row.key] ? 1 : 0) : p[row.key]);
     if (row.lower) {
       row.bestIdx = nums.indexOf(Math.min(...nums));
     } else {
@@ -12020,6 +12228,9 @@ function openDetailModal(id) {
             <i data-lucide="battery-charging" class="w-3 h-3"></i> Check live availability on Tesla.com <i data-lucide="external-link" class="w-3 h-3"></i>
           </a>` : ''}
         </div>` : ''}
+
+        <!-- Your Notes -->
+        ${renderNotesSection(p)}
 
         <!-- View on Source Sites -->
         <div class="p-6">
@@ -12356,6 +12567,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Invalidate map size after a beat (Leaflet quirk)
   setTimeout(() => { if (map) map.invalidateSize(); }, 500);
+
+  // Price drop detection
+  const drops = trackPrices();
+  if (drops.length > 0) showPriceDropAlerts(drops);
 
   // Deep link: open property modal if ?property=ID in URL
   checkDeepLink();
