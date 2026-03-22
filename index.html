@@ -985,6 +985,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <!-- Min beds -->
     <select id="filter-beds" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none">
       <option value="0">Any Beds</option>
+      <option value="2">2+ Beds</option>
       <option value="3">3+ Beds</option>
       <option value="4">4+ Beds</option>
     </select>
@@ -994,6 +995,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <option value="300000">Under $300K</option>
       <option value="400000">Under $400K</option>
       <option value="500000">Under $500K</option>
+      <option value="600000">Under $600K</option>
       <option value="750000">Under $750K</option>
     </select>
     <!-- Sort -->
@@ -1071,6 +1073,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
         <label class="text-sm text-slate-400 block mb-2">Minimum Bedrooms</label>
         <select id="mf-beds" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
           <option value="0">Any</option>
+          <option value="2">2+ Beds</option>
           <option value="3">3+ Beds</option>
           <option value="4">4+ Beds</option>
         </select>
@@ -1082,6 +1085,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
           <option value="300000">Under $300K</option>
           <option value="400000">Under $400K</option>
           <option value="500000">Under $500K</option>
+          <option value="600000">Under $600K</option>
           <option value="750000">Under $750K</option>
         </select>
       </div>
@@ -1784,7 +1788,7 @@ function addMarkers(filter) {
   props.forEach(p => {
     const color = markerColor(p.waterType);
     const marker = L.circleMarker([p.latitude, p.longitude], {
-      radius: 10,
+      radius: 8,
       fillColor: color,
       color: '#1e293b',
       weight: 2,
@@ -1804,7 +1808,7 @@ function addMarkers(filter) {
         <div style="margin-top: 4px;">
           <span style="font-size: 11px; padding: 2px 8px; border-radius: 99px; background: ${color}18; color: ${color};">${waterTypeLabel(p.waterType)}</span>
         </div>
-        <a href="#search" onclick="scrollToCard(${p.id})" style="display:inline-block;margin-top:8px;font-size:12px;color:#0891b2;text-decoration:none;font-weight:500;">View Card &rarr;</a>
+        <a href="#" onclick="event.preventDefault();map.closePopup();openDetailModal(${p.id})" style="display:inline-block;margin-top:8px;font-size:12px;color:#0891b2;text-decoration:none;font-weight:500;">View Details &rarr;</a>
       </div>
     `);
 

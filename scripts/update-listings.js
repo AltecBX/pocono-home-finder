@@ -33,7 +33,7 @@ const LAKES = [
     zipCode: '18347',
     hoaFee: 350,
     motorboats: false,
-    maxListings: 6,
+    maxListings: Infinity,
   },
   {
     name: 'Lake Naomi',
@@ -43,7 +43,7 @@ const LAKES = [
     zipCode: '18350',
     hoaFee: 500,
     motorboats: false,
-    maxListings: 5,
+    maxListings: Infinity,
   },
   {
     name: 'Lake Wallenpaupack',
@@ -53,7 +53,7 @@ const LAKES = [
     zipCode: null, // varies
     hoaFee: 0,
     motorboats: true,
-    maxListings: 4,
+    maxListings: Infinity,
   },
 ];
 
