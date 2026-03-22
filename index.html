@@ -21942,6 +21942,92 @@ function gmapsUrl(lat, lng, name) {
 // ========== HOME COMMUTE ==========
 const HOME_LOCATION = { lat: 40.9556, lng: -73.8627, address: '96 Stockbridge Rd, Yonkers, NY 10710' };
 
+// ========== COMMUNITY PROFILES ==========
+const COMMUNITY_DATA = {
+  'Arrowhead Lake': { url: 'https://www.arrowheadlakepoa.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Hiking','Ski Slope','Lodge'] },
+  'Lake Naomi': { url: 'https://www.naomiclub.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Gym','Golf','Ski Slope','Playground','Basketball','Marina','Hiking'] },
+  'Timber Trails': { url: 'https://www.timbertrailscommunity.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Hiking'] },
+  'Emerald Lakes': { url: 'https://www.emeraldlakesvillage.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing'] },
+  'Lake Harmony': { url: 'https://www.lakeharmony.org', gated: false, amenities: ['Beach','Boat Launch','Fishing','Motorboats','Jet Ski','Water Skiing'] },
+  'Buck Hill Falls': { url: 'https://www.buckhillfalls.org', gated: true, amenities: ['Pool','Tennis','Golf','Clubhouse','Gym','Hiking','Ski Slope','Waterfall','Spa'] },
+  'Pocono Country Place': { url: 'https://www.poconocountryplace.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Hiking','Lodge'] },
+  'Lake Carobeth': { url: 'https://www.lakecarobeth.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
+  'Locust Lake Village': { url: 'https://www.locustlake.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Hiking','Lodge'] },
+  'Saw Creek Estates': { url: 'https://www.sawcreek.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Gym','Playground','Basketball','Fishing','Skiing','Mini Golf'] },
+  'Indian Mountain Lakes': { url: 'https://www.indianmountainlakes.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Basketball','Hiking'] },
+  'Stillwater Lakes': { url: 'https://www.stillwaterlakes.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
+  'Lake of the Pines': { url: 'https://www.lakeofthepines.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Basketball'] },
+  'Pocono Farms': { url: 'https://www.poconofarms.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Hiking'] },
+  'Pocono Mountain Lake Estates': { url: 'https://www.pmle.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
+  'Towamensing Trails': { url: 'https://www.towamensingtrails.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Skiing','Lodge'] },
+  'Wild Acres': { url: 'https://www.wildacres.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
+  'Monroe Lakes': { url: 'https://www.monroelakes.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
+  'Saylors Lake': { url: null, gated: false, amenities: ['Beach','Fishing','Boat Launch'] },
+  'Pocono Springs': { url: 'https://www.poconosprings.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
+  'Penn Forest Streams': { url: null, gated: true, amenities: ['Beach','Pool','Clubhouse','Fishing','Hiking'] },
+  'Pinecrest Lake': { url: 'https://www.pinecrestlake.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Hiking'] },
+  'Lake Wallenpaupack': { url: 'https://www.wallenpaupack.com', gated: false, amenities: ['Boat Launch','Marina','Fishing','Motorboats','Jet Ski','Water Skiing','Sailing','Kayaking'] },
+  'Tunkhannock Lake': { url: null, gated: false, amenities: ['Beach','Fishing','Boat Launch'] },
+  'Brady Lake': { url: null, gated: false, amenities: ['Beach','Fishing'] },
+  'Long Pond': { url: null, gated: false, amenities: ['Beach','Fishing','Boat Launch','Kayaking'] },
+  'Pocono Lake': { url: null, gated: false, amenities: ['Beach','Fishing','Boat Launch'] },
+};
+
+const AMENITY_ICONS = {
+  'Beach': 'umbrella', 'Pool': 'waves', 'Tennis': 'trophy', 'Clubhouse': 'home',
+  'Playground': 'smile', 'Basketball': 'circle', 'Fishing': 'anchor', 'Hiking': 'mountain',
+  'Ski Slope': 'mountain-snow', 'Skiing': 'mountain-snow', 'Lodge': 'building', 'Gym': 'dumbbell',
+  'Golf': 'flag', 'Marina': 'ship', 'Boat Launch': 'sailboat', 'Motorboats': 'ship',
+  'Jet Ski': 'zap', 'Water Skiing': 'waves', 'Mini Golf': 'flag', 'Spa': 'heart',
+  'Waterfall': 'droplets', 'Sailing': 'sailboat', 'Kayaking': 'sailboat',
+};
+
+// Price vs lake average
+function getLakePriceAnalysis(p) {
+  const lakePeers = PROPERTIES.filter(pr => pr.waterBodyName === p.waterBodyName && pr.sqft > 0 && pr.id !== p.id);
+  if (lakePeers.length < 2 || p.sqft <= 0) return null;
+  const avgPpsf = lakePeers.reduce((sum, pr) => sum + pr.price / pr.sqft, 0) / lakePeers.length;
+  const thisPpsf = p.price / p.sqft;
+  const pctDiff = Math.round((thisPpsf / avgPpsf - 1) * 100);
+  return { avgPpsf: Math.round(avgPpsf), thisPpsf: Math.round(thisPpsf), pctDiff, peerCount: lakePeers.length };
+}
+
+// Market heat for a lake
+function getLakeMarketHeat(lakeName) {
+  const lakeProps = PROPERTIES.filter(p => p.waterBodyName === lakeName);
+  if (lakeProps.length < 2) return null;
+  const avgDom = lakeProps.reduce((s, p) => s + (p.daysOnMarket || 30), 0) / lakeProps.length;
+  const reducedPct = lakeProps.filter(p => p.isReduced || p.status === 'Price Reduced').length / lakeProps.length * 100;
+  // Low DOM + low reductions = hot market
+  let heat = 0;
+  if (avgDom < 14) heat += 40; else if (avgDom < 30) heat += 25; else if (avgDom < 60) heat += 15; else heat += 5;
+  if (reducedPct < 10) heat += 30; else if (reducedPct < 25) heat += 20; else if (reducedPct < 40) heat += 10; else heat += 5;
+  if (lakeProps.length > 15) heat += 15; else if (lakeProps.length > 8) heat += 20; else heat += 30; // fewer listings = competitive
+  heat = Math.min(100, heat);
+  let label = heat >= 70 ? 'Hot' : heat >= 45 ? 'Warm' : 'Cool';
+  let color = heat >= 70 ? 'text-red-400' : heat >= 45 ? 'text-amber-400' : 'text-blue-400';
+  return { heat, label, color, avgDom: Math.round(avgDom), reducedPct: Math.round(reducedPct), listingCount: lakeProps.length };
+}
+
+// Estimated Airbnb income (based on Pocono lake area averages)
+function estimateAirbnbIncome(p) {
+  // Pocono lakefront Airbnb averages: ~$200-350/night for 2-3bd, $300-500 for 4+bd
+  // Occupancy: ~55-65% for well-managed lakefront
+  let nightlyRate = 150;
+  if (p.bedrooms >= 4) nightlyRate = 400;
+  else if (p.bedrooms >= 3) nightlyRate = 300;
+  else if (p.bedrooms >= 2) nightlyRate = 225;
+  // Lakefront premium
+  if (p.waterType === 'lakefront') nightlyRate *= 1.25;
+  // Pool community premium
+  const comm = COMMUNITY_DATA[p.waterBodyName];
+  if (comm && comm.amenities.includes('Pool')) nightlyRate *= 1.1;
+  const occupancy = 0.58;
+  const monthly = Math.round(nightlyRate * 30 * occupancy);
+  const annual = monthly * 12;
+  return { nightlyRate: Math.round(nightlyRate), occupancy: Math.round(occupancy * 100), monthly, annual };
+}
+
 function calcCommute(propertyLat, propertyLng) {
   if (!propertyLat || !propertyLng) return null;
   const straightLine = haversine(HOME_LOCATION.lat, HOME_LOCATION.lng, propertyLat, propertyLng);
@@ -22877,6 +22963,90 @@ function openDetailModal(id) {
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Community Profile -->
+        ${(() => {
+          const comm = COMMUNITY_DATA[p.waterBodyName];
+          if (!comm) return '';
+          return `
+          <div class="p-6 border-b border-white/5">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-xs text-purple-400 uppercase tracking-wider font-medium flex items-center gap-2">
+                <i data-lucide="building-2" class="w-4 h-4"></i> Community Profile
+              </h4>
+              ${comm.gated ? '<span class="text-[10px] bg-amber-500/10 text-amber-400 rounded-full px-2 py-0.5">Gated Community</span>' : '<span class="text-[10px] bg-blue-500/10 text-blue-400 rounded-full px-2 py-0.5">Public Lake</span>'}
+            </div>
+            ${comm.url ? `
+            <a href="${comm.url}" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-4 flex items-center gap-3 hover:bg-white/10 hover:border-purple-500/20 transition group cursor-pointer no-underline mb-4">
+              <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                <i data-lucide="globe" class="w-5 h-5 text-purple-400"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-purple-300 group-hover:text-purple-200 transition">${p.waterBodyName} Community</div>
+                <div class="text-[11px] text-slate-500 truncate">${comm.url}</div>
+              </div>
+              <i data-lucide="external-link" class="w-4 h-4 text-slate-600 group-hover:text-purple-400 transition shrink-0"></i>
+            </a>` : ''}
+            <div class="flex flex-wrap gap-2">
+              ${comm.amenities.map(a => `<span class="inline-flex items-center gap-1.5 text-xs bg-white/5 rounded-full px-3 py-1.5 text-slate-300"><i data-lucide="${AMENITY_ICONS[a] || 'check'}" class="w-3 h-3 text-purple-400"></i>${a}</span>`).join('')}
+            </div>
+          </div>`;
+        })()}
+
+        <!-- Market Intelligence -->
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-amber-400 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-4 h-4"></i> Market Intelligence
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ${(() => {
+              const pa = getLakePriceAnalysis(p);
+              if (!pa) return '';
+              const isBelow = pa.pctDiff < 0;
+              return `
+              <div class="glass rounded-xl p-4">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Price vs ${p.waterBodyName} Avg</div>
+                <div class="flex items-end gap-2">
+                  <span class="text-2xl font-bold ${isBelow ? 'text-emerald-400' : 'text-red-400'}">${isBelow ? '' : '+'}${pa.pctDiff}%</span>
+                  <span class="text-xs text-slate-500 mb-1">${isBelow ? 'below' : 'above'} avg</span>
+                </div>
+                <div class="text-[10px] text-slate-500 mt-2">This: $${pa.thisPpsf}/ft² · Lake avg: $${pa.avgPpsf}/ft² · ${pa.peerCount} comparable${pa.peerCount > 1 ? 's' : ''}</div>
+              </div>`;
+            })()}
+            ${(() => {
+              const mh = getLakeMarketHeat(p.waterBodyName);
+              if (!mh) return '';
+              return `
+              <div class="glass rounded-xl p-4">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-2">${p.waterBodyName} Market</div>
+                <div class="flex items-end gap-2">
+                  <span class="text-2xl font-bold ${mh.color}">${mh.label}</span>
+                  <span class="text-xs text-slate-500 mb-1">${mh.heat}/100</span>
+                </div>
+                <div class="text-[10px] text-slate-500 mt-2">${mh.listingCount} listings · Avg ${mh.avgDom}d on market · ${mh.reducedPct}% reduced</div>
+              </div>`;
+            })()}
+          </div>
+          ${(() => {
+            const airbnb = estimateAirbnbIncome(p);
+            return `
+            <div class="glass rounded-xl p-4 mt-3">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <i data-lucide="calendar" class="w-3 h-3"></i> Airbnb Income Estimate
+                </div>
+                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 rounded px-2 py-0.5">${airbnb.occupancy}% occupancy</span>
+              </div>
+              <div class="flex items-center gap-6">
+                <div>
+                  <span class="text-xl font-bold text-emerald-400">$${airbnb.monthly.toLocaleString()}</span>
+                  <span class="text-xs text-slate-500">/month</span>
+                </div>
+                <div class="text-xs text-slate-500">~$${airbnb.nightlyRate}/night · $${airbnb.annual.toLocaleString()}/year</div>
+              </div>
+            </div>`;
+          })()}
         </div>
 
         <!-- Property Details -->
