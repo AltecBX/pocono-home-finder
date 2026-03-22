@@ -10920,6 +10920,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <option value="reduced">Price Drops First</option>
       <option value="sqft">Largest First</option>
       <option value="ppsqft">Lowest $/sqft</option>
+      <option value="commute">Shortest Commute</option>
       <option value="tesla">Closest to Tesla</option>
       <option value="grocery">Closest to Grocery</option>
     </select>
@@ -11246,6 +11247,26 @@ function gmapsUrl(lat, lng, name) {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=&travelmode=driving`;
 }
 
+// ========== HOME COMMUTE ==========
+const HOME_LOCATION = { lat: 40.9556, lng: -73.8627, address: '96 Stockbridge Rd, Yonkers, NY 10710' };
+
+function calcCommute(propertyLat, propertyLng) {
+  if (!propertyLat || !propertyLng) return null;
+  const straightLine = haversine(HOME_LOCATION.lat, HOME_LOCATION.lng, propertyLat, propertyLng);
+  // Yonkers→Poconos is mostly I-87→I-287→I-80, road factor ~1.3 for highway-heavy routes
+  const roadMiles = Math.round(straightLine * 1.3);
+  // Average ~48mph (highway mix with some local roads at destination)
+  const driveMinutes = Math.round(roadMiles / 48 * 60);
+  const hrs = Math.floor(driveMinutes / 60);
+  const mins = driveMinutes % 60;
+  const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+  return { miles: roadMiles, minutes: driveMinutes, timeStr };
+}
+
+function commuteGmapsUrl(propertyLat, propertyLng) {
+  return `https://www.google.com/maps/dir/${encodeURIComponent(HOME_LOCATION.address)}/${propertyLat},${propertyLng}`;
+}
+
 function gmapsDirFromProperty(pLat, pLng, dLat, dLng) {
   return `https://www.google.com/maps/dir/${pLat},${pLng}/${dLat},${dLng}`;
 }
@@ -11306,6 +11327,10 @@ function enrichWithDistances() {
       const g = findNearest(p.latitude, p.longitude, NEARBY_GROCERY);
       if (g) g.name = g.name + ' — ' + g.address;
       p.nearestGrocery = g;
+    }
+    // Commute from home
+    if (!p.commute && p.latitude && p.longitude) {
+      p.commute = calcCommute(p.latitude, p.longitude);
     }
   });
 }
@@ -11476,6 +11501,7 @@ function renderPropertyCard(p) {
 
         <!-- Distance badges -->
         <div class="flex items-center gap-3 mt-2.5 text-[11px] text-slate-500">
+          ${p.commute ? `<a href="${commuteGmapsUrl(p.latitude, p.longitude)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 hover:text-emerald-400 transition no-underline text-slate-500" onclick="event.stopPropagation()" title="Drive from Yonkers — ${p.commute.miles} mi, ~${p.commute.timeStr}"><i data-lucide="car" class="w-3 h-3 text-emerald-400"></i>${p.commute.timeStr}</a>` : ''}
           ${p.nearestTesla ? `<a href="${gmapsDirFromProperty(p.latitude, p.longitude, p.nearestTesla.lat, p.nearestTesla.lng)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 hover:text-red-400 transition no-underline text-slate-500" onclick="event.stopPropagation()" title="${p.nearestTesla.name} — ${p.nearestTesla.kw}kW, ${p.nearestTesla.stalls} stalls"><i data-lucide="zap" class="w-3 h-3 text-red-400"></i>${p.nearestTesla.miles} mi</a>` : ''}
           ${p.nearestGrocery ? `<a href="${gmapsDirFromProperty(p.latitude, p.longitude, p.nearestGrocery.lat, p.nearestGrocery.lng)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 hover:text-blue-400 transition no-underline text-slate-500" onclick="event.stopPropagation()" title="${p.nearestGrocery.name}"><i data-lucide="shopping-cart" class="w-3 h-3 text-blue-400"></i>${p.nearestGrocery.miles} mi</a>` : ''}
           ${p.sqft > 0 ? `<span class="flex items-center gap-1" title="Price per sqft"><i data-lucide="ruler" class="w-3 h-3 text-amber-400"></i>$${Math.round(p.price / p.sqft)}/ft²</span>` : ''}
@@ -11592,6 +11618,7 @@ function getFilteredProperties() {
     case 'reduced': filtered.sort((a, b) => (b.previousPrice ? 1 : 0) - (a.previousPrice ? 1 : 0) || b.overallScore - a.overallScore); break;
     case 'sqft': filtered.sort((a, b) => b.sqft - a.sqft); break;
     case 'ppsqft': filtered.sort((a, b) => (a.sqft > 0 ? a.price/a.sqft : 99999) - (b.sqft > 0 ? b.price/b.sqft : 99999)); break;
+    case 'commute': filtered.sort((a, b) => (a.commute?.minutes || 999) - (b.commute?.minutes || 999)); break;
     case 'tesla': filtered.sort((a, b) => (a.nearestTesla?.miles || 999) - (b.nearestTesla?.miles || 999)); break;
     case 'grocery': filtered.sort((a, b) => (a.nearestGrocery?.miles || 999) - (b.nearestGrocery?.miles || 999)); break;
     default: filtered.sort((a, b) => b.overallScore - a.overallScore);
@@ -11923,6 +11950,29 @@ function openDetailModal(id) {
           <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">Description</h4>
           <p class="text-sm text-slate-300 leading-relaxed">${p.description}</p>
         </div>
+
+        <!-- Commute from Home -->
+        ${p.commute ? `
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
+            <i data-lucide="navigation" class="w-4 h-4"></i> Commute from Home
+          </h4>
+          <a href="${commuteGmapsUrl(p.latitude, p.longitude)}" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-4 flex items-center gap-4 hover:bg-white/10 hover:border-emerald-500/20 transition group cursor-pointer no-underline">
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <i data-lucide="car" class="w-6 h-6 text-emerald-400"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm text-slate-400">From 96 Stockbridge Rd, Yonkers</div>
+              <div class="flex items-center gap-4 mt-1">
+                <span class="text-xl font-bold text-emerald-400">${p.commute.timeStr}</span>
+                <span class="text-sm text-slate-500">${p.commute.miles} miles</span>
+              </div>
+            </div>
+            <div class="shrink-0 text-slate-600 group-hover:text-emerald-400 transition">
+              <i data-lucide="external-link" class="w-5 h-5"></i>
+            </div>
+          </a>
+        </div>` : ''}
 
         <!-- Nearby Amenities -->
         ${(p.nearestTesla || p.nearestGrocery) ? `
