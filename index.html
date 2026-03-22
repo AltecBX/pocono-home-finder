@@ -21944,42 +21944,47 @@ const HOME_LOCATION = { lat: 40.9556, lng: -73.8627, address: '96 Stockbridge Rd
 
 // ========== COMMUNITY PROFILES ==========
 const COMMUNITY_DATA = {
-  'Arrowhead Lake': { url: 'https://www.arrowheadlakepoa.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Hiking','Ski Slope','Lodge'] },
-  'Lake Naomi': { url: 'https://www.naomiclub.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Gym','Golf','Ski Slope','Playground','Basketball','Marina','Hiking'] },
-  'Timber Trails': { url: 'https://www.timbertrailscommunity.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Hiking'] },
-  'Emerald Lakes': { url: 'https://www.emeraldlakesvillage.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing'] },
-  'Lake Harmony': { url: 'https://www.lakeharmony.org', gated: false, amenities: ['Beach','Boat Launch','Fishing','Motorboats','Jet Ski','Water Skiing'] },
-  'Buck Hill Falls': { url: 'https://www.buckhillfalls.org', gated: true, amenities: ['Pool','Tennis','Golf','Clubhouse','Gym','Hiking','Ski Slope','Waterfall','Spa'] },
-  'Pocono Country Place': { url: 'https://www.poconocountryplace.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Hiking','Lodge'] },
-  'Lake Carobeth': { url: 'https://www.lakecarobeth.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
-  'Locust Lake Village': { url: 'https://www.locustlake.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Hiking','Lodge'] },
-  'Saw Creek Estates': { url: 'https://www.sawcreek.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Gym','Playground','Basketball','Fishing','Skiing','Mini Golf'] },
-  'Indian Mountain Lakes': { url: 'https://www.indianmountainlakes.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Basketball','Hiking'] },
-  'Stillwater Lakes': { url: 'https://www.stillwaterlakes.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
-  'Lake of the Pines': { url: 'https://www.lakeofthepines.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Basketball'] },
-  'Pocono Farms': { url: 'https://www.poconofarms.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Hiking'] },
-  'Pocono Mountain Lake Estates': { url: 'https://www.pmle.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
-  'Towamensing Trails': { url: 'https://www.towamensingtrails.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Skiing','Lodge'] },
-  'Wild Acres': { url: 'https://www.wildacres.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
-  'Monroe Lakes': { url: 'https://www.monroelakes.com', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
-  'Saylors Lake': { url: null, gated: false, amenities: ['Beach','Fishing','Boat Launch'] },
-  'Pocono Springs': { url: 'https://www.poconosprings.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing'] },
-  'Penn Forest Streams': { url: null, gated: true, amenities: ['Beach','Pool','Clubhouse','Fishing','Hiking'] },
-  'Pinecrest Lake': { url: 'https://www.pinecrestlake.org', gated: true, amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Hiking'] },
-  'Lake Wallenpaupack': { url: 'https://www.wallenpaupack.com', gated: false, amenities: ['Boat Launch','Marina','Fishing','Motorboats','Jet Ski','Water Skiing','Sailing','Kayaking'] },
-  'Tunkhannock Lake': { url: null, gated: false, amenities: ['Beach','Fishing','Boat Launch'] },
-  'Brady Lake': { url: null, gated: false, amenities: ['Beach','Fishing'] },
-  'Long Pond': { url: null, gated: false, amenities: ['Beach','Fishing','Boat Launch','Kayaking'] },
-  'Pocono Lake': { url: null, gated: false, amenities: ['Beach','Fishing','Boat Launch'] },
+  'Arrowhead Lake': { url: 'https://arrowheadlakepa.net', gated: true, strOk: true, note: '260-acre main lake + 90-acre second lake. Golf-cart friendly. 24hr gated.', amenities: ['Beach','Pool','Tennis','Clubhouse','Gym','Playground','Basketball','Fishing','Kayaking','Bocce','Volleyball'] },
+  'Lake Naomi': { url: 'https://lakenaomiclub.com', gated: true, strOk: true, note: '277-acre lake. 48,000 sqft rec center with indoor pool. Restaurant & bar. 9-hole golf.', amenities: ['Beach','Pool','Indoor Pool','Tennis','Indoor Tennis','Golf','Clubhouse','Gym','Restaurant','Playground','Sailing','Hiking'] },
+  'Timber Trails': { url: 'https://lakenaomiclub.com/timber-trails-community-association', gated: true, strOk: true, note: '46-acre Tall Timber Lake. 1-acre lots. Optional Lake Naomi Club membership.', amenities: ['Beach','Fishing','Hiking','Golf'] },
+  'Timber Trails Lake': { url: 'https://lakenaomiclub.com/timber-trails-community-association', gated: true, strOk: true, note: '46-acre lake. Gated with 72hr guest registration. Sister community to Pocono Pines.', amenities: ['Beach','Fishing','Hiking','Golf'] },
+  'Emerald Lakes': { url: 'https://elainc.org', gated: false, strOk: true, note: '5 lakes, stocked annually. Electric motors only. Day passes $20.', amenities: ['Beach','Pool','Indoor Pool','Clubhouse','Playground','Fishing','Kayaking','Hiking'] },
+  'Lake Harmony': { url: 'https://www.lakeharmonyestatespoa.com', gated: false, strOk: true, note: '#1 STR community in Poconos. Near Big Boulder & Jack Frost ski. Walkable to restaurants.', amenities: ['Beach','Marina','Fishing','Motorboats','Jet Ski','Water Skiing','Boat Launch'] },
+  'Buck Hill Falls': { url: 'https://www.buckhillfalls.com', gated: true, strOk: false, note: 'Founded 1901. 4,500 acres. 27-hole golf (Donald Ross). 30-day min rental. Exclusive.', amenities: ['Pool','Tennis','Golf','Clubhouse','Gym','Hiking','Pickleball','Ice Skating','Restaurant'] },
+  'Pocono Country Place': { url: 'https://apcppoa.com', gated: true, strOk: true, note: '4,576 homes. 24/7 security. 4 pools including new splash pad. 2 dog parks. Lake Carobeth.', amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Basketball','Fishing','Kayaking','Mini Golf','Dog Park'] },
+  'Lake Carobeth': { url: 'https://apcppoa.com', gated: true, strOk: true, note: 'Lake inside A Pocono Country Place. Swimming, paddle boating, fishing.', amenities: ['Beach','Pool','Tennis','Clubhouse','Playground','Fishing','Kayaking','Dog Park'] },
+  'Locust Lake Village': { url: 'https://locustlakevillage.org', gated: true, strOk: true, note: '4 lakes. Private ski slope (900ft run). 40% full-time residents.', amenities: ['Beach','Tennis','Clubhouse','Basketball','Fishing','Ski Slope','Ice Skating','Bocce'] },
+  'Saw Creek Estates': { url: 'https://sawcreek.org', gated: true, strOk: true, note: '#1 rated Pocono community. Only indoor tennis in the Poconos. Private ski area with chair lift.', amenities: ['Beach','Pool','Indoor Pool','Tennis','Indoor Tennis','Gym','Playground','Basketball','Fishing','Ski Slope','Kayaking'] },
+  'Indian Mountain Lakes': { url: 'https://imlca.nabrnetwork.com', gated: true, strOk: 'partial', note: '5 lakes. 4,600 acres. STR depends on township. 83% owner-occupied.', amenities: ['Beach','Pool','Tennis','Clubhouse','Basketball','Fishing'] },
+  'Stillwater Lakes': { url: 'https://stillwaterestatespoa.com', gated: true, strOk: true, note: '315-acre pristine private lake. No gas boats — electric only. Pickleball courts.', amenities: ['Beach','Tennis','Clubhouse','Playground','Fishing','Basketball','Pickleball','Kayaking'] },
+  'Lake of the Pines': { url: 'https://www.lakeofthepines.net', gated: false, strOk: false, note: 'No STR allowed. Disc golf, campground, rec hall. Modest community.', amenities: ['Pool','Clubhouse','Gym','Fishing','Disc Golf','Volleyball'] },
+  'Pocono Farms': { url: 'https://poconofarms.com', gated: false, strOk: true, note: '18-hole championship golf (Art Wall Jr.). Olympic pool. Lakeside restaurant & pub.', amenities: ['Beach','Pool','Tennis','Pickleball','Golf','Clubhouse','Gym','Restaurant','Basketball','Fishing','Kayaking','Bocce'] },
+  'Pocono Mountain Lake Estates': { url: 'https://www.pmle1234.com', gated: false, strOk: true, note: 'Near Bushkill Falls. Indoor + outdoor pools. Summer rec program. No pets on HOA property.', amenities: ['Beach','Pool','Indoor Pool','Tennis','Clubhouse','Gym','Basketball','Pickleball','Fishing'] },
+  'Towamensing Trails': { url: 'http://towamensing.com', gated: true, strOk: true, note: '190-acre lake. 24/7 security. Low taxes. Near Jim Thorpe. 75% vacation homes.', amenities: ['Beach','Pool','Tennis','Basketball','Volleyball','Playground','Fishing','Kayaking','Restaurant'] },
+  'Wild Acres': { url: 'https://wildacreslakes.org', gated: true, strOk: true, note: '7 non-motorized lakes. Indoor + outdoor pools. Swim team. Pike County.', amenities: ['Beach','Pool','Indoor Pool','Tennis','Clubhouse','Playground','Basketball','Fishing'] },
+  'Monroe Lakes': { url: 'https://monroelake.org', gated: false, strOk: false, note: 'No STR. Small modest community. Managed by NEPA Management.', amenities: ['Beach','Clubhouse','Playground','Basketball','Fishing','Boat Launch'] },
+  'Saylors Lake': { url: null, gated: false, strOk: null, note: 'Small fishing association lake. Bass, trout. Member beach.', amenities: ['Beach','Fishing','Kayaking'] },
+  'Pocono Springs': { url: 'https://poconosprings.org', gated: true, strOk: true, note: '133-acre Crystal Lake. 24hr security. Recreation island. 2,000+ vacant lots. Wayne County.', amenities: ['Pool','Tennis','Basketball','Pickleball','Fishing','Kayaking','Bocce'] },
+  'Penn Forest Streams': { url: 'http://www.pfspoa.org', gated: false, strOk: false, note: '710 lots on 1-acre each. No STR (30-day min). Golf carts & ATVs allowed. Carbon County.', amenities: ['Pool','Tennis','Clubhouse','Basketball'] },
+  'Pinecrest Lake': { url: 'https://www.pinecrestlakeclubrealestate.com', gated: false, strOk: true, note: '77-acre spring-fed lake. 18-hole championship golf. 2,000+ acres of woods. No jet skis.', amenities: ['Beach','Pool','Tennis','Golf','Marina','Clubhouse','Fishing','Kayaking','Hiking'] },
+  'Lake Wallenpaupack': { url: 'https://www.pa.gov/agencies/fishandboat/about-us/pfbc-lakes/lake-wallenpaupack', gated: false, strOk: true, note: 'Largest lake in NE PA. 5,700 acres. 13 miles long. Public. Motorboats, skiing, camping.', amenities: ['Boat Launch','Marina','Fishing','Motorboats','Jet Ski','Water Skiing','Sailing','Kayaking','Camping','Hiking'] },
+  'Pocono Lake Preserve': { url: 'https://www.poconolakepreserve.net', gated: true, strOk: true, note: 'Gated community with 5 serene lakes. Near outlets, Kalahari, ski resorts.', amenities: ['Beach','Pool','Tennis','Basketball','Fishing'] },
+  'Tunkhannock Lake': { url: null, gated: false, strOk: null, amenities: ['Beach','Fishing','Boat Launch'] },
+  'Brady Lake': { url: null, gated: false, strOk: null, amenities: ['Beach','Fishing'] },
+  'Long Pond': { url: null, gated: false, strOk: null, note: 'Village/area name. Main community: Emerald Lakes.', amenities: ['Beach','Fishing','Boat Launch','Kayaking'] },
+  'Pocono Lake': { url: null, gated: false, strOk: null, note: 'Town name. Main communities: Arrowhead Lake, Locust Lake Village.', amenities: ['Beach','Fishing','Boat Launch'] },
 };
 
 const AMENITY_ICONS = {
-  'Beach': 'umbrella', 'Pool': 'waves', 'Tennis': 'trophy', 'Clubhouse': 'home',
-  'Playground': 'smile', 'Basketball': 'circle', 'Fishing': 'anchor', 'Hiking': 'mountain',
-  'Ski Slope': 'mountain-snow', 'Skiing': 'mountain-snow', 'Lodge': 'building', 'Gym': 'dumbbell',
-  'Golf': 'flag', 'Marina': 'ship', 'Boat Launch': 'sailboat', 'Motorboats': 'ship',
-  'Jet Ski': 'zap', 'Water Skiing': 'waves', 'Mini Golf': 'flag', 'Spa': 'heart',
-  'Waterfall': 'droplets', 'Sailing': 'sailboat', 'Kayaking': 'sailboat',
+  'Beach': 'umbrella', 'Pool': 'waves', 'Indoor Pool': 'waves', 'Tennis': 'trophy',
+  'Indoor Tennis': 'trophy', 'Clubhouse': 'home', 'Playground': 'smile', 'Basketball': 'circle',
+  'Fishing': 'anchor', 'Hiking': 'mountain', 'Ski Slope': 'mountain-snow', 'Skiing': 'mountain-snow',
+  'Lodge': 'building', 'Gym': 'dumbbell', 'Golf': 'flag', 'Marina': 'ship',
+  'Boat Launch': 'sailboat', 'Motorboats': 'ship', 'Jet Ski': 'zap', 'Water Skiing': 'waves',
+  'Mini Golf': 'flag', 'Spa': 'heart', 'Waterfall': 'droplets', 'Sailing': 'sailboat',
+  'Kayaking': 'sailboat', 'Restaurant': 'utensils', 'Pickleball': 'trophy',
+  'Dog Park': 'dog', 'Bocce': 'circle', 'Volleyball': 'circle', 'Disc Golf': 'target',
+  'Ice Skating': 'snowflake', 'Camping': 'tent',
 };
 
 // Price vs lake average
@@ -22975,7 +22980,8 @@ function openDetailModal(id) {
               <h4 class="text-xs text-purple-400 uppercase tracking-wider font-medium flex items-center gap-2">
                 <i data-lucide="building-2" class="w-4 h-4"></i> Community Profile
               </h4>
-              ${comm.gated ? '<span class="text-[10px] bg-amber-500/10 text-amber-400 rounded-full px-2 py-0.5">Gated Community</span>' : '<span class="text-[10px] bg-blue-500/10 text-blue-400 rounded-full px-2 py-0.5">Public Lake</span>'}
+              ${comm.gated ? '<span class="text-[10px] bg-amber-500/10 text-amber-400 rounded-full px-2 py-0.5">Gated</span>' : '<span class="text-[10px] bg-blue-500/10 text-blue-400 rounded-full px-2 py-0.5">Public</span>'}
+              ${comm.strOk === true ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5">STR OK</span>' : comm.strOk === false ? '<span class="text-[10px] bg-red-500/10 text-red-400 rounded-full px-2 py-0.5">No STR</span>' : comm.strOk === 'partial' ? '<span class="text-[10px] bg-amber-500/10 text-amber-400 rounded-full px-2 py-0.5">STR Varies</span>' : ''}
             </div>
             ${comm.url ? `
             <a href="${comm.url}" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-4 flex items-center gap-3 hover:bg-white/10 hover:border-purple-500/20 transition group cursor-pointer no-underline mb-4">
@@ -22988,6 +22994,7 @@ function openDetailModal(id) {
               </div>
               <i data-lucide="external-link" class="w-4 h-4 text-slate-600 group-hover:text-purple-400 transition shrink-0"></i>
             </a>` : ''}
+            ${comm.note ? `<p class="text-[11px] text-slate-400 leading-relaxed mb-3">${comm.note}</p>` : ''}
             <div class="flex flex-wrap gap-2">
               ${comm.amenities.map(a => `<span class="inline-flex items-center gap-1.5 text-xs bg-white/5 rounded-full px-3 py-1.5 text-slate-300"><i data-lucide="${AMENITY_ICONS[a] || 'check'}" class="w-3 h-3 text-purple-400"></i>${a}</span>`).join('')}
             </div>
