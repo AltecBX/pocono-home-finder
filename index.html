@@ -56,6 +56,53 @@ tailwind.config = {
     --border-subtle: rgba(148, 163, 184, 0.06);
   }
 
+  /* Light mode overrides */
+  html[data-theme="light"] {
+    --bg-primary: #f0f4f8;
+    --bg-card: #ffffff;
+    --bg-elevated: #e8edf2;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --accent-water: #0284c7;
+    --accent-brand: #0369a1;
+    --border-subtle: rgba(15, 23, 42, 0.08);
+  }
+  html[data-theme="light"] .glass {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: rgba(15, 23, 42, 0.08);
+  }
+  html[data-theme="light"] .glass-strong {
+    background: rgba(240, 244, 248, 0.95);
+  }
+  html[data-theme="light"] .gradient-text {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  html[data-theme="light"] .text-slate-200 { color: #1e293b !important; }
+  html[data-theme="light"] .text-slate-300 { color: #334155 !important; }
+  html[data-theme="light"] .text-slate-400 { color: #475569 !important; }
+  html[data-theme="light"] .text-slate-500 { color: #64748b !important; }
+  html[data-theme="light"] .text-slate-600 { color: #94a3b8 !important; }
+  html[data-theme="light"] .text-white { color: #0f172a !important; }
+  html[data-theme="light"] .text-white\/60 { color: rgba(15, 23, 42, 0.6) !important; }
+  html[data-theme="light"] .text-white\/70 { color: rgba(15, 23, 42, 0.7) !important; }
+  html[data-theme="light"] .bg-white\/5 { background-color: rgba(15, 23, 42, 0.04) !important; }
+  html[data-theme="light"] .bg-white\/10 { background-color: rgba(15, 23, 42, 0.06) !important; }
+  html[data-theme="light"] .border-white\/5 { border-color: rgba(15, 23, 42, 0.06) !important; }
+  html[data-theme="light"] .border-white\/10 { border-color: rgba(15, 23, 42, 0.08) !important; }
+  html[data-theme="light"] header { background: rgba(255, 255, 255, 0.85) !important; border-bottom-color: rgba(15, 23, 42, 0.08) !important; }
+  html[data-theme="light"] .mobile-menu { background: #ffffff !important; }
+  html[data-theme="light"] .modal-overlay { background: rgba(0, 0, 0, 0.3); }
+  html[data-theme="light"] .modal-content { background: #ffffff !important; }
+  html[data-theme="light"] .property-card { background: #ffffff !important; border-color: rgba(15, 23, 42, 0.06) !important; }
+  html[data-theme="light"] .property-card:hover { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(2, 132, 199, 0.12); }
+  html[data-theme="light"] .toggle-switch { background: #cbd5e1; }
+  html[data-theme="light"] .compare-table-wrap { background: #ffffff !important; }
+  html[data-theme="light"] select, html[data-theme="light"] .bg-navy-600 { background: #e2e8f0 !important; color: #334155 !important; border-color: rgba(15, 23, 42, 0.1) !important; }
+  html[data-theme="light"] .mobile-filter-panel { background: #ffffff !important; }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
@@ -16250,6 +16297,13 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <a href="#trips" onclick="closeMobileMenu()" class="text-lg text-slate-200 hover:text-water transition flex items-center gap-3">
       <i data-lucide="map-pin" class="w-5 h-5"></i> Trip Planner
     </a>
+    <!-- Theme Toggle -->
+    <div class="flex items-center justify-between pt-4 mt-4 border-t border-white/10">
+      <span class="text-lg text-slate-200 flex items-center gap-3">
+        <i data-lucide="sun-moon" class="w-5 h-5"></i> Dark Mode
+      </span>
+      <div id="theme-toggle" class="toggle-switch active" onclick="toggleTheme()"></div>
+    </div>
   </nav>
 </div>
 
@@ -17355,6 +17409,33 @@ function applyFilters() {
   updateActiveFilterCount();
 }
 
+function toggleTheme() {
+  const html = document.documentElement;
+  const toggle = document.getElementById('theme-toggle');
+  const isDark = html.getAttribute('data-theme') !== 'light';
+  if (isDark) {
+    html.setAttribute('data-theme', 'light');
+    toggle.classList.remove('active');
+    localStorage.setItem('pocono-theme', 'light');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f0f4f8');
+  } else {
+    html.removeAttribute('data-theme');
+    toggle.classList.add('active');
+    localStorage.setItem('pocono-theme', 'dark');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#090f1a');
+  }
+}
+
+// Load saved theme preference
+function loadTheme() {
+  const saved = localStorage.getItem('pocono-theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('theme-toggle')?.classList.remove('active');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f0f4f8');
+  }
+}
+
 function toggleDogFilter() {
   const toggle = document.getElementById('filter-dog-toggle');
   toggle.classList.toggle('active');
@@ -18154,6 +18235,7 @@ function populateLakeFilters() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadTheme();
   deduplicateProperties();
   enrichSources();
   enrichWithDistances();
