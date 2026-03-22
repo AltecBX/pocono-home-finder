@@ -318,6 +318,7 @@ tailwind.config = {
     flex-shrink: 0;
   }
   .toggle-switch.active { background: var(--accent-water); }
+  .active-layer { border: 1px solid rgba(56,189,248,0.3) !important; color: var(--accent-water) !important; background: rgba(56,189,248,0.08) !important; }
   .toggle-switch::after {
     content: '';
     width: 18px; height: 18px;
@@ -10915,6 +10916,9 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <option value="newest">Newest First</option>
       <option value="reduced">Price Drops First</option>
       <option value="sqft">Largest First</option>
+      <option value="ppsqft">Lowest $/sqft</option>
+      <option value="tesla">Closest to Tesla</option>
+      <option value="grocery">Closest to Grocery</option>
     </select>
     <!-- Dog friendly toggle -->
     <div class="flex items-center gap-2 ml-auto">
@@ -10939,6 +10943,9 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <option value="newest">Newest</option>
       <option value="reduced">Price Drops</option>
       <option value="sqft">Largest</option>
+      <option value="ppsqft">Lowest $/sqft</option>
+      <option value="tesla">Closest Tesla</option>
+      <option value="grocery">Closest Grocery</option>
     </select>
   </div>
 
@@ -11028,6 +11035,9 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
   <div class="flex flex-wrap gap-2 mb-4">
     <button onclick="filterMap('all')" class="map-filter-btn active px-3 py-1.5 rounded-full text-xs glass text-water border-water/30" data-filter="all">All Lakes</button>
     <span id="map-lake-buttons"></span>
+    <span class="w-px h-6 bg-white/10 mx-1"></span>
+    <button id="toggle-tesla-btn" onclick="toggleMapLayer('tesla')" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-red-400 transition flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Tesla</button>
+    <button id="toggle-grocery-btn" onclick="toggleMapLayer('grocery')" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-blue-400 transition flex items-center gap-1"><i data-lucide="shopping-cart" class="w-3 h-3"></i> Stores</button>
   </div>
 
   <div class="glass rounded-2xl overflow-hidden" style="height: 500px;">
@@ -11204,13 +11214,13 @@ function createScoreRing(score, size = 52, strokeWidth = 4, label = '') {
 // ========== CLIENT-SIDE DISTANCE CALCULATION ==========
 
 const NEARBY_TESLA = [
-  { name: 'Tannersville (Pocono Outlets)', lat: 41.0479, lng: -75.3128 },
-  { name: 'Bartonsville (Giant)', lat: 41.0012, lng: -75.2741 },
-  { name: 'Mt Pocono (Wawa)', lat: 41.1202, lng: -75.3761 },
-  { name: 'Columbia NJ (I-80)', lat: 40.9338, lng: -75.1010 },
-  { name: 'Hickory Run (PA Turnpike)', lat: 40.9705, lng: -75.6317 },
-  { name: 'Wilkes-Barre', lat: 41.2378, lng: -75.8446 },
-  { name: 'Moosic (Shoppes at Montage)', lat: 41.3639, lng: -75.6798 },
+  { name: 'Tannersville (Pocono Outlets)', lat: 41.0479, lng: -75.3128, kw: 150, stalls: 8, teslaId: 'tannersvillesupercharger' },
+  { name: 'Bartonsville (Giant)', lat: 41.0012, lng: -75.2741, kw: 250, stalls: 8, teslaId: 'BartonsvillePASupercharger' },
+  { name: 'Mt Pocono (Wawa)', lat: 41.1202, lng: -75.3761, kw: 250, stalls: 8, teslaId: '26703' },
+  { name: 'Columbia NJ (I-80)', lat: 40.9338, lng: -75.1010, kw: 250, stalls: 8, teslaId: 'ColumbiaNJsupercharger' },
+  { name: 'Hickory Run (PA Turnpike)', lat: 40.9705, lng: -75.6317, kw: 250, stalls: 16, teslaId: 'JimThorpePAsupercharger' },
+  { name: 'Wilkes-Barre', lat: 41.2378, lng: -75.8446, kw: 250, stalls: 12, teslaId: '19506' },
+  { name: 'Moosic (Shoppes at Montage)', lat: 41.3639, lng: -75.6798, kw: 150, stalls: 8, teslaId: 'moosicsupercharger' },
 ];
 
 const NEARBY_GROCERY = [
@@ -11228,6 +11238,20 @@ const NEARBY_GROCERY = [
   { name: "BJ's Wholesale", address: 'Stroudsburg', lat: 41.0100, lng: -75.2150 },
   { name: 'Target', address: 'Stroudsburg', lat: 41.0095, lng: -75.2160 },
 ];
+
+function gmapsUrl(lat, lng, name) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=&travelmode=driving`;
+}
+
+function gmapsDirFromProperty(pLat, pLng, dLat, dLng) {
+  return `https://www.google.com/maps/dir/${pLat},${pLng}/${dLat},${dLng}`;
+}
+
+function driveTimeEstimate(miles) {
+  // Pocono mountain roads avg ~30mph
+  const mins = Math.round(miles / 30 * 60);
+  return mins < 60 ? `~${mins} min` : `~${Math.floor(mins/60)}h ${mins%60}m`;
+}
 
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 3959;
@@ -11370,6 +11394,7 @@ function renderPropertyCard(p) {
           <span class="text-2xl font-bold text-white drop-shadow-lg">${formatPrice(p.price)}</span>
           ${p.previousPrice ? `<span class="ml-2 text-sm text-red-300 line-through drop-shadow">${formatPrice(p.previousPrice)}</span>` : ''}
           ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/80 text-white rounded-full px-2 py-0.5 animate-pulse">Price Drop</span>' : ''}
+          ${p.daysOnMarket <= 7 ? '<span class="ml-2 text-xs bg-emerald-500/90 text-white rounded-full px-2 py-0.5">New</span>' : ''}
         </div>
 
         <!-- Favorite button -->
@@ -11410,8 +11435,9 @@ function renderPropertyCard(p) {
 
         <!-- Distance badges -->
         <div class="flex items-center gap-3 mt-2.5 text-[11px] text-slate-500">
-          ${p.nearestTesla ? `<span class="flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-red-400"></i>${p.nearestTesla.miles} mi</span>` : ''}
-          ${p.nearestGrocery ? `<span class="flex items-center gap-1"><i data-lucide="shopping-cart" class="w-3 h-3 text-blue-400"></i>${p.nearestGrocery.miles} mi</span>` : ''}
+          ${p.nearestTesla ? `<a href="${gmapsDirFromProperty(p.latitude, p.longitude, p.nearestTesla.lat, p.nearestTesla.lng)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 hover:text-red-400 transition no-underline text-slate-500" onclick="event.stopPropagation()" title="${p.nearestTesla.name} — ${p.nearestTesla.kw}kW, ${p.nearestTesla.stalls} stalls"><i data-lucide="zap" class="w-3 h-3 text-red-400"></i>${p.nearestTesla.miles} mi</a>` : ''}
+          ${p.nearestGrocery ? `<a href="${gmapsDirFromProperty(p.latitude, p.longitude, p.nearestGrocery.lat, p.nearestGrocery.lng)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 hover:text-blue-400 transition no-underline text-slate-500" onclick="event.stopPropagation()" title="${p.nearestGrocery.name}"><i data-lucide="shopping-cart" class="w-3 h-3 text-blue-400"></i>${p.nearestGrocery.miles} mi</a>` : ''}
+          ${p.sqft > 0 ? `<span class="flex items-center gap-1" title="Price per sqft"><i data-lucide="ruler" class="w-3 h-3 text-amber-400"></i>$${Math.round(p.price / p.sqft)}/ft²</span>` : ''}
         </div>
 
         <!-- Source sites row -->
@@ -11476,6 +11502,9 @@ function getFilteredProperties() {
     case 'newest': filtered.sort((a, b) => a.daysOnMarket - b.daysOnMarket); break;
     case 'reduced': filtered.sort((a, b) => (b.previousPrice ? 1 : 0) - (a.previousPrice ? 1 : 0) || b.overallScore - a.overallScore); break;
     case 'sqft': filtered.sort((a, b) => b.sqft - a.sqft); break;
+    case 'ppsqft': filtered.sort((a, b) => (a.sqft > 0 ? a.price/a.sqft : 99999) - (b.sqft > 0 ? b.price/b.sqft : 99999)); break;
+    case 'tesla': filtered.sort((a, b) => (a.nearestTesla?.miles || 999) - (b.nearestTesla?.miles || 999)); break;
+    case 'grocery': filtered.sort((a, b) => (a.nearestGrocery?.miles || 999) - (b.nearestGrocery?.miles || 999)); break;
     default: filtered.sort((a, b) => b.overallScore - a.overallScore);
   }
   return filtered;
@@ -11807,31 +11836,46 @@ function openDetailModal(id) {
         <div class="p-6 border-b border-white/5">
           <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
             <i data-lucide="map-pin" class="w-4 h-4"></i> Nearby Amenities
+            <span class="text-[10px] text-slate-600 font-normal ml-auto">Click for directions</span>
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             ${p.nearestTesla ? `
-            <div class="glass rounded-xl p-4 flex items-start gap-3">
+            <a href="${gmapsDirFromProperty(p.latitude, p.longitude, p.nearestTesla.lat, p.nearestTesla.lng)}" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-4 flex items-start gap-3 hover:bg-white/10 hover:border-water/20 transition group cursor-pointer no-underline">
               <div class="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
                 <i data-lucide="zap" class="w-5 h-5 text-red-400"></i>
               </div>
-              <div>
-                <div class="text-sm font-medium text-slate-200">Tesla Supercharger</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-slate-200 group-hover:text-red-400 transition flex items-center gap-1.5">Tesla Supercharger <i data-lucide="external-link" class="w-3 h-3 text-slate-600 group-hover:text-red-400"></i></div>
                 <div class="text-xs text-slate-400 mt-0.5">${p.nearestTesla.name}</div>
-                <div class="text-sm font-semibold text-red-400 mt-1">${p.nearestTesla.miles} miles away</div>
+                <div class="flex items-center gap-3 mt-1.5">
+                  <span class="text-sm font-semibold text-red-400">${p.nearestTesla.miles} mi</span>
+                  <span class="text-[10px] text-slate-500">${driveTimeEstimate(p.nearestTesla.miles)}</span>
+                </div>
+                <div class="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500">
+                  ${p.nearestTesla.kw ? `<span class="bg-red-500/10 text-red-400 rounded px-1.5 py-0.5">${p.nearestTesla.kw} kW</span>` : ''}
+                  ${p.nearestTesla.stalls ? `<span class="bg-white/5 rounded px-1.5 py-0.5">${p.nearestTesla.stalls} stalls</span>` : ''}
+                </div>
               </div>
-            </div>` : ''}
+            </a>` : ''}
             ${p.nearestGrocery ? `
-            <div class="glass rounded-xl p-4 flex items-start gap-3">
+            <a href="${gmapsDirFromProperty(p.latitude, p.longitude, p.nearestGrocery.lat, p.nearestGrocery.lng)}" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-4 flex items-start gap-3 hover:bg-white/10 hover:border-water/20 transition group cursor-pointer no-underline">
               <div class="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
                 <i data-lucide="shopping-cart" class="w-5 h-5 text-blue-400"></i>
               </div>
-              <div>
-                <div class="text-sm font-medium text-slate-200">Nearest Grocery</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-slate-200 group-hover:text-blue-400 transition flex items-center gap-1.5">Nearest Grocery <i data-lucide="external-link" class="w-3 h-3 text-slate-600 group-hover:text-blue-400"></i></div>
                 <div class="text-xs text-slate-400 mt-0.5">${p.nearestGrocery.name}</div>
-                <div class="text-sm font-semibold text-blue-400 mt-1">${p.nearestGrocery.miles} miles away</div>
+                <div class="flex items-center gap-3 mt-1.5">
+                  <span class="text-sm font-semibold text-blue-400">${p.nearestGrocery.miles} mi</span>
+                  <span class="text-[10px] text-slate-500">${driveTimeEstimate(p.nearestGrocery.miles)}</span>
+                </div>
               </div>
-            </div>` : ''}
+            </a>` : ''}
           </div>
+          ${p.nearestTesla && p.nearestTesla.teslaId ? `
+          <a href="https://www.tesla.com/findus/location/supercharger/${p.nearestTesla.teslaId}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 mt-3 text-[11px] text-slate-500 hover:text-red-400 transition">
+            <i data-lucide="battery-charging" class="w-3 h-3"></i> Check live availability on Tesla.com <i data-lucide="external-link" class="w-3 h-3"></i>
+          </a>` : ''}
         </div>` : ''}
 
         <!-- View on Source Sites -->
@@ -11867,6 +11911,9 @@ function closeModal() {
 
 // ========== MAP ==========
 
+let teslaLayer = null, groceryLayer = null;
+let showTeslaMarkers = false, showGroceryMarkers = false;
+
 function initMap() {
   map = L.map('leaflet-map', { zoomControl: true }).setView([41.25, -75.38], 9);
 
@@ -11877,6 +11924,50 @@ function initMap() {
   }).addTo(map);
 
   addMarkers(PROPERTIES);
+}
+
+function toggleMapLayer(type) {
+  if (type === 'tesla') {
+    showTeslaMarkers = !showTeslaMarkers;
+    if (showTeslaMarkers) {
+      teslaLayer = L.layerGroup();
+      NEARBY_TESLA.forEach(t => {
+        const m = L.marker([t.lat, t.lng], {
+          icon: L.divIcon({
+            className: 'tesla-map-icon',
+            html: '<div style="width:28px;height:28px;background:#ef4444;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"></polygon></svg></div>',
+            iconSize: [28, 28], iconAnchor: [14, 14]
+          })
+        });
+        m.bindPopup(`<div style="min-width:160px;"><b style="color:#ef4444;">Tesla Supercharger</b><br><span style="font-size:13px;color:#334155;">${t.name}</span><br><span style="font-size:12px;color:#64748b;">${t.kw} kW &bull; ${t.stalls} stalls</span><br><a href="https://www.tesla.com/findus/location/supercharger/${t.teslaId}" target="_blank" style="font-size:11px;color:#0891b2;text-decoration:none;">Check availability &rarr;</a></div>`);
+        teslaLayer.addLayer(m);
+      });
+      teslaLayer.addTo(map);
+    } else if (teslaLayer) {
+      map.removeLayer(teslaLayer); teslaLayer = null;
+    }
+    document.getElementById('toggle-tesla-btn')?.classList.toggle('active-layer', showTeslaMarkers);
+  } else if (type === 'grocery') {
+    showGroceryMarkers = !showGroceryMarkers;
+    if (showGroceryMarkers) {
+      groceryLayer = L.layerGroup();
+      NEARBY_GROCERY.forEach(g => {
+        const m = L.marker([g.lat, g.lng], {
+          icon: L.divIcon({
+            className: 'grocery-map-icon',
+            html: '<div style="width:24px;height:24px;background:#3b82f6;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>',
+            iconSize: [24, 24], iconAnchor: [12, 12]
+          })
+        });
+        m.bindPopup(`<div style="min-width:140px;"><b style="color:#3b82f6;">${g.name}</b><br><span style="font-size:13px;color:#334155;">${g.address}</span></div>`);
+        groceryLayer.addLayer(m);
+      });
+      groceryLayer.addTo(map);
+    } else if (groceryLayer) {
+      map.removeLayer(groceryLayer); groceryLayer = null;
+    }
+    document.getElementById('toggle-grocery-btn')?.classList.toggle('active-layer', showGroceryMarkers);
+  }
 }
 
 function updateMapMarkers() {
