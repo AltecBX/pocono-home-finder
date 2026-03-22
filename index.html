@@ -11365,14 +11365,29 @@ function addToRecentlyViewed(id) {
 // ========== SHARE PROPERTY ==========
 
 function shareProperty(p) {
+  const baseUrl = window.location.origin + window.location.pathname;
+  const propertyUrl = `${baseUrl}?property=${p.id}`;
   const text = `Check out this ${p.bedrooms}bd/${p.bathrooms}ba home at ${p.address}, ${p.city} for ${formatPriceFull(p.price)}! ${p.waterBodyName} — ${waterTypeLabel(p.waterType)}`;
   if (navigator.share) {
-    navigator.share({ title: p.address, text, url: window.location.href });
+    navigator.share({ title: `${p.address} — ${formatPriceFull(p.price)}`, text, url: propertyUrl });
   } else {
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(`${text}\n${propertyUrl}`).then(() => {
       const btn = document.getElementById('share-btn');
-      if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Share'; }, 2000); }
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="check" class="w-5 h-5 text-emerald-400"></i>';
+        lucide.createIcons();
+        setTimeout(() => { btn.innerHTML = orig; lucide.createIcons(); }, 2000);
+      }
     });
+  }
+}
+
+function checkDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const propertyId = parseInt(params.get('property'));
+  if (propertyId && PROPERTIES.find(p => p.id === propertyId)) {
+    setTimeout(() => openDetailModal(propertyId), 500);
   }
 }
 
@@ -11461,22 +11476,70 @@ function renderPropertyCard(p) {
   `;
 }
 
+const PAGE_SIZE = 48;
+let currentPage = 1;
+let currentFilteredProperties = [];
+
 function renderCards(properties) {
   const grid = document.getElementById('property-grid');
   const noResults = document.getElementById('no-results');
   const count = document.getElementById('result-count');
 
+  currentFilteredProperties = properties;
+  currentPage = 1;
+
   if (properties.length === 0) {
     grid.innerHTML = '';
     noResults.classList.remove('hidden');
     count.textContent = '0 results';
+    removeLoadMore();
     return;
   }
 
   noResults.classList.add('hidden');
   count.textContent = properties.length + ' result' + (properties.length !== 1 ? 's' : '');
-  grid.innerHTML = properties.map(renderPropertyCard).join('');
+  const visible = properties.slice(0, PAGE_SIZE);
+  grid.innerHTML = visible.map(renderPropertyCard).join('');
   lucide.createIcons();
+  updateLoadMoreButton();
+}
+
+function loadMoreCards() {
+  currentPage++;
+  const grid = document.getElementById('property-grid');
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const nextBatch = currentFilteredProperties.slice(start, start + PAGE_SIZE);
+  grid.insertAdjacentHTML('beforeend', nextBatch.map(renderPropertyCard).join(''));
+  lucide.createIcons();
+  updateLoadMoreButton();
+}
+
+function updateLoadMoreButton() {
+  removeLoadMore();
+  const total = currentFilteredProperties.length;
+  const shown = Math.min(currentPage * PAGE_SIZE, total);
+  if (shown < total) {
+    const remaining = total - shown;
+    const container = document.getElementById('property-grid').parentElement;
+    container.insertAdjacentHTML('beforeend', `
+      <div id="load-more-container" class="text-center mt-8 mb-4">
+        <div class="text-sm text-slate-500 mb-3">Showing ${shown} of ${total} properties</div>
+        <button onclick="loadMoreCards()" class="px-8 py-3 rounded-xl text-sm font-medium bg-water/10 text-water hover:bg-water/20 transition inline-flex items-center gap-2">
+          <span>Load ${Math.min(PAGE_SIZE, remaining)} more</span>
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </button>
+        <div class="mt-2 w-full bg-white/5 rounded-full h-1.5 max-w-xs mx-auto">
+          <div class="bg-water/40 h-1.5 rounded-full transition-all" style="width: ${Math.round(shown/total*100)}%"></div>
+        </div>
+      </div>
+    `);
+    lucide.createIcons();
+  }
+}
+
+function removeLoadMore() {
+  const existing = document.getElementById('load-more-container');
+  if (existing) existing.remove();
 }
 
 // ========== FILTERING & SORTING ==========
@@ -12212,6 +12275,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Invalidate map size after a beat (Leaflet quirk)
   setTimeout(() => { if (map) map.invalidateSize(); }, 500);
+
+  // Deep link: open property modal if ?property=ID in URL
+  checkDeepLink();
 });
 </script>
 

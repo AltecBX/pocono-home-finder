@@ -81,6 +81,11 @@ const FALLBACK_PHOTOS = [
 const DEFAULT_SOURCES = [
   { name: 'Redfin', url: 'https://www.redfin.com/county/2405/PA/Monroe-County/waterfront' },
   { name: 'Zillow', url: 'https://www.zillow.com/monroe-county-pa/waterfront/' },
+  { name: 'Realtor.com', url: 'https://www.realtor.com/realestateandhomes-search/Monroe-County_PA/type-single-family-home/feature-waterfront' },
+  { name: 'Trulia', url: 'https://www.trulia.com/PA/Monroe_County/' },
+  { name: 'Homes.com', url: 'https://www.homes.com/monroe-county-pa/lakefront/' },
+  { name: 'LakeHomes.com', url: 'https://www.lakehomes.com/pennsylvania/pocono-country-place' },
+  { name: 'FSBO', url: 'https://www.forsalebyowner.com/search/list/monroe-county-pennsylvania' },
 ];
 
 // Tesla Superchargers near the Poconos (within ~50 miles)
