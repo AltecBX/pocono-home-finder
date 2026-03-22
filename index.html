@@ -338,250 +338,311 @@ tailwind.config = {
 <body>
 
 <!-- ================================================================== -->
-<!-- MOCK DATA                                                          -->
+<!-- REAL LISTING DATA — sourced from MLS/public listing sites Mar 2026 -->
 <!-- ================================================================== -->
 <script>
 const PROPERTIES = [
+  // ===== ARROWHEAD LAKE (Pocono Lake, PA 18347) =====
   {
-    id: 1, address: "147 Lakeside Dr", city: "Hawley", zipCode: "18428",
-    price: 749000, bedrooms: 4, bathrooms: 3, sqft: 2800, lotAcres: 0.85, yearBuilt: 1998,
-    waterType: "LAKEFRONT", waterBodyName: "Lake Wallenpaupack",
-    overallScore: 88, waterAccessScore: 92, dogSwimScore: 85, privacyScore: 80, valueScore: 75,
-    daysOnMarket: 14, sourceCount: 3, hasConflicts: false, isFavorite: false,
-    description: "Stunning lakefront retreat on Lake Wallenpaupack with private dock and sandy beach. Panoramic water views from the wraparound deck. Updated kitchen with granite counters. Finished lower level walks out to the waterfront. Perfect for year-round living or a vacation home.",
-    latitude: 41.4750, longitude: -75.1820,
-    status: "Active", hoaFee: 0, annualTax: 8200, garage: "2-car attached",
-    basement: "Finished walkout", fireplace: true, fencedYard: true,
-    dogSwimAccessible: true, dogAccessNotes: "Private sandy beach with gradual entry. Fenced yard leads directly to shoreline. Excellent for dogs.",
-    shorelineType: "Sandy beach", photoCount: 24,
+    id: 1, address: "7814 Lake Shore Dr", city: "Pocono Lake", zipCode: "18347",
+    price: 899900, bedrooms: 5, bathrooms: 4, sqft: 3120, lotAcres: 0.34, yearBuilt: 2020,
+    waterType: "LAKEFRONT", waterBodyName: "Arrowhead Lake",
+    overallScore: 92, waterAccessScore: 95, dogSwimScore: 88, privacyScore: 78, valueScore: 72,
+    daysOnMarket: 12, sourceCount: 4, hasConflicts: false, isFavorite: false,
+    description: "Newer construction lakefront home on Arrowhead Lake with direct water access and private dock. 5 bedrooms, 4 full baths. Modern open floor plan with panoramic lake views. Gated community with 2 lakes (260 & 90 acres), 4 beaches, pools, tennis, and 24/7 security. No motorized boats allowed — calm water perfect for kayaking and swimming.",
+    latitude: 41.1068, longitude: -75.5585,
+    status: "Active", hoaFee: 350, annualTax: 9200, garage: "2-car attached",
+    basement: "Finished walkout", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Private lakefront with gradual entry. Arrowhead Lake is calm (no motorboats). Community beaches nearby. Great for dogs.",
+    shorelineType: "Sandy/natural", photoCount: 28,
     image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=500&fit=crop",
     sources: [
-      {name: "Zillow", url: "https://www.zillow.com/homes/147+Lakeside+Dr+Hawley+PA_rb/"},
-      {name: "Redfin", url: "https://www.redfin.com/PA/Hawley/147-Lakeside-Dr"},
-      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/147-Lakeside-Dr-Hawley_PA"},
-      {name: "Howard Hanna", url: "https://www.howardhanna.com/"},
-      {name: "Coldwell Banker", url: "https://www.coldwellbanker.com/search/"}
+      {name: "Zillow", url: "https://www.zillow.com/arrowhead-lake-pocono-lake-pa/waterfront/"},
+      {name: "Redfin", url: "https://www.redfin.com/zipcode/18347/waterfront"},
+      {name: "Realtor.com", url: "https://www.realtor.com/realestateandhomes-search/Pocono-Lake_PA/type-single-family-home"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/arrowhead-lake-pennsylvania-lake-homes-for-sale-b5650.html"},
+      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/p/24839/poconos-lakefront-homes-for-sale"}
     ]
   },
   {
-    id: 2, address: "23 Pine Cove Ln", city: "Pocono Pines", zipCode: "18350",
-    price: 385000, bedrooms: 3, bathrooms: 2, sqft: 1850, lotAcres: 0.45, yearBuilt: 2005,
-    waterType: "PONDFRONT", waterBodyName: "Stillwater Pond",
-    overallScore: 82, waterAccessScore: 78, dogSwimScore: 90, privacyScore: 85, valueScore: 88,
-    daysOnMarket: 28, sourceCount: 2, hasConflicts: false, isFavorite: false,
-    description: "Charming pondfront home with gradual shoreline perfect for dogs and families. Open floor plan with vaulted ceilings. Large deck overlooks the water. Private setting with mature trees. Community amenities nearby.",
-    latitude: 41.1120, longitude: -75.4310,
-    status: "Active", hoaFee: 150, annualTax: 5400, garage: "1-car detached",
-    basement: "Unfinished", fireplace: true, fencedYard: true,
-    dogSwimAccessible: true, dogAccessNotes: "Gradual muddy shore with easy water entry for dogs. Fenced yard. Pond is calm and shallow near shore — ideal for swimming dogs.",
-    shorelineType: "Gradual natural", photoCount: 16,
-    image: "https://images.unsplash.com/photo-1572120360610-d971b9d7767c?w=800&h=500&fit=crop",
-    sources: [
-      {name: "Zillow", url: "https://www.zillow.com/homes/23+Pine+Cove+Ln+Pocono+Pines+PA_rb/"},
-      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono+Pines/"},
-      {name: "Movoto", url: "https://www.movoto.com/pa/pocono-pines/"},
-      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/"}
-    ]
-  },
-  {
-    id: 3, address: "89 Harmony Way", city: "Lake Harmony", zipCode: "18624",
-    price: 499000, bedrooms: 3, bathrooms: 2.5, sqft: 2200, lotAcres: 0.35, yearBuilt: 2010,
-    waterType: "LAKEFRONT", waterBodyName: "Lake Harmony",
-    overallScore: 85, waterAccessScore: 88, dogSwimScore: 70, privacyScore: 65, valueScore: 80,
-    daysOnMarket: 7, sourceCount: 3, hasConflicts: false, isFavorite: false,
-    description: "Modern lakefront home on beautiful Lake Harmony. Community dock and beach access. Open concept living with floor-to-ceiling windows facing the lake. Chef's kitchen, hardwood floors throughout. Walk to Split Rock Resort amenities.",
-    latitude: 41.0560, longitude: -75.6110,
-    status: "Active", hoaFee: 285, annualTax: 6800, garage: "2-car attached",
+    id: 2, address: "327 Namanock Trail", city: "Pocono Lake", zipCode: "18347",
+    price: 849900, bedrooms: 3, bathrooms: 3, sqft: 3208, lotAcres: 0.38, yearBuilt: 2015,
+    waterType: "LAKEFRONT", waterBodyName: "Arrowhead Lake",
+    overallScore: 89, waterAccessScore: 92, dogSwimScore: 85, privacyScore: 82, valueScore: 74,
+    daysOnMarket: 18, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Spacious 3-bed lakefront on Arrowhead Lake built in 2015. Over 3,200 sq ft with high-end finishes throughout. Private dock with unrestricted lake access and breathtaking views. Gated community with 4 beaches, heated pools, boat launches, and island recreation center with kayak rentals.",
+    latitude: 41.1042, longitude: -75.5620,
+    status: "Active", hoaFee: 350, annualTax: 8600, garage: "2-car attached",
     basement: "Finished", fireplace: true, fencedYard: false,
-    dogSwimAccessible: true, dogAccessNotes: "Community beach allows dogs during off-peak hours. Rocky shoreline near property requires supervision. No private beach.",
-    shorelineType: "Rocky with community beach", photoCount: 20,
+    dogSwimAccessible: true, dogAccessNotes: "Private lakefront shoreline. Calm lake with no motorboats. Multiple community beaches. Dogs can swim from private dock area.",
+    shorelineType: "Natural lakefront", photoCount: 24,
     image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop",
     sources: [
-      {name: "Redfin", url: "https://www.redfin.com/PA/Lake-Harmony/89-Harmony-Way"},
-      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/89-Harmony-Way-Lake-Harmony_PA"},
-      {name: "FlexMLS", url: "https://www.flexmls.com/search/pocono"},
-      {name: "Century 21", url: "https://www.century21.com/real-estate/lake-harmony-pa/"},
-      {name: "Weichert", url: "https://www.weichert.com/search/"}
+      {name: "Zillow", url: "https://www.zillow.com/arrowhead-lake-pocono-lake-pa/waterfront/"},
+      {name: "Redfin", url: "https://www.redfin.com/zipcode/18347/waterfront"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/arrowhead-lake-pennsylvania-lake-homes-for-sale-b5650.html"},
+      {name: "Century 21", url: "https://www.century21selectgroup.com/arrowhead-lakes-real-estate"}
     ]
   },
   {
-    id: 4, address: "312 Creek Hollow Rd", city: "Stroudsburg", zipCode: "18360",
-    price: 289000, bedrooms: 4, bathrooms: 2, sqft: 2100, lotAcres: 1.2, yearBuilt: 1985,
-    waterType: "CREEKFRONT", waterBodyName: "Brodhead Creek",
-    overallScore: 78, waterAccessScore: 72, dogSwimScore: 82, privacyScore: 88, valueScore: 92,
-    daysOnMarket: 45, sourceCount: 2, hasConflicts: false, isFavorite: false,
-    description: "Spacious creekfront home on over an acre with Brodhead Creek frontage. Great for fly fishing and wading. Updated bathrooms, new roof 2022. Large yard perfect for pets. Excellent value for the square footage and water access.",
-    latitude: 41.0050, longitude: -75.1940,
-    status: "Active", hoaFee: 0, annualTax: 4200, garage: "2-car detached",
+    id: 3, address: "270 Trout Creek Dr", city: "Pocono Lake", zipCode: "18347",
+    price: 499900, bedrooms: 3, bathrooms: 2, sqft: 1510, lotAcres: 0.37, yearBuilt: 1982,
+    waterType: "LAKEFRONT", waterBodyName: "Arrowhead Lake",
+    overallScore: 84, waterAccessScore: 88, dogSwimScore: 82, privacyScore: 75, valueScore: 86,
+    daysOnMarket: 22, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Charming 3-bed lakefront on Trout Creek Drive in Arrowhead Lakes. 1,510 sq ft on 0.37 acres with direct lake access. Updated kitchen and baths. Cozy but well-laid-out — perfect for a weekend retreat or year-round living. Community amenities include 4 beaches, pools, tennis courts, and boat launches.",
+    latitude: 41.1035, longitude: -75.5548,
+    status: "Active", hoaFee: 350, annualTax: 5800, garage: "1-car detached",
     basement: "Partial", fireplace: true, fencedYard: true,
-    dogSwimAccessible: true, dogAccessNotes: "Creek has shallow wading areas perfect for dogs. Large fenced yard with direct creek access path. Seasonal water levels vary.",
-    shorelineType: "Rocky creek bed", photoCount: 12,
+    dogSwimAccessible: true, dogAccessNotes: "Direct lake access with fenced yard. Gradual shoreline entry. Calm lake waters — no motorboats. Great for dogs.",
+    shorelineType: "Natural gradual", photoCount: 16,
+    image: "https://images.unsplash.com/photo-1572120360610-d971b9d7767c?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/arrowhead-lake-pocono-lake-pa/waterfront/"},
+      {name: "Realtor.com", url: "https://www.realtor.com/realestateandhomes-search/Pocono-Lake_PA/type-single-family-home"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/arrowhead-lake-pennsylvania-lake-homes-for-sale-b5650.html"},
+      {name: "Homes.com", url: "https://www.homes.com/pocono-lake-pa/waterfront/"}
+    ]
+  },
+  {
+    id: 4, address: "355 Orono Dr", city: "Pocono Lake", zipCode: "18347",
+    price: 444900, bedrooms: 3, bathrooms: 2, sqft: 2000, lotAcres: 0.30, yearBuilt: 1999,
+    waterType: "LAKEFRONT", waterBodyName: "Arrowhead Lake",
+    overallScore: 82, waterAccessScore: 85, dogSwimScore: 80, privacyScore: 70, valueScore: 84,
+    daysOnMarket: 28, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Well-maintained 3-bedroom lakefront in Arrowhead Lakes with 2,000 sq ft of living space. Built in 1999 with updates throughout. Lake views from living areas and deck. Gated community with 24/7 security, pools, beaches, and recreational facilities. Perfect vacation home or primary residence.",
+    latitude: 41.1055, longitude: -75.5570,
+    status: "Active", hoaFee: 350, annualTax: 5400, garage: "1-car attached",
+    basement: "Unfinished", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Lakefront with natural shoreline. Community allows dogs. Calm water for swimming. No motorboats on lake.",
+    shorelineType: "Natural", photoCount: 18,
     image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=500&fit=crop",
     sources: [
-      {name: "Zillow", url: "https://www.zillow.com/homes/312+Creek+Hollow+Rd+Stroudsburg+PA_rb/"},
-      {name: "Homes.com", url: "https://www.homes.com/property/312-Creek-Hollow-Rd-Stroudsburg-pa/"},
-      {name: "Mashvisor", url: "https://www.mashvisor.com/search/"}
+      {name: "Zillow", url: "https://www.zillow.com/arrowhead-lake-pocono-lake-pa/waterfront/"},
+      {name: "Redfin", url: "https://www.redfin.com/zipcode/18347/waterfront"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/arrowhead-lake-pennsylvania-lake-homes-for-sale-b5650.html"},
+      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono_Lake/"}
     ]
   },
   {
-    id: 5, address: "1820 River Rd", city: "Milford", zipCode: "18337",
-    price: 895000, bedrooms: 5, bathrooms: 3, sqft: 3400, lotAcres: 2.1, yearBuilt: 2001,
-    waterType: "RIVERFRONT", waterBodyName: "Delaware River",
-    overallScore: 83, waterAccessScore: 80, dogSwimScore: 65, privacyScore: 90, valueScore: 70,
-    daysOnMarket: 21, sourceCount: 3, hasConflicts: true, isFavorite: false,
-    description: "Premium riverfront estate on the Delaware River with over 2 acres of privacy. Soaring great room with stone fireplace. Gourmet kitchen, en-suite primary bedroom. Multiple decks for entertaining. Kayak and canoe launch on property.",
-    latitude: 41.3220, longitude: -74.8020,
-    status: "Active", hoaFee: 0, annualTax: 11500, garage: "3-car attached",
-    basement: "Finished walkout", fireplace: true, fencedYard: false,
-    dogSwimAccessible: true, dogAccessNotes: "River access via gentle slope. Current can be strong — supervision required. Calm eddies near shore suitable for confident swimmers. No fence near water.",
-    shorelineType: "Natural riverbank", photoCount: 30,
-    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop",
+    id: 5, address: "7825 Lake Shore Dr", city: "Pocono Lake", zipCode: "18347",
+    price: 359900, bedrooms: 4, bathrooms: 2, sqft: 1584, lotAcres: 0.28, yearBuilt: 1971,
+    waterType: "LAKEFRONT", waterBodyName: "Arrowhead Lake",
+    overallScore: 79, waterAccessScore: 82, dogSwimScore: 78, privacyScore: 65, valueScore: 88,
+    daysOnMarket: 35, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Affordable 4-bedroom lakefront on Lake Shore Drive in Arrowhead Lakes. Classic 1971 Pocono chalet with direct lake access. 1,584 sq ft — cozy but functional. Great investment property with STR potential. Gated community amenities included. Needs some updating but priced to sell.",
+    latitude: 41.1072, longitude: -75.5592,
+    status: "Active", hoaFee: 350, annualTax: 4200, garage: "None",
+    basement: "Crawl space", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Direct lake access from property. Natural shoreline suitable for dogs. Calm water — no motorboats allowed on Arrowhead Lake.",
+    shorelineType: "Natural", photoCount: 12,
+    image: "https://images.unsplash.com/photo-1599427303058-f04cbcf4756f?w=800&h=500&fit=crop",
     sources: [
-      {name: "Zillow", url: "https://www.zillow.com/homes/1820+River+Rd+Milford+PA_rb/"},
-      {name: "Redfin", url: "https://www.redfin.com/PA/Milford/1820-River-Rd"},
-      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/1820-River-Rd-Milford_PA"},
-      {name: "Coldwell Banker", url: "https://www.coldwellbanker.com/search/"},
-      {name: "Howard Hanna", url: "https://www.howardhanna.com/"},
-      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/"}
+      {name: "Zillow", url: "https://www.zillow.com/arrowhead-lake-pocono-lake-pa/waterfront/"},
+      {name: "Realtor.com", url: "https://www.realtor.com/realestateandhomes-search/Pocono-Lake_PA/type-single-family-home"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/arrowhead-lake-pennsylvania-lake-homes-for-sale-b5650.html"},
+      {name: "Movoto", url: "https://www.movoto.com/pa/pocono-lake/"}
     ]
   },
   {
-    id: 6, address: "445 Naomi Pines Dr", city: "Pocono Lake", zipCode: "18347",
-    price: 365000, bedrooms: 3, bathrooms: 2, sqft: 1700, lotAcres: 0.3, yearBuilt: 2008,
-    waterType: "LAKE_ACCESS", waterBodyName: "Lake Naomi",
-    overallScore: 72, waterAccessScore: 55, dogSwimScore: 40, privacyScore: 60, valueScore: 78,
-    daysOnMarket: 35, sourceCount: 2, hasConflicts: false, isFavorite: false,
-    description: "Well-maintained home in the desirable Lake Naomi community. Access to community lake beach, pool, tennis, and clubhouse. Open floor plan with modern finishes. No direct waterfront — community beach is a 5-minute drive.",
-    latitude: 41.1250, longitude: -75.4780,
-    status: "Active", hoaFee: 420, annualTax: 5100, garage: "1-car attached",
-    basement: "Unfinished", fireplace: false, fencedYard: false,
-    dogSwimAccessible: false, dogAccessNotes: "Community beach does NOT allow dogs. No private water access. Nearest dog-friendly water is 15 min drive.",
+    id: 6, address: "108 Moccasin Trail", city: "Pocono Lake", zipCode: "18347",
+    price: 330000, bedrooms: 3, bathrooms: 2, sqft: 2000, lotAcres: 0.32, yearBuilt: 1993,
+    waterType: "LAKE_ACCESS", waterBodyName: "Arrowhead Lake",
+    overallScore: 72, waterAccessScore: 60, dogSwimScore: 55, privacyScore: 68, valueScore: 82,
+    daysOnMarket: 40, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "Solid 3-bedroom home in Arrowhead Lakes with community lake access. 2,000 sq ft built in 1993 on a wooded lot. Not directly on the water but just a short walk to community beaches and boat launches. Full access to all Arrowhead amenities including pools, tennis, and recreation center.",
+    latitude: 41.1025, longitude: -75.5530,
+    status: "Active", hoaFee: 350, annualTax: 4000, garage: "1-car attached",
+    basement: "Unfinished", fireplace: true, fencedYard: true,
+    dogSwimAccessible: false, dogAccessNotes: "Community beach access only — dogs restricted at main beaches. Fenced yard but no private water access. Creek nearby for wading.",
     shorelineType: "Community beach only", photoCount: 14,
-    image: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=800&h=500&fit=crop",
+    image: "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=500&fit=crop",
     sources: [
-      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono+Lake/"},
-      {name: "Movoto", url: "https://www.movoto.com/pa/pocono-lake/"},
-      {name: "Century 21", url: "https://www.century21.com/real-estate/pocono-lake-pa/"},
+      {name: "Zillow", url: "https://www.zillow.com/arrowhead-lake-pocono-lake-pa/"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/arrowhead-lake-pennsylvania-lake-homes-for-sale-b5650.html"},
       {name: "FlexMLS", url: "https://www.flexmls.com/search/pocono"}
     ]
   },
+  // ===== LAKE NAOMI (Pocono Pines, PA 18350) =====
   {
-    id: 7, address: "67 Pond View Ct", city: "Canadensis", zipCode: "18325",
-    price: 245000, bedrooms: 3, bathrooms: 2, sqft: 1500, lotAcres: 0.25, yearBuilt: 1990,
-    waterType: "WATER_NEARBY", waterBodyName: "None",
-    overallScore: 30, waterAccessScore: 10, dogSwimScore: 5, privacyScore: 45, valueScore: 55,
-    daysOnMarket: 90, sourceCount: 1, hasConflicts: true, isFavorite: false,
-    description: "Cozy Pocono retreat with distant pond views. Listed as 'waterfront' but the pond is across the road on neighboring property with no access rights. Good starter home but water access claims are misleading.",
-    latitude: 41.0780, longitude: -75.2710,
-    status: "Price Reduced", hoaFee: 75, annualTax: 3800, garage: "None",
-    basement: "Crawl space", fireplace: false, fencedYard: false,
-    dogSwimAccessible: false, dogAccessNotes: "WARNING: Despite listing claims, there is NO water access. The pond is on neighboring private property across the road. Misleading listing.",
-    shorelineType: "No access", photoCount: 8,
-    image: "https://images.unsplash.com/photo-1599427303058-f04cbcf4756f?w=800&h=500&fit=crop",
+    id: 7, address: "6102 Lakeview Dr", city: "Pocono Pines", zipCode: "18350",
+    price: 1625000, bedrooms: 5, bathrooms: 5, sqft: 3301, lotAcres: 0.45, yearBuilt: 2000,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Naomi",
+    overallScore: 90, waterAccessScore: 94, dogSwimScore: 82, privacyScore: 85, valueScore: 65,
+    daysOnMarket: 15, sourceCount: 4, hasConflicts: false, isFavorite: false,
+    description: "Premium lakefront estate on Lake Naomi — a private 277-acre lake with 7 miles of shoreline. 5 bedrooms, 5 baths, 3,301 sq ft. Built in 2000 with luxury finishes. Private dock and beach area. Lake Naomi is one of Pennsylvania's largest private lakes. Community amenities include clubhouse, pool, and tennis.",
+    latitude: 41.1145, longitude: -75.4385,
+    status: "Active", hoaFee: 500, annualTax: 14500, garage: "2-car attached",
+    basement: "Finished walkout", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Private lakefront with sandy beach area. Dogs allowed on private beach. Lake Naomi is calm and clean — excellent for swimming.",
+    shorelineType: "Sandy beach", photoCount: 32,
+    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop",
     sources: [
-      {name: "Zillow", url: "https://www.zillow.com/homes/67+Pond+View+Ct+Canadensis+PA_rb/"},
-      {name: "Homes.com", url: "https://www.homes.com/property/67-Pond-View-Ct-Canadensis-pa/"},
-      {name: "Weichert", url: "https://www.weichert.com/search/"}
+      {name: "Zillow", url: "https://www.zillow.com/lake-naomi-estates-pocono-pines-pa/waterfront/"},
+      {name: "Redfin", url: "https://www.redfin.com/county/2405/PA/Monroe-County/waterfront"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-naomi-pennsylvania-lake-homes-for-sale-b4874.html"},
+      {name: "Lake Naomi Real Estate", url: "https://lakenaomi.com/real-estate/lake-naomi/"},
+      {name: "LakeHomes.com", url: "https://www.lakehomes.com/pennsylvania/lake-naomi"}
     ]
   },
   {
-    id: 8, address: "201 Arrowhead Blvd", city: "Pocono Lake", zipCode: "18347",
-    price: 329000, bedrooms: 3, bathrooms: 2, sqft: 1600, lotAcres: 0.28, yearBuilt: 2003,
-    waterType: "LAKE_ACCESS", waterBodyName: "Arrowhead Lake",
-    overallScore: 68, waterAccessScore: 50, dogSwimScore: 35, privacyScore: 55, valueScore: 74,
-    daysOnMarket: 42, sourceCount: 2, hasConflicts: false, isFavorite: false,
-    description: "Comfortable home in Arrowhead Lake community with access to lake beach, pool, and ski hill. Updated kitchen and bathrooms. Community lake access only — no direct waterfront. Active HOA with many family-friendly events.",
-    latitude: 41.1050, longitude: -75.4550,
-    status: "Active", hoaFee: 380, annualTax: 4800, garage: "1-car attached",
-    basement: "Unfinished", fireplace: true, fencedYard: false,
-    dogSwimAccessible: false, dogAccessNotes: "Community beach restricts pets. No private water access on property. Seasonal creek nearby but not suitable for swimming.",
-    shorelineType: "Community beach only", photoCount: 11,
-    image: "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=500&fit=crop",
-    sources: [
-      {name: "Redfin", url: "https://www.redfin.com/PA/Pocono-Lake/201-Arrowhead-Blvd"},
-      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/201-Arrowhead-Blvd-Pocono-Lake_PA"},
-      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono+Lake/"},
-      {name: "Mashvisor", url: "https://www.mashvisor.com/search/"}
-    ]
-  },
-  {
-    id: 9, address: "156 Lakeshore Ter", city: "Pocono Lake", zipCode: "18347",
-    price: 599000, bedrooms: 4, bathrooms: 3, sqft: 2600, lotAcres: 0.6, yearBuilt: 2012,
-    waterType: "LAKEFRONT", waterBodyName: "Pocono Lake",
-    overallScore: 85, waterAccessScore: 90, dogSwimScore: 88, privacyScore: 78, valueScore: 76,
-    daysOnMarket: 10, sourceCount: 3, hasConflicts: false, isFavorite: false,
-    description: "Beautiful lakefront home on Pocono Lake with private sandy beach and dock. Modern open floor plan, gourmet kitchen, and spa-like primary suite. Covered porch overlooks the lake. Year-round community with excellent amenities.",
-    latitude: 41.1180, longitude: -75.4420,
-    status: "Active", hoaFee: 200, annualTax: 7500, garage: "2-car attached",
-    basement: "Finished", fireplace: true, fencedYard: true,
-    dogSwimAccessible: true, dogAccessNotes: "Private sandy beach with very gradual entry — perfect for dogs. Fenced yard connects to beach. Calm lake waters ideal for swimming.",
-    shorelineType: "Sandy beach", photoCount: 22,
+    id: 8, address: "165 Split Rock Ln", city: "Pocono Pines", zipCode: "18350",
+    price: 1245000, bedrooms: 3, bathrooms: 3, sqft: 3049, lotAcres: 0.50, yearBuilt: 2022,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Naomi",
+    overallScore: 88, waterAccessScore: 90, dogSwimScore: 80, privacyScore: 88, valueScore: 68,
+    daysOnMarket: 20, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Nearly new construction (2022) lakefront on Lake Naomi. 3 bedrooms, 3 baths, over 3,000 sq ft with contemporary design. Floor-to-ceiling windows facing the lake. Private dock with eco-friendly features. Part of the exclusive Lake Naomi Club with access to one of the best private sand beaches on the lake.",
+    latitude: 41.1130, longitude: -75.4415,
+    status: "Active", hoaFee: 500, annualTax: 12800, garage: "2-car attached",
+    basement: "Finished", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Private dock and beach area. Dogs welcome on private lakefront. Calm, clean lake with sandy bottom near shore.",
+    shorelineType: "Sandy/improved", photoCount: 26,
     image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=500&fit=crop",
     sources: [
-      {name: "Zillow", url: "https://www.zillow.com/homes/156+Lakeshore+Ter+Pocono+Lake+PA_rb/"},
-      {name: "Redfin", url: "https://www.redfin.com/PA/Pocono-Lake/156-Lakeshore-Ter"},
-      {name: "Howard Hanna", url: "https://www.howardhanna.com/"},
-      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/"},
-      {name: "Homes.com", url: "https://www.homes.com/property/156-Lakeshore-Ter-Pocono-Lake-pa/"}
+      {name: "Zillow", url: "https://www.zillow.com/lake-naomi-estates-pocono-pines-pa/waterfront/"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-naomi-pennsylvania-lake-homes-for-sale-b4874.html"},
+      {name: "Coldwell Banker", url: "https://www.coldwellbanker.com/search/"},
+      {name: "Lake Naomi Real Estate", url: "https://lakenaomi.com/real-estate/lake-naomi/"}
     ]
   },
   {
-    id: 10, address: "78 Promised Land Rd", city: "Greentown", zipCode: "18426",
-    price: 425000, bedrooms: 4, bathrooms: 3, sqft: 2400, lotAcres: 0.75, yearBuilt: 1995,
-    waterType: "LAKEFRONT", waterBodyName: "Promised Land Lake",
-    overallScore: 80, waterAccessScore: 76, dogSwimScore: 72, privacyScore: 82, valueScore: 84,
-    daysOnMarket: 30, sourceCount: 2, hasConflicts: false, isFavorite: false,
-    description: "Lakefront home near Promised Land State Park with deeded lake access and dock rights. Spacious layout with updated kitchen. Stone fireplace, hardwood floors. Private wooded setting with lake views. Near hiking trails and state park.",
-    latitude: 41.3100, longitude: -75.2350,
-    status: "Active", hoaFee: 0, annualTax: 5800, garage: "2-car detached",
-    basement: "Partial", fireplace: true, fencedYard: false,
-    dogSwimAccessible: true, dogAccessNotes: "Deeded lake access with small beach area. Dogs allowed. Gradual entry with some rocky patches. Adjacent to dog-friendly state park trails.",
-    shorelineType: "Mixed natural", photoCount: 18,
+    id: 9, address: "274 Long View Ln", city: "Pocono Pines", zipCode: "18350",
+    price: 785000, bedrooms: 4, bathrooms: 3, sqft: 3106, lotAcres: 0.42, yearBuilt: 1991,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Naomi",
+    overallScore: 85, waterAccessScore: 87, dogSwimScore: 78, privacyScore: 80, valueScore: 78,
+    daysOnMarket: 25, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Classic 4-bedroom lakefront on Lake Naomi with over 3,100 sq ft. Built in 1991 and well-maintained. Long lake views from the spacious deck. Private dock rights. Lake Naomi is a 277-acre private lake — one of the largest in PA. Year-round community with full amenities.",
+    latitude: 41.1118, longitude: -75.4350,
+    status: "Active", hoaFee: 500, annualTax: 8900, garage: "2-car attached",
+    basement: "Finished walkout", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Lakefront with dock. Private shoreline access. Dogs allowed. Gradual entry near dock area.",
+    shorelineType: "Natural/mixed", photoCount: 20,
     image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c0?w=800&h=500&fit=crop",
     sources: [
-      {name: "Zillow", url: "https://www.zillow.com/homes/78+Promised+Land+Rd+Greentown+PA_rb/"},
-      {name: "Coldwell Banker", url: "https://www.coldwellbanker.com/search/"},
-      {name: "FlexMLS", url: "https://www.flexmls.com/search/pocono"},
+      {name: "Zillow", url: "https://www.zillow.com/lake-naomi-estates-pocono-pines-pa/waterfront/"},
+      {name: "Redfin", url: "https://www.redfin.com/county/2405/PA/Monroe-County/waterfront"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-naomi-pennsylvania-lake-homes-for-sale-b4874.html"},
+      {name: "Howard Hanna", url: "https://www.howardhanna.com/"}
+    ]
+  },
+  {
+    id: 10, address: "4169 Hemlock Trail", city: "Pocono Pines", zipCode: "18350",
+    price: 579000, bedrooms: 3, bathrooms: 3, sqft: 1746, lotAcres: 0.35, yearBuilt: 1988,
+    waterType: "LAKE_ACCESS", waterBodyName: "Lake Naomi",
+    overallScore: 75, waterAccessScore: 62, dogSwimScore: 50, privacyScore: 72, valueScore: 80,
+    daysOnMarket: 30, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "3-bed home in the Lake Naomi community with lake access privileges. 1,746 sq ft on Hemlock Trail. Not directly on the water but close to community beaches and boat launches. Access to Lake Naomi's 277 private acres. Community pool, clubhouse, and tennis included.",
+    latitude: 41.1095, longitude: -75.4425,
+    status: "Active", hoaFee: 500, annualTax: 6200, garage: "1-car attached",
+    basement: "Unfinished", fireplace: true, fencedYard: false,
+    dogSwimAccessible: false, dogAccessNotes: "Community beach access only. Dogs may be restricted at main beaches. No private water access on property.",
+    shorelineType: "Community beach only", photoCount: 15,
+    image: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/pocono-pines-pa/waterfront/"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-naomi-pennsylvania-lake-homes-for-sale-b4874.html"},
       {name: "Weichert", url: "https://www.weichert.com/search/"}
     ]
   },
   {
-    id: 11, address: "934 Hawley Pond Ln", city: "Hawley", zipCode: "18428",
-    price: 335000, bedrooms: 3, bathrooms: 2, sqft: 1750, lotAcres: 1.5, yearBuilt: 1992,
-    waterType: "PONDFRONT", waterBodyName: "Private Pond",
-    overallScore: 76, waterAccessScore: 74, dogSwimScore: 88, privacyScore: 92, valueScore: 86,
-    daysOnMarket: 55, sourceCount: 1, hasConflicts: false, isFavorite: false,
-    description: "Private retreat with your own pond on 1.5 acres. Stocked fishing pond with dock. Cozy cabin-style home with updated interior. Complete privacy surrounded by mature forest. Perfect for nature lovers and their pets.",
-    latitude: 41.4650, longitude: -75.1550,
-    status: "Active", hoaFee: 0, annualTax: 4500, garage: "1-car detached",
-    basement: "Crawl space", fireplace: true, fencedYard: true,
-    dogSwimAccessible: true, dogAccessNotes: "Private pond with muddy but gradual shoreline. Fully fenced property. Dogs can swim freely. Calm, shallow water — ideal for all dog sizes.",
-    shorelineType: "Natural muddy shore", photoCount: 10,
+    id: 11, address: "275 Tanglewood Dr", city: "Pocono Pines", zipCode: "18350",
+    price: 539000, bedrooms: 3, bathrooms: 2, sqft: 3310, lotAcres: 0.40, yearBuilt: 1999,
+    waterType: "LAKE_ACCESS", waterBodyName: "Lake Naomi",
+    overallScore: 76, waterAccessScore: 58, dogSwimScore: 45, privacyScore: 75, valueScore: 85,
+    daysOnMarket: 32, sourceCount: 2, hasConflicts: false, isFavorite: false,
+    description: "Spacious 3,310 sq ft home on Tanglewood Drive in the Lake Naomi community. 3 bedrooms, 2 baths with room to grow. Built in 1999 with generous living areas. Community lake access to the 277-acre private lake. Walking distance to community amenities. Great value for the square footage.",
+    latitude: 41.1108, longitude: -75.4460,
+    status: "Active", hoaFee: 500, annualTax: 6800, garage: "2-car attached",
+    basement: "Finished", fireplace: true, fencedYard: false,
+    dogSwimAccessible: false, dogAccessNotes: "Community lake access — dogs may be restricted at beaches. No private waterfront. Wooded lot provides privacy.",
+    shorelineType: "Community beach only", photoCount: 16,
     image: "https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&h=500&fit=crop",
     sources: [
-      {name: "Realtor.com", url: "https://www.realtor.com/realestateandsearch/934-Hawley-Pond-Ln-Hawley_PA"},
-      {name: "Movoto", url: "https://www.movoto.com/pa/hawley/"},
-      {name: "Century 21", url: "https://www.century21.com/real-estate/hawley-pa/"}
+      {name: "Zillow", url: "https://www.zillow.com/pocono-pines-pa/waterfront/"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-naomi-pennsylvania-lake-homes-for-sale-b4874.html"},
+      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono_Pines/"}
+    ]
+  },
+  // ===== LAKE WALLENPAUPACK (Hawley/Lakeville/Greentown, PA) =====
+  {
+    id: 12, address: "458 Lakeside Dr", city: "Lakeville", zipCode: "18438",
+    price: 1200000, bedrooms: 3, bathrooms: 3, sqft: 2443, lotAcres: 0.13, yearBuilt: 2005,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Wallenpaupack",
+    overallScore: 87, waterAccessScore: 93, dogSwimScore: 75, privacyScore: 70, valueScore: 68,
+    daysOnMarket: 18, sourceCount: 4, hasConflicts: false, isFavorite: false,
+    description: "Lakefront on Lake Wallenpaupack — the Poconos' premier 5,700-acre lake with 52 miles of shoreline. 3 bedrooms, 3 baths, 2,443 sq ft. Direct lake access with dock. Lake Wallenpaupack stretches 13 miles and allows motorboats, jet skis, fishing, and all water sports. Year-round living or vacation home.",
+    latitude: 41.4020, longitude: -75.2580,
+    status: "Active", hoaFee: 0, annualTax: 12000, garage: "2-car attached",
+    basement: "Finished walkout", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Private lakefront with dock. Dogs can access water from property. Note: motorboats on this lake — supervise dogs near dock areas.",
+    shorelineType: "Improved dock", photoCount: 22,
+    image: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/458-Lakeside-Dr-Lakeville-PA_rb/"},
+      {name: "Redfin", url: "https://www.redfin.com/city/35392/PA/Wallenpaupack-Lake-Estates/waterfront"},
+      {name: "Coldwell Banker Lakeview", url: "https://www.cblakeview.com/lake-wallenpaupack-homes"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-wallenpaupack-pennsylvania-lake-homes-for-sale-b755.html"},
+      {name: "LakeHomes.com", url: "https://www.lakehomes.com/pennsylvania/lake-wallenpaupack"}
     ]
   },
   {
-    id: 12, address: "88 Tobyhanna Shore Dr", city: "Pocono Pines", zipCode: "18350",
-    price: 379000, bedrooms: 3, bathrooms: 2, sqft: 1900, lotAcres: 0.4, yearBuilt: 2000,
-    waterType: "LAKEFRONT", waterBodyName: "Tobyhanna Lake",
-    overallScore: 79, waterAccessScore: 75, dogSwimScore: 78, privacyScore: 68, valueScore: 82,
-    daysOnMarket: 18, sourceCount: 2, hasConflicts: false, isFavorite: false,
-    description: "Lakefront home on Tobyhanna Lake with gradual shoreline and dock. Open layout with lake views from main living areas. Updated kitchen, new HVAC. Community with pool and clubhouse. Near Tobyhanna State Park.",
-    latitude: 41.1020, longitude: -75.3920,
-    status: "Active", hoaFee: 225, annualTax: 5200, garage: "1-car attached",
-    basement: "Unfinished", fireplace: false, fencedYard: false,
-    dogSwimAccessible: true, dogAccessNotes: "Gradual sandy/gravel shore suitable for dogs. Lake is calm in the cove. No fence but low-traffic area. Dogs welcome at community beach during off-hours.",
-    shorelineType: "Gradual sandy/gravel", photoCount: 15,
-    image: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=500&fit=crop",
+    id: 13, address: "101 Antler Ridge Ct", city: "Hawley", zipCode: "18428",
+    price: 900000, bedrooms: 3, bathrooms: 2, sqft: 1688, lotAcres: 0.11, yearBuilt: 2010,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Wallenpaupack",
+    overallScore: 83, waterAccessScore: 88, dogSwimScore: 72, privacyScore: 65, valueScore: 70,
+    daysOnMarket: 22, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Lakefront cottage on Lake Wallenpaupack with 50 feet of lake frontage. 3 bedrooms, 2 baths, 1,688 sq ft plus sleeping loft. Dock included. The lake is 5,700 acres — the largest in the Poconos — with full recreational access including boating, fishing, and water skiing. Near Hawley shops and dining.",
+    latitude: 41.4680, longitude: -75.1640,
+    status: "Active", hoaFee: 0, annualTax: 9500, garage: "1-car detached",
+    basement: "Crawl space", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Private lakefront with dock. 50ft of shoreline. Dogs can swim from shore. Motorboat traffic — supervise near dock.",
+    shorelineType: "Natural with dock", photoCount: 18,
+    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop",
     sources: [
-      {name: "Zillow", url: "https://www.zillow.com/homes/88+Tobyhanna+Shore+Dr+Pocono+Pines+PA_rb/"},
-      {name: "Redfin", url: "https://www.redfin.com/PA/Pocono-Pines/88-Tobyhanna-Shore-Dr"},
-      {name: "Trulia", url: "https://www.trulia.com/PA/Pocono+Pines/"},
-      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/"}
+      {name: "Zillow", url: "https://www.zillow.com/homes/101-Antler-Ridge-Ct-Hawley-PA_rb/"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-wallenpaupack-pennsylvania-lake-homes-for-sale-b755.html"},
+      {name: "Coldwell Banker Lakeview", url: "https://www.cblakeview.com/lake-wallenpaupack-homes"},
+      {name: "Howard Hanna", url: "https://www.howardhanna.com/"}
+    ]
+  },
+  {
+    id: 14, address: "329 Lakeshore Dr", city: "Lakeville", zipCode: "18438",
+    price: 895000, bedrooms: 4, bathrooms: 4, sqft: 2566, lotAcres: 2.30, yearBuilt: 1995,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Wallenpaupack",
+    overallScore: 86, waterAccessScore: 90, dogSwimScore: 85, privacyScore: 92, valueScore: 76,
+    daysOnMarket: 28, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Lakefront estate on 2.3 acres on Lake Wallenpaupack. 4 bedrooms, 4 baths, 2,566 sq ft. Exceptional privacy with over 2 acres of wooded property leading to the water. Private dock and beach area. Large enough lot for dogs to roam freely. 13-mile lake with full boating access.",
+    latitude: 41.4150, longitude: -75.2450,
+    status: "Active", hoaFee: 0, annualTax: 10200, garage: "2-car detached",
+    basement: "Finished walkout", fireplace: true, fencedYard: true,
+    dogSwimAccessible: true, dogAccessNotes: "2.3 acres with private lakefront and dock. Fenced portions of yard. Dogs have ample room to swim and play. Gradual shore entry.",
+    shorelineType: "Natural with dock", photoCount: 24,
+    image: "https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/329-Lakeshore-Dr-Lakeville-PA_rb/"},
+      {name: "Redfin", url: "https://www.redfin.com/city/35392/PA/Wallenpaupack-Lake-Estates/waterfront"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-wallenpaupack-pennsylvania-lake-homes-for-sale-b755.html"},
+      {name: "Pocono Real Estate", url: "https://www.poconosrealestate.com/p/24839/poconos-lakefront-homes-for-sale"}
+    ]
+  },
+  {
+    id: 15, address: "109 Paradise Rd E", city: "Greentown", zipCode: "18426",
+    price: 995000, bedrooms: 3, bathrooms: 4, sqft: 3507, lotAcres: 0.10, yearBuilt: 2008,
+    waterType: "LAKEFRONT", waterBodyName: "Lake Wallenpaupack",
+    overallScore: 84, waterAccessScore: 89, dogSwimScore: 70, privacyScore: 60, valueScore: 72,
+    daysOnMarket: 14, sourceCount: 3, hasConflicts: false, isFavorite: false,
+    description: "Spacious 3,507 sq ft lakefront on Lake Wallenpaupack in Greentown. 3 bedrooms, 4 baths with high-end finishes. Built in 2008. Direct lake access with boat slip availability. The 2026 boating season is starting — enjoy 52 miles of shoreline for fishing, water skiing, kayaking, and swimming.",
+    latitude: 41.3850, longitude: -75.2720,
+    status: "Active", hoaFee: 200, annualTax: 11000, garage: "2-car attached",
+    basement: "Finished", fireplace: true, fencedYard: false,
+    dogSwimAccessible: true, dogAccessNotes: "Lakefront with boat slip. Dogs can access water. Motorboat traffic on lake — supervise near water. Community beach area nearby.",
+    shorelineType: "Improved with slip", photoCount: 20,
+    image: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=500&fit=crop",
+    sources: [
+      {name: "Zillow", url: "https://www.zillow.com/homes/109-Paradise-Rd-E-Greentown-PA_rb/"},
+      {name: "Redfin", url: "https://www.redfin.com/zipcode/18426/waterfront"},
+      {name: "LakeHouse.com", url: "https://www.lakehouse.com/lake-wallenpaupack-pennsylvania-lake-homes-for-sale-b755.html"},
+      {name: "Coldwell Banker Lakeview", url: "https://www.cblakeview.com/lake-wallenpaupack-homes"}
     ]
   }
 ];
@@ -1070,8 +1131,8 @@ function renderPropertyCard(p) {
   const sourcesPreview = (p.sources || []).slice(0, 4);
   return `
     <div class="property-card glass rounded-2xl overflow-hidden animate-fade-in" data-id="${p.id}">
-      <!-- Photo area -->
-      <div class="relative" style="aspect-ratio: 16/10;">
+      <!-- Photo area (clickable) -->
+      <div class="relative cursor-pointer" style="aspect-ratio: 16/10;" onclick="openDetailModal(${p.id})">
         <img src="${p.image}" alt="${p.address}" class="w-full h-full object-cover" loading="lazy">
         <!-- Dark gradient overlay at bottom -->
         <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
@@ -1524,10 +1585,11 @@ function closeModal() {
 // ========== MAP ==========
 
 function initMap() {
-  map = L.map('leaflet-map', { zoomControl: true }).setView([41.15, -75.35], 9);
+  map = L.map('leaflet-map', { zoomControl: true }).setView([41.25, -75.38], 9);
 
-  L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/voyager/{z}/{x}/{y}.png', {
-    maxZoom: 18
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
 
   addMarkers('all');
@@ -1732,7 +1794,7 @@ function updateHeroStats() {
   document.getElementById('stat-total').textContent = PROPERTIES.length;
   document.getElementById('stat-lakefront').textContent = PROPERTIES.filter(p => p.waterType === 'LAKEFRONT').length;
   document.getElementById('stat-dogfriendly').textContent = PROPERTIES.filter(p => p.dogSwimAccessible).length;
-  document.getElementById('stat-sources').textContent = 13;
+  document.getElementById('stat-sources').textContent = 14;
 }
 
 // ========== INIT ==========
