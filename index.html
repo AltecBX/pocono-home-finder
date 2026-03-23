@@ -21443,13 +21443,16 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       Every lake property in Monroe County, PA in one place. Real MLS data, updated daily, so we never miss a listing.
     </p>
 
-    <!-- Decorative search bar -->
+    <!-- Smart Search Bar -->
     <div class="mt-10 animate-fade-in-up stagger-2">
-      <a href="#search" class="inline-flex items-center gap-3 glass rounded-full px-6 py-4 w-full max-w-lg hover:border-water/30 transition-colors group">
-        <i data-lucide="search" class="w-5 h-5 text-water"></i>
-        <span id="typing-text" class="text-slate-500 typing-cursor text-left flex-1"></span>
-        <span class="text-xs text-slate-600 hidden sm:inline bg-white/5 rounded px-2 py-1">Enter</span>
-      </a>
+      <div class="relative w-full max-w-lg mx-auto">
+        <div class="inline-flex items-center gap-3 glass rounded-full px-6 py-4 w-full hover:border-water/30 transition-colors group">
+          <i data-lucide="search" class="w-5 h-5 text-water shrink-0"></i>
+          <input id="smart-search" type="text" placeholder="" class="bg-transparent border-none outline-none text-white text-sm flex-1 placeholder:text-slate-500 w-full" autocomplete="off" onkeydown="if(event.key==='Enter'){smartSearch(this.value);this.blur();}">
+          <span class="text-xs text-slate-600 hidden sm:inline bg-white/5 rounded px-2 py-1 shrink-0 cursor-pointer" onclick="smartSearch(document.getElementById('smart-search').value)">Search</span>
+        </div>
+        <span id="typing-text" class="absolute left-14 top-1/2 -translate-y-1/2 text-slate-500 typing-cursor pointer-events-none text-sm"></span>
+      </div>
     </div>
 
     <!-- Searching across sites -->
@@ -22450,6 +22453,7 @@ function renderPropertyCard(p) {
           ${p.previousPrice ? `<span class="ml-2 text-sm text-red-300 line-through drop-shadow">${formatPrice(p.previousPrice)}</span>` : ''}
           ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/80 text-white rounded-full px-2 py-0.5 animate-pulse">Price Drop</span>' : ''}
           ${p.daysOnMarket <= 7 ? '<span class="ml-2 text-xs bg-emerald-500/90 text-white rounded-full px-2 py-0.5">New</span>' : ''}
+          ${isTopPick(p) ? '<span class="ml-2 text-xs bg-amber-500/90 text-white rounded-full px-2 py-0.5 flex items-center gap-1 inline-flex"><i data-lucide="flame" class="w-3 h-3"></i>Top Pick</span>' : ''}
         </div>
 
         <!-- Favorite button -->
@@ -22486,6 +22490,7 @@ function renderPropertyCard(p) {
         <div class="flex items-center gap-3 mt-3 flex-wrap">
           <span class="text-xs text-slate-500">${p.daysOnMarket}d on market</span>
           ${p.dogSwimAccessible ? '<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="dog" class="w-3 h-3"></i>Dog OK</span>' : ''}
+          ${(() => { const pa = getLakePriceAnalysis(p); return pa && pa.pctDiff < 0 ? `<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5">${pa.pctDiff}% avg</span>` : pa && pa.pctDiff > 10 ? `<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2 py-0.5">+${pa.pctDiff}% avg</span>` : ''; })()}
         </div>
 
         <!-- Distance badges -->
@@ -22605,6 +22610,16 @@ function getFilteredProperties() {
   if (f.source !== 'all') {
     filtered = filtered.filter(p => p.sources && p.sources.some(s => s.name === f.source && s.verified));
   }
+  // Text search — match address, city, lake name, description
+  if (f.textQuery) {
+    const words = f.textQuery.split(/\s+/).filter(w => w.length > 2 && !['bed','bath','under','below','with','near','the','and','for'].includes(w));
+    if (words.length > 0) {
+      filtered = filtered.filter(p => {
+        const haystack = `${p.address} ${p.city} ${p.waterBodyName} ${p.description}`.toLowerCase();
+        return words.some(w => haystack.includes(w));
+      });
+    }
+  }
 
   switch (f.sort) {
     case 'price-asc': filtered.sort((a, b) => a.price - b.price); break;
@@ -22620,6 +22635,122 @@ function getFilteredProperties() {
     default: filtered.sort((a, b) => b.overallScore - a.overallScore);
   }
   return filtered;
+}
+
+// ========== SMART SEARCH (Natural Language) ==========
+function smartSearch(query) {
+  if (!query || !query.trim()) {
+    // Reset all filters
+    activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all', search: '' };
+    syncFiltersToUI();
+    applyFilters();
+    return;
+  }
+  const q = query.toLowerCase().trim();
+  activeFilters.search = q;
+
+  // Parse natural language
+  // Bedrooms
+  const bedMatch = q.match(/(\d+)\s*(?:bed|bd|br|bedroom)/);
+  if (bedMatch) activeFilters.minBeds = parseInt(bedMatch[1]);
+
+  // Price
+  const priceMatch = q.match(/(?:under|below|max|<)\s*\$?\s*(\d+)\s*k?/i);
+  if (priceMatch) {
+    let price = parseInt(priceMatch[1]);
+    if (price < 10000) price *= 1000; // "400k" → 400000
+    activeFilters.maxPrice = price;
+  }
+
+  // Dog friendly
+  if (q.includes('dog') || q.includes('pet')) activeFilters.dogFriendly = true;
+
+  // Water type
+  if (q.includes('lakefront') || q.includes('lake front') || q.includes('waterfront')) activeFilters.waterType = 'lakefront';
+
+  // Lake name
+  const lakes = [...new Set(PROPERTIES.map(p => p.waterBodyName))];
+  for (const lake of lakes) {
+    if (q.includes(lake.toLowerCase())) { activeFilters.lake = lake; break; }
+  }
+
+  // Sort preferences
+  if (q.includes('cheap') || q.includes('lowest price') || q.includes('affordable')) activeFilters.sort = 'price-asc';
+  if (q.includes('newest') || q.includes('just listed') || q.includes('new listing')) activeFilters.sort = 'newest';
+  if (q.includes('biggest') || q.includes('largest') || q.includes('most space')) activeFilters.sort = 'sqft';
+  if (q.includes('best value') || q.includes('deal')) activeFilters.sort = 'ppsqft';
+  if (q.includes('price drop') || q.includes('reduced') || q.includes('discount')) activeFilters.sort = 'reduced';
+  if (q.includes('close') || q.includes('short commute') || q.includes('nearest')) activeFilters.sort = 'commute';
+
+  // Text search for address/city
+  activeFilters.textQuery = q;
+
+  syncFiltersToUI();
+  applyFilters();
+
+  // Scroll to results
+  document.getElementById('search')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function syncFiltersToUI() {
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  setVal('filter-lake', activeFilters.lake);
+  setVal('filter-water', activeFilters.waterType);
+  setVal('filter-beds', activeFilters.minBeds || 0);
+  setVal('filter-price', activeFilters.maxPrice === Infinity ? '999999999' : activeFilters.maxPrice);
+  setVal('filter-sort', activeFilters.sort);
+  setVal('filter-source', activeFilters.source || 'all');
+}
+
+// ========== TOP PICK DETECTION ==========
+function isTopPick(p) {
+  if (!p.bedrooms || p.bedrooms <= 0) return false; // no land
+  const pa = getLakePriceAnalysis(p);
+  const belowAvg = pa && pa.pctDiff < -5; // 5%+ below lake avg
+  const highScore = p.overallScore >= 80;
+  const freshListing = p.daysOnMarket <= 14;
+  const goodValue = p.valueScore >= 85;
+  return (belowAvg && highScore) || (freshListing && highScore && goodValue) || (belowAvg && goodValue);
+}
+
+// ========== "SINCE LAST VISIT" ALERTS ==========
+function checkNewSinceLastVisit() {
+  const lastVisit = localStorage.getItem('pocono-last-visit');
+  const now = Date.now();
+  localStorage.setItem('pocono-last-visit', now);
+
+  if (!lastVisit) return; // First visit
+
+  const newListings = PROPERTIES.filter(p => p.daysOnMarket <= 3);
+  const priceDrops = PROPERTIES.filter(p => p.previousPrice && p.status === 'Price Reduced');
+  const favorites = JSON.parse(localStorage.getItem('pocono-favorites') || '[]');
+  const favDrops = priceDrops.filter(p => favorites.includes(p.id));
+
+  if (newListings.length === 0 && priceDrops.length === 0) return;
+
+  const alertBar = document.createElement('div');
+  alertBar.id = 'new-since-visit';
+  alertBar.className = 'fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-water/90 to-emerald-500/90 backdrop-blur-md text-white text-sm py-3 px-4 flex items-center justify-center gap-4 shadow-lg transition-transform';
+  alertBar.style.paddingTop = 'max(12px, env(safe-area-inset-top, 0px))';
+
+  let msg = '';
+  if (newListings.length > 0) msg += `<span class="font-semibold">${newListings.length} new listing${newListings.length > 1 ? 's' : ''}</span>`;
+  if (newListings.length > 0 && priceDrops.length > 0) msg += ' · ';
+  if (priceDrops.length > 0) msg += `<span class="font-semibold">${priceDrops.length} price drop${priceDrops.length > 1 ? 's' : ''}</span>`;
+  if (favDrops.length > 0) msg += ` <span class="bg-white/20 rounded-full px-2 py-0.5 text-xs">${favDrops.length} on your favorites!</span>`;
+
+  alertBar.innerHTML = `
+    <i data-lucide="bell" class="w-4 h-4 shrink-0"></i>
+    <span>${msg}</span>
+    <button onclick="this.parentElement.remove()" class="ml-4 p-1 rounded-full hover:bg-white/20 transition shrink-0">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  `;
+  document.body.prepend(alertBar);
+  lucide.createIcons();
+
+  // Auto-dismiss after 8 seconds
+  setTimeout(() => { alertBar.style.transform = 'translateY(-100%)'; setTimeout(() => alertBar.remove(), 300); }, 8000);
 }
 
 function applyFilters() {
@@ -23543,11 +23674,21 @@ function runTypingAnimation() {
     'Dog-friendly lakefront under $500K...',
   ];
   const el = document.getElementById('typing-text');
+  const searchInput = document.getElementById('smart-search');
   let phraseIdx = 0;
   let charIdx = 0;
   let deleting = false;
+  let typingPaused = false;
+
+  // Hide typing placeholder when search input is focused or has content
+  if (searchInput) {
+    searchInput.addEventListener('focus', () => { el.style.display = 'none'; typingPaused = true; });
+    searchInput.addEventListener('blur', () => { if (!searchInput.value) { el.style.display = ''; typingPaused = false; } });
+    searchInput.addEventListener('input', () => { if (searchInput.value) { el.style.display = 'none'; typingPaused = true; } });
+  }
 
   function tick() {
+    if (typingPaused) { setTimeout(tick, 500); return; }
     const phrase = phrases[phraseIdx];
     if (!deleting) {
       el.textContent = phrase.slice(0, charIdx + 1);
@@ -23672,6 +23813,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Deep link: open property modal if ?property=ID in URL
   checkDeepLink();
+
+  // Show "new since last visit" notification
+  setTimeout(checkNewSinceLastVisit, 1500);
 });
 </script>
 
