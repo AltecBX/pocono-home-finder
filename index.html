@@ -417,7 +417,7 @@ tailwind.config = {
 </style>
 </head>
 
-<body>
+<body style="padding-bottom: env(safe-area-inset-bottom, 0px);">
 
 <!-- ================================================================== -->
 <!-- REAL LISTING DATA — sourced from MLS/public listing sites Mar 2026 -->
@@ -21366,7 +21366,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 <!-- ================================================================== -->
 <!-- HEADER / NAV                                                       -->
 <!-- ================================================================== -->
-<header id="header" class="fixed top-0 left-0 right-0 z-50 glass-strong">
+<header id="header" class="fixed top-0 left-0 right-0 z-50 glass-strong" style="padding-top: env(safe-area-inset-top, 0px);">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
     <!-- Logo -->
     <a href="#hero" class="flex items-center gap-2 text-lg font-bold tracking-tight">
@@ -21428,7 +21428,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 <!-- ================================================================== -->
 <!-- HERO SECTION                                                       -->
 <!-- ================================================================== -->
-<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden" style="padding-top: calc(4rem + env(safe-area-inset-top, 0px));">
   <!-- Ambient glow orbs -->
   <div class="hero-glow glow-1"></div>
   <div class="hero-glow glow-2"></div>
@@ -22740,17 +22740,32 @@ function checkNewSinceLastVisit() {
   if (favDrops.length > 0) msg += ` <span class="bg-white/20 rounded-full px-2 py-0.5 text-xs">${favDrops.length} on your favorites!</span>`;
 
   alertBar.innerHTML = `
-    <i data-lucide="bell" class="w-4 h-4 shrink-0"></i>
-    <span>${msg}</span>
-    <button onclick="this.parentElement.remove()" class="ml-4 p-1 rounded-full hover:bg-white/20 transition shrink-0">
+    <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="showNewListings()">
+      <i data-lucide="bell" class="w-4 h-4 shrink-0"></i>
+      <span>${msg}</span>
+      <span class="text-xs bg-white/20 rounded-full px-2 py-0.5">Tap to view</span>
+    </div>
+    <button onclick="event.stopPropagation();this.parentElement.remove()" class="p-1 rounded-full hover:bg-white/20 transition shrink-0">
       <i data-lucide="x" class="w-4 h-4"></i>
     </button>
   `;
   document.body.prepend(alertBar);
   lucide.createIcons();
 
-  // Auto-dismiss after 8 seconds
-  setTimeout(() => { alertBar.style.transform = 'translateY(-100%)'; setTimeout(() => alertBar.remove(), 300); }, 8000);
+  // Auto-dismiss after 12 seconds
+  setTimeout(() => { if (document.getElementById('new-since-visit')) { alertBar.style.transform = 'translateY(-100%)'; setTimeout(() => alertBar.remove(), 300); } }, 12000);
+}
+
+function showNewListings() {
+  // Remove the alert banner
+  const alert = document.getElementById('new-since-visit');
+  if (alert) alert.remove();
+
+  // Sort by newest and scroll to results
+  activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'newest', dogFriendly: false, source: 'all', search: '', textQuery: '' };
+  syncFiltersToUI();
+  applyFilters();
+  document.getElementById('search')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 function applyFilters() {
