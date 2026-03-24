@@ -21606,6 +21606,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <span class="w-px h-6 bg-white/10 mx-1"></span>
     <button id="toggle-tesla-btn" onclick="toggleMapLayer('tesla')" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-red-400 transition flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Tesla</button>
     <button id="toggle-grocery-btn" onclick="toggleMapLayer('grocery')" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-blue-400 transition flex items-center gap-1"><i data-lucide="shopping-cart" class="w-3 h-3"></i> Stores</button>
+    <button id="toggle-flood-btn" onclick="toggleMapLayer('flood')" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-cyan-400 transition flex items-center gap-1"><i data-lucide="waves" class="w-3 h-3"></i> Flood Zones</button>
   </div>
 
   <div class="glass rounded-2xl overflow-hidden" style="height: 500px;">
@@ -23350,8 +23351,8 @@ document.addEventListener('keydown', function(e) {
 
 // ========== MAP ==========
 
-let teslaLayer = null, groceryLayer = null;
-let showTeslaMarkers = false, showGroceryMarkers = false;
+let teslaLayer = null, groceryLayer = null, floodLayer = null;
+let showTeslaMarkers = false, showGroceryMarkers = false, showFloodLayer = false;
 
 function initMap() {
   map = L.map('leaflet-map', { zoomControl: true }).setView([41.25, -75.38], 9);
@@ -23406,6 +23407,20 @@ function toggleMapLayer(type) {
       map.removeLayer(groceryLayer); groceryLayer = null;
     }
     document.getElementById('toggle-grocery-btn')?.classList.toggle('active-layer', showGroceryMarkers);
+  } else if (type === 'flood') {
+    if (!floodLayer) {
+      floodLayer = L.tileLayer.wms(
+        'https://msc.fema.gov/arcgis/rest/services/NFHL_Print/NFHL/MapServer/WMSServer',
+        { layers: '14', format: 'image/png', transparent: true, opacity: 0.4, attribution: 'FEMA NFHL' }
+      );
+    }
+    showFloodLayer = !showFloodLayer;
+    if (showFloodLayer) {
+      floodLayer.addTo(map);
+    } else {
+      map.removeLayer(floodLayer);
+    }
+    document.getElementById('toggle-flood-btn')?.classList.toggle('active-layer', showFloodLayer);
   }
 }
 
