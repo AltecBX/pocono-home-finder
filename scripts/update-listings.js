@@ -864,6 +864,7 @@ function generatePropertyJS(listing, id) {
     basement: "See listing", fireplace: true, fencedYard: false,
     dogSwimAccessible: ${dogAccessible}, dogAccessNotes: ${safeDogNotes},
     shorelineType: "${isLakefront ? 'Natural lakefront' : 'Community beach only'}", photoCount: ${photoCount},
+    floodZone: "${listing.floodZone || 'Unknown'}", isFloodHazard: ${listing.isFloodHazard || false},
     nearestTesla: { name: ${JSON.stringify(nearestTesla.name)}, miles: ${nearestTesla.distance} },
     nearestGrocery: { name: ${JSON.stringify(nearestGrocery.name + ' — ' + (nearestGrocery.address || ''))}, miles: ${nearestGrocery.distance} },
     image: "${image}",
@@ -990,6 +991,36 @@ async function main() {
     // Polite delay between batches
     if (i + 3 < allListings.length) await new Promise(r => setTimeout(r, 800));
   }
+
+  // Step 2.5: FEMA Flood Zone lookup (5 at a time, with rate limiting)
+  console.log('\n🌊 Checking FEMA flood zones...');
+  for (let i = 0; i < allListings.length; i += 5) {
+    const batch = allListings.slice(i, i + 5);
+    await Promise.all(batch.map(async (listing) => {
+      if (!listing.latitude || !listing.longitude) { listing.floodZone = 'Unknown'; return; }
+      try {
+        const url = `https://msc.fema.gov/arcgis/rest/services/NFHL_Print/NFHL/MapServer/14/query?geometry=${listing.longitude}%2C${listing.latitude}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE%2CZONE_SUBTY%2CSFHA_TF&returnGeometry=false&f=json`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.features && data.features.length > 0) {
+          const attr = data.features[0].attributes;
+          listing.floodZone = attr.FLD_ZONE || 'Unknown';
+          listing.floodZoneSub = attr.ZONE_SUBTY || '';
+          listing.isFloodHazard = attr.SFHA_TF === 'T';
+        } else {
+          listing.floodZone = 'X';
+          listing.isFloodHazard = false;
+        }
+      } catch (e) {
+        listing.floodZone = 'Unknown';
+        listing.isFloodHazard = false;
+      }
+    }));
+    if (i + 5 < allListings.length) await new Promise(r => setTimeout(r, 500));
+    if (i % 50 === 0) console.log(`    Checked ${Math.min(i + 5, allListings.length)} / ${allListings.length}`);
+  }
+  const hazardCount = allListings.filter(l => l.isFloodHazard).length;
+  console.log(`    ${hazardCount} properties in flood hazard zones`);
 
   // Step 3: Generate JavaScript
   console.log('\n📝 Generating property data...');

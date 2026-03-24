@@ -22063,8 +22063,9 @@ function renderMortgageSection(p) {
   const m = calcMortgage(p.price);
   const monthlyTax = Math.round(p.annualTax / 12);
   const monthlyHOA = p.hoaFee || 0;
-  // Insurance estimate: ~0.35% of home value/yr for 2nd home in PA
-  const monthlyInsurance = Math.round(p.price * 0.0035 / 12);
+  // Insurance estimate: ~0.35% of home value/yr + flood insurance if in hazard zone
+  const floodInsuranceAnnual = p.isFloodHazard ? 3000 : 0; // ~$3K/yr avg NFIP flood insurance
+  const monthlyInsurance = Math.round((p.price * 0.0035 + floodInsuranceAnnual) / 12);
   // Winter maintenance: snow removal, heating, winterization ~$250/mo avg
   const monthlyMaintenance = 250;
   // Round-trip Tesla charging cost from Yonkers (~150mi each way, ~30kWh/100mi, $0.35/kWh Supercharger avg)
@@ -22108,7 +22109,8 @@ function renderMortgageSection(p) {
             <div class="font-medium flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-red-400"></i>$${monthlyCommuteCost.toLocaleString()}</div>
           </div>
         </div>
-        <div class="text-[10px] text-slate-600 mt-3">${p.township ? `<span class="text-slate-500">${p.township} Twp</span> · ` : ''}20% down ($${m.down.toLocaleString()}), 6.8% rate, 30yr. Tax based on 2025 Monroe County millage rates. Insurance est. 0.35%/yr. Commute: 4 weekend round trips via Tesla Supercharger.</div>
+        ${p.isFloodHazard ? `<div class="mt-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i><span><strong>FEMA Zone ${p.floodZone}</strong> — Flood insurance required. ~$3,000/yr added to insurance estimate. <a href="https://msc.fema.gov/portal/search#searchresultsanchor" target="_blank" class="underline">Check FEMA map</a></span></div>` : ''}
+        <div class="text-[10px] text-slate-600 mt-3">${p.township ? `<span class="text-slate-500">${p.township} Twp</span> · ` : ''}20% down ($${m.down.toLocaleString()}), 6.8% rate, 30yr. Tax based on 2025 Monroe County millage rates. Insurance ${p.isFloodHazard ? 'incl. $3K/yr flood' : 'est. 0.35%/yr'}. Commute: 4 weekend round trips via Tesla Supercharger.</div>
       </div>
     </div>
   `;
@@ -22389,6 +22391,7 @@ function renderPropertyCard(p) {
         <div class="flex items-center gap-3 mt-3 flex-wrap">
           <span class="text-xs text-slate-500">${p.daysOnMarket}d on market</span>
           ${p.daysOnMarket >= 90 ? '<span class="text-xs bg-orange-500/10 text-orange-400 rounded-full px-2 py-0.5 flex items-center gap-1" title="On market 90+ days — seller may accept lower offers"><i data-lucide="trending-down" class="w-3 h-3"></i>Negotiate</span>' : p.daysOnMarket >= 60 ? '<span class="text-xs bg-amber-500/10 text-amber-400 rounded-full px-2 py-0.5">Sitting</span>' : ''}
+          ${p.isFloodHazard ? '<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2 py-0.5 flex items-center gap-1" title="FEMA Zone ' + p.floodZone + ' — flood insurance required (~$2-5K/yr extra)"><i data-lucide="waves" class="w-3 h-3"></i>Flood Zone</span>' : ''}
           ${p.dogSwimAccessible ? '<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="dog" class="w-3 h-3"></i>Dog OK</span>' : ''}
           ${(() => { const pa = getLakePriceAnalysis(p); return pa && pa.pctDiff < 0 ? `<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5">${pa.pctDiff}% avg</span>` : pa && pa.pctDiff > 10 ? `<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2 py-0.5">+${pa.pctDiff}% avg</span>` : ''; })()}
         </div>
