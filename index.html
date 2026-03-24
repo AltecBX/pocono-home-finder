@@ -22319,6 +22319,15 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <div id="dash-market-heat" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
   </div>
 
+  <!-- Upcoming Open Houses -->
+  <div class="mb-10">
+    <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
+      <i data-lucide="calendar" class="w-5 h-5 text-purple-400"></i> Upcoming Open Houses
+    </h3>
+    <p class="text-sm text-slate-500 mb-4">Properties with scheduled open houses — plan your viewing trip.</p>
+    <div id="dash-open-houses"></div>
+  </div>
+
   <!-- Seasonal Buy Signal -->
   <div class="mt-10">
     <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -23031,6 +23040,7 @@ function renderPropertyCard(p) {
           ${p.previousPrice ? `<span class="ml-2 text-sm text-red-300 line-through drop-shadow">${formatPrice(p.previousPrice)}</span>` : ''}
           ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/80 text-white rounded-full px-2 py-0.5 animate-pulse">Price Drop</span>' : ''}
           ${p.daysOnMarket <= 7 ? '<span class="ml-2 text-xs bg-emerald-500/90 text-white rounded-full px-2 py-0.5">New</span>' : ''}
+          ${p.openHouse ? '<span class="ml-2 text-xs bg-purple-500/90 text-white rounded-full px-2 py-0.5 flex items-center gap-1 inline-flex"><i data-lucide="calendar" class="w-3 h-3"></i>Open House</span>' : ''}
           ${isTopPick(p) ? '<span class="ml-2 text-xs bg-amber-500/90 text-white rounded-full px-2 py-0.5 flex items-center gap-1 inline-flex"><i data-lucide="flame" class="w-3 h-3"></i>Top Pick</span>' : ''}
         </div>
 
@@ -24260,6 +24270,38 @@ function renderDashboard() {
         </div>
       `;
     }).join('');
+  }
+
+  // Open Houses
+  const openHouses = PROPERTIES.filter(p => p.openHouse);
+  const ohEl = document.getElementById('dash-open-houses');
+  if (ohEl) {
+    if (openHouses.length > 0) {
+      ohEl.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          ${openHouses.map(p => `
+            <div class="glass rounded-xl p-4 cursor-pointer hover:border-purple-500/20 transition" onclick="openDetailModal(${p.id})">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs bg-purple-500/20 text-purple-400 rounded-full px-2 py-0.5 flex items-center gap-1">
+                  <i data-lucide="calendar" class="w-3 h-3"></i>${typeof p.openHouse === 'string' ? p.openHouse : 'Open House'}
+                </span>
+              </div>
+              <div class="font-bold">${formatPrice(p.price)}</div>
+              <div class="text-sm text-slate-300 mt-0.5">${p.address}</div>
+              <div class="text-xs text-slate-500">${p.waterBodyName} · ${p.bedrooms}bd/${p.bathrooms}ba</div>
+            </div>
+          `).join('')}
+        </div>
+        ${openHouses.length >= 2 ? `
+        <div class="mt-3">
+          <a href="https://www.google.com/maps/dir/${encodeURIComponent('96 Stockbridge Rd, Yonkers, NY 10710')}/${openHouses.map(p => encodeURIComponent(p.address + ', ' + p.city + ', PA')).join('/')}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 transition no-underline">
+            <i data-lucide="route" class="w-4 h-4"></i> Plan viewing route for all ${openHouses.length} open houses
+          </a>
+        </div>` : ''}
+      `;
+    } else {
+      ohEl.innerHTML = '<div class="glass rounded-xl p-5 text-center"><div class="text-slate-500 text-sm">No open houses scheduled right now</div><div class="text-xs text-slate-600 mt-1">Check back after the next data refresh — open houses are pulled from Zillow & Redfin</div></div>';
+    }
   }
 
   // Seasonal Buy Signal

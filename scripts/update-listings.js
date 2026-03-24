@@ -464,6 +464,8 @@ async function scrapeZillow() {
         photoCount: result.carouselPhotos?.length || 1,
         source: 'Zillow',
         zillow: true,
+        openHouse: result.openStatusType === 1 || result.openStatusText ? (result.openStatusText || 'Open House') : null,
+        openHouseDate: result.openHouse?.[0]?.startTime || result.hdpData?.homeInfo?.openHouse?.[0]?.startTime || null,
       });
     }
 
@@ -865,6 +867,7 @@ function generatePropertyJS(listing, id) {
     dogSwimAccessible: ${dogAccessible}, dogAccessNotes: ${safeDogNotes},
     shorelineType: "${isLakefront ? 'Natural lakefront' : 'Community beach only'}", photoCount: ${photoCount},
     floodZone: "${listing.floodZone || 'Unknown'}", isFloodHazard: ${listing.isFloodHazard || false},
+    openHouse: ${listing.openHouse ? JSON.stringify(listing.openHouse) : 'null'},
     nearestTesla: { name: ${JSON.stringify(nearestTesla.name)}, miles: ${nearestTesla.distance} },
     nearestGrocery: { name: ${JSON.stringify(nearestGrocery.name + ' — ' + (nearestGrocery.address || ''))}, miles: ${nearestGrocery.distance} },
     image: "${image}",
