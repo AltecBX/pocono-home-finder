@@ -23946,7 +23946,7 @@ function openDetailModal(id) {
             <i data-lucide="check-circle" class="w-4 h-4"></i> Direct Listing Links
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
-            ${(p.sources || []).filter(s => s.verified).map(s => `
+            ${(p.sources || []).filter(s => s.verified).filter((s, i, arr) => arr.findIndex(x => x.name === s.name) === i).map(s => `
               <a href="${s.url}" target="_blank" rel="noopener noreferrer"
                 class="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition group">
                 <div class="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
