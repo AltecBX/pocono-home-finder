@@ -333,7 +333,7 @@ async function scrapeRedfin() {
         motorboats: false,
         description: String(remarks || '').slice(0, 500),
         image: image,
-        photos: photos.slice(0, 20),
+        photos: photos.slice(0, 30),
         listingUrl: listingUrl,
         mlsId: str(home.mlsId),
         daysOnMarket: num(home.dom) || num(home.timeOnRedfin),
@@ -465,7 +465,7 @@ async function scrapeZillow() {
         motorboats: false,
         description: String(result.hdpData?.homeInfo?.description || '').slice(0, 500),
         image: result.imgSrc || result.image || '',
-        photos: (result.carouselPhotos || []).map(p => p.url || p).filter(Boolean).slice(0, 20),
+        photos: (result.carouselPhotos || []).map(p => p.url || p).filter(Boolean).slice(0, 30),
         listingUrl: detailUrl,
         daysOnMarket: result.hdpData?.homeInfo?.daysOnZillow || 0,
         isReduced: (result.hdpData?.homeInfo?.priceChange || 0) < 0,
@@ -509,7 +509,7 @@ async function scrapeZillow() {
               latitude: result.latLong?.latitude || 0, longitude: result.latLong?.longitude || 0,
               waterBodyName: 'Unknown Lake', hoaFee: 0, motorboats: false,
               description: 'Coming Soon — ' + (String(result.hdpData?.homeInfo?.description || '').slice(0, 400)),
-              image: result.imgSrc || '', photos: (result.carouselPhotos || []).map(p => p.url || p).filter(Boolean).slice(0, 20),
+              image: result.imgSrc || '', photos: (result.carouselPhotos || []).map(p => p.url || p).filter(Boolean).slice(0, 30),
               listingUrl: result.detailUrl ? (result.detailUrl.startsWith('http') ? result.detailUrl : `https://www.zillow.com${result.detailUrl}`) : '',
               daysOnMarket: 0, isReduced: false, photoCount: result.carouselPhotos?.length || 1,
               source: 'Zillow', zillow: true, isComingSoon: true,
@@ -820,7 +820,7 @@ async function enrichListing(listing) {
       if (!allPhotos.includes(url)) allPhotos.push(url);
     }
     if (allPhotos.length > 0) {
-      listing.photos = allPhotos.slice(0, 20);
+      listing.photos = allPhotos.slice(0, 30);
       listing.image = listing.photos[0];
       listing.photoCount = allPhotos.length;
     }
@@ -925,7 +925,7 @@ function generatePropertyJS(listing, id) {
     nearestTesla: { name: ${JSON.stringify(nearestTesla.name)}, miles: ${nearestTesla.distance} },
     nearestGrocery: { name: ${JSON.stringify(nearestGrocery.name + ' — ' + (nearestGrocery.address || ''))}, miles: ${nearestGrocery.distance} },
     image: "${image}",
-    photos: ${JSON.stringify((listing.photos || [image]).filter(Boolean).slice(0, 20))},
+    photos: ${JSON.stringify((listing.photos || [image]).filter(Boolean).slice(0, 30))},
     sources: ${JSON.stringify(sources, null, 6).replace(/\n/g, '\n    ')}
   }`;
 }
