@@ -24806,12 +24806,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.createElement('button');
   btn.id = 'back-to-top';
   btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>';
-  btn.className = 'fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-water/80 text-white shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-water transition-all opacity-0 pointer-events-none';
-  btn.style.cssText = 'transition: opacity 0.3s, transform 0.3s; bottom: calc(24px + env(safe-area-inset-bottom, 0px));';
+  btn.className = 'fixed z-[9999] w-14 h-14 rounded-full bg-water text-white shadow-2xl flex items-center justify-center hover:bg-water/90 transition-all opacity-0 pointer-events-none';
+  btn.style.cssText = 'transition: opacity 0.3s, transform 0.3s; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); right: 20px; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);';
   btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
   document.body.appendChild(btn);
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 600) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+    if (window.scrollY > 400) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
     else { btn.style.opacity = '0'; btn.style.pointerEvents = 'none'; }
   }, { passive: true });
 })();
