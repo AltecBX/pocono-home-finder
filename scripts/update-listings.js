@@ -73,6 +73,46 @@ const LAKES = [
   lake('Werry Lake', 'werry-lake', { id: 'b22114' }),
 ];
 
+// 2025 Monroe County Township Millage Rates (total mills = county + library + municipal + school)
+// Source: https://www.monroecountypa.gov/departments/assessment/resources/millages
+const TOWNSHIP_MILLAGE = {
+  'Barrett':           31.321, // Pocono Mountain SD
+  'Chestnuthill':      33.767, // Pleasant Valley SD
+  'Coolbaugh':         33.201, // Pocono Mountain SD
+  'Delaware Water Gap': 35.028, // Stroudsburg SD
+  'East Stroudsburg':  45.299, // East Stroudsburg SD (borough)
+  'Eldred':            33.557, // Pleasant Valley SD
+  'Hamilton':          33.198, // Stroudsburg SD
+  'Jackson':           30.263, // Pocono Mountain SD
+  'Middle Smithfield':  39.083, // East Stroudsburg SD
+  'Pocono':            32.342, // Pocono Mountain SD
+  'Smithfield':        40.143, // East Stroudsburg SD
+  'Stroud':            35.638, // Stroudsburg SD
+  'Stroudsburg':       44.373, // Stroudsburg SD (borough)
+  'Tobyhanna':         31.226, // Pocono Mountain SD
+  'Tunkhannock':       30.736, // Pocono Mountain SD
+};
+
+// Map city names and zip codes to townships for tax calculation
+const CITY_TO_TOWNSHIP = {
+  'pocono lake': 'Tobyhanna', 'pocono pines': 'Tobyhanna', 'tobyhanna': 'Tobyhanna',
+  'blakeslee': 'Tobyhanna', 'long pond': 'Tunkhannock', 'pocono summit': 'Coolbaugh',
+  'mount pocono': 'Coolbaugh', 'mt pocono': 'Coolbaugh', 'coolbaugh twp': 'Coolbaugh',
+  'east stroudsburg': 'Middle Smithfield', 'marshalls creek': 'Middle Smithfield',
+  'bushkill': 'Middle Smithfield', 'stroudsburg': 'Stroud', 'bartonsville': 'Stroud',
+  'tannersville': 'Pocono', 'scotrun': 'Pocono', 'swiftwater': 'Pocono',
+  'saylorsburg': 'Chestnuthill', 'brodheadsville': 'Chestnuthill',
+  'cresco': 'Barrett', 'mountainhome': 'Barrett', 'canadensis': 'Barrett',
+  'delaware water gap': 'Delaware Water Gap', 'albrightsville': 'Tunkhannock',
+  'pocono country place': 'Coolbaugh', 'kunkletown': 'Eldred',
+};
+
+function getAnnualTax(price, city) {
+  const township = CITY_TO_TOWNSHIP[(city || '').toLowerCase().trim()];
+  const millage = township ? TOWNSHIP_MILLAGE[township] : 32.5; // default ~avg
+  return Math.round(price * millage / 1000);
+}
+
 // Unsplash fallback photos in case listing photo fails
 const FALLBACK_PHOTOS = [
   'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=500&fit=crop',
@@ -820,7 +860,7 @@ function generatePropertyJS(listing, id) {
     daysOnMarket: ${daysOnMarket}, sourceCount: ${sources.length}, hasConflicts: false, isFavorite: false,
     description: ${safeDesc},
     latitude: ${lat.toFixed(8)}, longitude: ${lng.toFixed(8)},
-    status: "${listing.isReduced ? 'Price Reduced' : 'Active'}", hoaFee: ${listing.hoaFee || 0}, annualTax: ${Math.round(listing.price * 0.012)}, garage: "See listing",
+    township: "${CITY_TO_TOWNSHIP[(listing.city || '').toLowerCase().trim()] || ''}", status: "${listing.isReduced ? 'Price Reduced' : 'Active'}", hoaFee: ${listing.hoaFee || 0}, annualTax: ${getAnnualTax(listing.price, listing.city)}, garage: "See listing",
     basement: "See listing", fireplace: true, fencedYard: false,
     dogSwimAccessible: ${dogAccessible}, dogAccessNotes: ${safeDogNotes},
     shorelineType: "${isLakefront ? 'Natural lakefront' : 'Community beach only'}", photoCount: ${photoCount},

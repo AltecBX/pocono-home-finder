@@ -22089,6 +22089,7 @@ function renderMortgageSection(p) {
           <div>
             <div class="text-slate-500 text-xs">Property Tax</div>
             <div class="font-medium">$${monthlyTax.toLocaleString()}</div>
+            <div class="text-[10px] text-slate-600">${p.annualTax > 0 ? '$' + p.annualTax.toLocaleString() + '/yr' : 'est.'}</div>
           </div>
           <div>
             <div class="text-slate-500 text-xs">HOA</div>
@@ -22107,7 +22108,7 @@ function renderMortgageSection(p) {
             <div class="font-medium flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3 text-red-400"></i>$${monthlyCommuteCost.toLocaleString()}</div>
           </div>
         </div>
-        <div class="text-[10px] text-slate-600 mt-3">20% down ($${m.down.toLocaleString()}), 6.8% rate, 30yr. Insurance est. 0.35%/yr. Maintenance ~$250/mo (heat, snow, upkeep). Commute: 4 weekend round trips via Tesla Supercharger.</div>
+        <div class="text-[10px] text-slate-600 mt-3">${p.township ? `<span class="text-slate-500">${p.township} Twp</span> · ` : ''}20% down ($${m.down.toLocaleString()}), 6.8% rate, 30yr. Tax based on 2025 Monroe County millage rates. Insurance est. 0.35%/yr. Commute: 4 weekend round trips via Tesla Supercharger.</div>
       </div>
     </div>
   `;
