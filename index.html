@@ -22331,6 +22331,53 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <div id="dash-open-houses"></div>
   </div>
 
+  <!-- Mortgage Pre-Qual Calculator -->
+  <div class="mb-10">
+    <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
+      <i data-lucide="calculator" class="w-5 h-5 text-cyan-400"></i> What Can I Afford?
+    </h3>
+    <p class="text-sm text-slate-500 mb-4">Enter your financials once — we'll highlight which properties fit your budget.</p>
+    <div class="glass rounded-xl p-5">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div>
+          <label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Annual Income</label>
+          <input type="text" id="prequal-income" placeholder="$150,000" class="w-full bg-navy-600 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:border-water/40 focus:outline-none" oninput="updatePreQual()">
+        </div>
+        <div>
+          <label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Monthly Debts</label>
+          <input type="text" id="prequal-debts" placeholder="$2,000" class="w-full bg-navy-600 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:border-water/40 focus:outline-none" oninput="updatePreQual()">
+        </div>
+        <div>
+          <label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Down Payment</label>
+          <input type="text" id="prequal-down" placeholder="$80,000" class="w-full bg-navy-600 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:border-water/40 focus:outline-none" oninput="updatePreQual()">
+        </div>
+        <div>
+          <label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Rate %</label>
+          <input type="text" id="prequal-rate" placeholder="6.8" value="6.8" class="w-full bg-navy-600 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:border-water/40 focus:outline-none" oninput="updatePreQual()">
+        </div>
+      </div>
+      <div id="prequal-result" class="hidden">
+        <div class="flex items-center gap-4 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+          <div>
+            <div class="text-xs text-slate-500">Max Purchase Price</div>
+            <div class="text-2xl font-bold text-emerald-400" id="prequal-max">$0</div>
+          </div>
+          <div class="h-10 w-px bg-white/10"></div>
+          <div>
+            <div class="text-xs text-slate-500">Max Monthly Payment</div>
+            <div class="text-lg font-bold text-slate-200" id="prequal-monthly">$0</div>
+          </div>
+          <div class="h-10 w-px bg-white/10"></div>
+          <div>
+            <div class="text-xs text-slate-500">Properties in Range</div>
+            <div class="text-lg font-bold text-water" id="prequal-count">0</div>
+          </div>
+        </div>
+        <div class="text-[10px] text-slate-600 mt-2">Based on 43% DTI ratio (investment property), 30yr fixed. This is an estimate — get pre-approved by a lender for your exact number.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Seasonal Buy Signal -->
   <div class="mt-10">
     <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -22778,6 +22825,95 @@ function generateAdvisorAnalysis(p) {
   `;
 }
 
+function renderComps(p) {
+  // Find similar properties: same or nearby lake, similar bed count, within 40% price range
+  const comps = PROPERTIES.filter(c =>
+    c.id !== p.id &&
+    c.bedrooms >= Math.max(1, p.bedrooms - 1) &&
+    c.bedrooms <= p.bedrooms + 1 &&
+    c.price >= p.price * 0.6 &&
+    c.price <= p.price * 1.4
+  ).sort((a, b) => {
+    // Prioritize same lake, then nearest price
+    const aLake = a.waterBodyName === p.waterBodyName ? 0 : 1;
+    const bLake = b.waterBodyName === p.waterBodyName ? 0 : 1;
+    if (aLake !== bLake) return aLake - bLake;
+    return Math.abs(a.price - p.price) - Math.abs(b.price - p.price);
+  }).slice(0, 4);
+
+  if (comps.length === 0) return '';
+
+  const avgCompPrice = Math.round(comps.reduce((s, c) => s + c.price, 0) / comps.length);
+  const priceDiff = p.price - avgCompPrice;
+  const pctDiff = Math.round(priceDiff / avgCompPrice * 100);
+
+  return `
+    <div class="p-6 border-b border-white/5">
+      <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-2 flex items-center gap-2">
+        <i data-lucide="git-compare" class="w-4 h-4"></i> Comparable Properties
+      </h4>
+      <div class="text-xs text-slate-500 mb-3">
+        vs ${comps.length} similar ${p.bedrooms}±1 bed properties.
+        Avg comp: <strong class="text-slate-300">${formatPriceFull(avgCompPrice)}</strong> —
+        this property is <strong class="${pctDiff <= 0 ? 'text-emerald-400' : 'text-red-400'}">${pctDiff <= 0 ? pctDiff + '%' : '+' + pctDiff + '%'}</strong> ${pctDiff <= 0 ? 'below' : 'above'} avg.
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        ${comps.map(c => `
+          <div class="glass rounded-lg p-3 cursor-pointer hover:border-water/20 transition" onclick="closeModal();setTimeout(()=>openDetailModal(${c.id}),300)">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-sm">${formatPrice(c.price)}</span>
+              <span class="text-[10px] ${c.price < p.price ? 'text-emerald-400' : c.price > p.price ? 'text-red-400' : 'text-slate-400'}">${c.price < p.price ? '-' : '+'}$${Math.abs(c.price - p.price).toLocaleString()}</span>
+            </div>
+            <div class="text-xs text-slate-400 truncate">${c.address}</div>
+            <div class="text-[10px] text-slate-500">${c.waterBodyName} · ${c.bedrooms}bd/${c.bathrooms}ba · ${c.sqft.toLocaleString()} sqft</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderAirbnbEstimate(p, totalMonthly) {
+  if (!p.bedrooms || p.bedrooms < 1) return '';
+  const nightlyRates = { 1: 120, 2: 165, 3: 215, 4: 285, 5: 350 };
+  const rate = nightlyRates[Math.min(p.bedrooms, 5)] || 165;
+  const lakefrontBonus = p.waterType === 'lakefront' ? 1.25 : 1.0;
+  const adjustedRate = Math.round(rate * lakefrontBonus);
+  const annualNights = Math.round(365 * 0.55);
+  const grossAnnual = adjustedRate * annualNights;
+  const netAnnual = Math.round(grossAnnual * 0.75);
+  const netMonthly = Math.round(netAnnual / 12);
+  const costOffset = Math.min(100, Math.round(netMonthly / totalMonthly * 100));
+
+  return `
+    <div class="glass rounded-xl p-4 mt-3">
+      <div class="flex items-center gap-2 mb-3">
+        <i data-lucide="home" class="w-4 h-4 text-rose-400"></i>
+        <span class="text-sm font-semibold text-rose-400">Airbnb Income Potential</span>
+      </div>
+      <div class="grid grid-cols-3 gap-3 text-center mb-2">
+        <div>
+          <div class="text-lg font-bold text-slate-200">$${adjustedRate}</div>
+          <div class="text-[10px] text-slate-500">Avg/night</div>
+        </div>
+        <div>
+          <div class="text-lg font-bold text-slate-200">${annualNights}</div>
+          <div class="text-[10px] text-slate-500">Booked nights/yr</div>
+        </div>
+        <div>
+          <div class="text-lg font-bold text-emerald-400">$${netMonthly.toLocaleString()}</div>
+          <div class="text-[10px] text-slate-500">Net/month</div>
+        </div>
+      </div>
+      <div class="w-full bg-white/5 rounded-full h-2 mb-1">
+        <div class="bg-gradient-to-r from-rose-500 to-emerald-500 h-2 rounded-full" style="width: ${costOffset}%"></div>
+      </div>
+      <div class="text-[10px] text-slate-500">Covers <strong class="text-slate-300">${costOffset}%</strong> of your $${totalMonthly.toLocaleString()}/mo cost · Gross: $${grossAnnual.toLocaleString()}/yr · Net: $${netAnnual.toLocaleString()}/yr</div>
+      <div class="text-[10px] text-slate-600 mt-1">${p.waterType === 'lakefront' ? 'Lakefront premium (+25%). ' : ''}Monroe County avg, 55% occupancy, 25% expense ratio.</div>
+    </div>
+  `;
+}
+
 function renderMortgageSection(p) {
   const m = calcMortgage(p.price);
   const monthlyTax = Math.round(p.annualTax / 12);
@@ -22831,6 +22967,8 @@ function renderMortgageSection(p) {
         ${p.isFloodHazard ? `<div class="mt-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i><span><strong>FEMA Zone ${p.floodZone}</strong> — Flood insurance required. ~$3,000/yr added to insurance estimate. <a href="https://msc.fema.gov/portal/search#searchresultsanchor" target="_blank" class="underline">Check FEMA map</a></span></div>` : ''}
         <div class="text-[10px] text-slate-600 mt-3">${p.township ? `<span class="text-slate-500">${p.township} Twp</span> · ` : ''}20% down ($${m.down.toLocaleString()}), 6.8% rate, 30yr. Tax based on 2025 Monroe County millage rates. Insurance ${p.isFloodHazard ? 'incl. $3K/yr flood' : 'est. 0.35%/yr'}. Commute: 4 weekend round trips via Tesla Supercharger.</div>
       </div>
+
+      ${p.bedrooms >= 1 ? renderAirbnbEstimate(p, totalMonthly) : ''}
     </div>
   `;
 }
@@ -23953,6 +24091,9 @@ function openDetailModal(id) {
           </div>
         </div>
 
+        <!-- Comparable Properties -->
+        ${renderComps(p)}
+
         <!-- Description -->
         <div class="p-6 border-b border-white/5">
           <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">Description</h4>
@@ -24361,6 +24502,52 @@ function scrollToCard(id) {
 }
 
 // ========== DASHBOARD ==========
+
+function updatePreQual() {
+  const parse = (id) => parseInt(String(document.getElementById(id)?.value || '0').replace(/[^0-9.]/g, '')) || 0;
+  const income = parse('prequal-income');
+  const debts = parse('prequal-debts');
+  const down = parse('prequal-down');
+  const rate = parseFloat(document.getElementById('prequal-rate')?.value || '6.8') || 6.8;
+
+  if (income < 10000) { document.getElementById('prequal-result')?.classList.add('hidden'); return; }
+
+  // DTI calculation: max 43% for investment property
+  const maxMonthly = Math.round(income / 12 * 0.43) - debts;
+  if (maxMonthly <= 0) { document.getElementById('prequal-result')?.classList.add('hidden'); return; }
+
+  // Subtract estimated tax + insurance from monthly payment to get mortgage-only budget
+  // We'll estimate these at ~$600/mo combined for a Pocono property
+  const mortgageBudget = maxMonthly - 600;
+  if (mortgageBudget <= 0) { document.getElementById('prequal-result')?.classList.add('hidden'); return; }
+
+  // Reverse mortgage calc: P = M * [(1+r)^n - 1] / [r * (1+r)^n]
+  const r = rate / 100 / 12;
+  const n = 360;
+  const maxLoan = Math.round(mortgageBudget * ((Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n))));
+  const maxPrice = maxLoan + down;
+
+  const affordable = PROPERTIES.filter(p => p.price <= maxPrice).length;
+
+  document.getElementById('prequal-result')?.classList.remove('hidden');
+  document.getElementById('prequal-max').textContent = '$' + maxPrice.toLocaleString();
+  document.getElementById('prequal-monthly').textContent = '$' + maxMonthly.toLocaleString();
+  document.getElementById('prequal-count').textContent = affordable;
+
+  // Save to localStorage for persistence
+  localStorage.setItem('pocono-prequal', JSON.stringify({ income, debts, down, rate }));
+}
+
+function loadPreQual() {
+  const saved = JSON.parse(localStorage.getItem('pocono-prequal') || 'null');
+  if (saved) {
+    if (saved.income) document.getElementById('prequal-income').value = '$' + saved.income.toLocaleString();
+    if (saved.debts) document.getElementById('prequal-debts').value = '$' + saved.debts.toLocaleString();
+    if (saved.down) document.getElementById('prequal-down').value = '$' + saved.down.toLocaleString();
+    if (saved.rate) document.getElementById('prequal-rate').value = saved.rate;
+    updatePreQual();
+  }
+}
 
 function renderDashboard() {
   // Avg score
@@ -24801,6 +24988,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Invalidate map size after a beat (Leaflet quirk)
   setTimeout(() => { if (map) map.invalidateSize(); }, 500);
+
+  // Load saved pre-qual data
+  loadPreQual();
 
   // Weather
   fetchPoconoWeather();
