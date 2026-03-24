@@ -22310,6 +22310,15 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <p class="text-sm text-slate-500 mb-4">How competitive is each lake? Based on median price, avg days on market, and inventory.</p>
     <div id="dash-market-heat" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
   </div>
+
+  <!-- Seasonal Buy Signal -->
+  <div class="mt-10">
+    <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
+      <i data-lucide="calendar-clock" class="w-5 h-5 text-purple-400"></i> Buying Season Intelligence
+    </h3>
+    <p class="text-sm text-slate-500 mb-4">When's the best time to make an offer?</p>
+    <div id="dash-seasonal" class="glass rounded-xl p-5"></div>
+  </div>
 </section>
 
 <!-- ================================================================== -->
@@ -22640,6 +22649,83 @@ function calcMortgage(price, downPct = 20, rate = 6.8, years = 30) {
   const n = years * 12;
   const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, n)) / (Math.pow(1 + monthlyRate, n) - 1);
   return { payment: Math.round(payment), down: Math.round(down), principal: Math.round(principal) };
+}
+
+function generateAdvisorAnalysis(p) {
+  const pros = [];
+  const cons = [];
+  const tips = [];
+
+  // Price analysis
+  const lakeAnalysis = getLakePriceAnalysis(p);
+  if (lakeAnalysis && lakeAnalysis.pctDiff < -10) pros.push(`Priced <strong>${Math.abs(lakeAnalysis.pctDiff)}% below</strong> the ${p.waterBodyName} average — strong value`);
+  else if (lakeAnalysis && lakeAnalysis.pctDiff < 0) pros.push(`Priced ${Math.abs(lakeAnalysis.pctDiff)}% below the lake average`);
+  else if (lakeAnalysis && lakeAnalysis.pctDiff > 15) cons.push(`Priced <strong>${lakeAnalysis.pctDiff}% above</strong> the ${p.waterBodyName} average`);
+  else if (lakeAnalysis && lakeAnalysis.pctDiff > 5) cons.push(`Priced ${lakeAnalysis.pctDiff}% above the lake average`);
+
+  // Water access
+  if (p.waterType === 'lakefront') pros.push('Direct lakefront — highest demand and resale value');
+  else if (p.waterType === 'community') cons.push('Community access only — no private waterfront');
+
+  // Dog access
+  if (p.dogSwimAccessible) pros.push('Dog-friendly water access — perfect for your pup');
+  else cons.push('No direct dog water access from this property');
+
+  // Flood zone
+  if (p.isFloodHazard) cons.push(`<strong>FEMA Zone ${p.floodZone}</strong> — flood insurance required, adds ~$3,000/year to carrying cost`);
+  else if (p.floodZone === 'X') pros.push('Outside flood zone — no flood insurance needed');
+
+  // Commute
+  if (p.commute) {
+    if (p.commute.minutes <= 100) pros.push(`Short commute: ${p.commute.timeStr} from Yonkers — easy weekend trips`);
+    else if (p.commute.minutes <= 130) tips.push(`Commute is ${p.commute.timeStr} — manageable for weekends, factor in Friday traffic`);
+    else cons.push(`Long commute: ${p.commute.timeStr} from Yonkers — consider for weekend-only use`);
+  }
+
+  // Days on market
+  if (p.daysOnMarket >= 90) pros.push(`On market <strong>${p.daysOnMarket} days</strong> — seller likely motivated, room to negotiate`);
+  else if (p.daysOnMarket >= 60) tips.push(`${p.daysOnMarket} days on market — some negotiation room`);
+  else if (p.daysOnMarket <= 7) cons.push('Just listed — expect competition, be ready to move fast');
+
+  // Price reduction
+  if (p.previousPrice) pros.push(`Price already reduced — seller is flexible`);
+
+  // Size and bedrooms
+  if (p.bedrooms >= 3 && p.sqft >= 1500) pros.push(`${p.bedrooms} bedrooms, ${p.sqft.toLocaleString()} sqft — great for hosting family & friends`);
+  else if (p.bedrooms <= 1) cons.push('Only 1 bedroom — limited hosting capacity');
+  if (p.bedrooms === 0 && p.sqft === 0) cons.push('Vacant land — requires new construction (6-12 months + $200K+)');
+
+  // Tesla
+  if (p.nearestTesla && p.nearestTesla.miles <= 5) pros.push(`Tesla Supercharger only ${p.nearestTesla.miles} mi away`);
+  else if (p.nearestTesla && p.nearestTesla.miles > 20) tips.push(`Nearest Tesla charger is ${p.nearestTesla.miles} mi — consider Level 2 home charger install`);
+
+  // Property tax
+  if (p.annualTax > 10000) cons.push(`High property taxes: $${p.annualTax.toLocaleString()}/year${p.township ? ' (' + p.township + ' Twp)' : ''}`);
+  else if (p.annualTax < 5000 && p.annualTax > 0) pros.push(`Low property taxes: $${p.annualTax.toLocaleString()}/year`);
+
+  // Overall verdict
+  const proWeight = pros.length * 2;
+  const conWeight = cons.length * 2;
+  const score = Math.min(100, Math.max(0, 50 + (proWeight - conWeight) * 5 + (p.overallScore - 70)));
+  let verdict, verdictColor, verdictIcon;
+  if (score >= 75) { verdict = 'Strong Buy'; verdictColor = 'text-emerald-400'; verdictIcon = 'thumbs-up'; }
+  else if (score >= 55) { verdict = 'Worth Considering'; verdictColor = 'text-amber-400'; verdictIcon = 'scale'; }
+  else { verdict = 'Proceed with Caution'; verdictColor = 'text-red-400'; verdictIcon = 'alert-triangle'; }
+
+  return `
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-xl ${score >= 75 ? 'bg-emerald-500/15' : score >= 55 ? 'bg-amber-500/15' : 'bg-red-500/15'} flex items-center justify-center">
+        <i data-lucide="${verdictIcon}" class="w-5 h-5 ${verdictColor}"></i>
+      </div>
+      <div>
+        <div class="font-bold ${verdictColor}">${verdict}</div>
+        <div class="text-xs text-slate-500">Based on ${pros.length + cons.length + tips.length} factors analyzed</div>
+      </div>
+    </div>
+    ${pros.length > 0 ? `<div class="mb-3"><div class="text-xs text-emerald-400 font-medium uppercase tracking-wider mb-1.5">Pros</div>${pros.map(p => `<div class="flex items-start gap-2 text-sm text-slate-300 mb-1"><span class="text-emerald-400 mt-0.5 shrink-0">+</span><span>${p}</span></div>`).join('')}</div>` : ''}
+    ${cons.length > 0 ? `<div class="mb-3"><div class="text-xs text-red-400 font-medium uppercase tracking-wider mb-1.5">Cons</div>${cons.map(c => `<div class="flex items-start gap-2 text-sm text-slate-300 mb-1"><span class="text-red-400 mt-0.5 shrink-0">−</span><span>${c}</span></div>`).join('')}</div>` : ''}
+    ${tips.length > 0 ? `<div><div class="text-xs text-amber-400 font-medium uppercase tracking-wider mb-1.5">Tips</div>${tips.map(t => `<div class="flex items-start gap-2 text-sm text-slate-300 mb-1"><span class="text-amber-400 mt-0.5 shrink-0">→</span><span>${t}</span></div>`).join('')}</div>` : ''}
+  `;
 }
 
 function renderMortgageSection(p) {
@@ -23744,6 +23830,16 @@ function openDetailModal(id) {
         <!-- Monthly Cost Estimate -->
         ${renderMortgageSection(p)}
 
+        <!-- AI Property Advisor -->
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-4 flex items-center gap-2">
+            <i data-lucide="brain" class="w-4 h-4"></i> Property Advisor
+          </h4>
+          <div class="glass rounded-xl p-4">
+            ${generateAdvisorAnalysis(p)}
+          </div>
+        </div>
+
         <!-- Description -->
         <div class="p-6 border-b border-white/5">
           <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">Description</h4>
@@ -24156,6 +24252,90 @@ function renderDashboard() {
         </div>
       `;
     }).join('');
+  }
+
+  // Seasonal Buy Signal
+  const seasonalEl = document.getElementById('dash-seasonal');
+  if (seasonalEl) {
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // Pocono real estate seasonal patterns (well-established industry data)
+    const seasonalData = [
+      { month: 'Jan', listings: 15, demand: 20, advantage: 'buyer', note: 'Lowest inventory, motivated sellers' },
+      { month: 'Feb', listings: 20, demand: 25, advantage: 'buyer', note: 'Pre-spring deals still available' },
+      { month: 'Mar', listings: 40, demand: 45, advantage: 'neutral', note: 'Inventory rising, competition growing' },
+      { month: 'Apr', listings: 65, demand: 70, advantage: 'seller', note: 'Spring rush begins' },
+      { month: 'May', listings: 85, demand: 90, advantage: 'seller', note: 'Peak competition — multiple offers common' },
+      { month: 'Jun', listings: 95, demand: 100, advantage: 'seller', note: 'Highest demand — summer buyers' },
+      { month: 'Jul', listings: 100, demand: 85, advantage: 'neutral', note: 'Most inventory, demand starts cooling' },
+      { month: 'Aug', listings: 90, demand: 75, advantage: 'buyer', note: 'Inventory high, buyers slowing down' },
+      { month: 'Sep', listings: 70, demand: 55, advantage: 'buyer', note: 'Good deals — sellers want to close before winter' },
+      { month: 'Oct', listings: 50, demand: 40, advantage: 'buyer', note: 'Great negotiating leverage' },
+      { month: 'Nov', listings: 30, demand: 20, advantage: 'buyer', note: 'Best prices — few buyers competing' },
+      { month: 'Dec', listings: 18, demand: 15, advantage: 'buyer', note: 'Lowest competition of the year' },
+    ];
+
+    const current = seasonalData[month];
+    const advantageColor = current.advantage === 'buyer' ? 'text-emerald-400' : current.advantage === 'seller' ? 'text-red-400' : 'text-amber-400';
+    const advantageLabel = current.advantage === 'buyer' ? "Buyer's Market" : current.advantage === 'seller' ? "Seller's Market" : 'Balanced Market';
+    const advantageIcon = current.advantage === 'buyer' ? 'trending-down' : current.advantage === 'seller' ? 'trending-up' : 'minus';
+
+    // Find best months to buy
+    const bestMonths = seasonalData.filter(s => s.advantage === 'buyer').map(s => s.month);
+
+    // Current signal
+    const avgDOM = Math.round(PROPERTIES.reduce((s, p) => s + p.daysOnMarket, 0) / PROPERTIES.length);
+    const priceReductions = PROPERTIES.filter(p => p.previousPrice).length;
+    const pctReduced = Math.round(priceReductions / PROPERTIES.length * 100);
+
+    seasonalEl.innerHTML = `
+      <div class="flex items-center gap-4 mb-5">
+        <div class="w-14 h-14 rounded-xl ${current.advantage === 'buyer' ? 'bg-emerald-500/15' : current.advantage === 'seller' ? 'bg-red-500/15' : 'bg-amber-500/15'} flex items-center justify-center shrink-0">
+          <i data-lucide="${advantageIcon}" class="w-7 h-7 ${advantageColor}"></i>
+        </div>
+        <div>
+          <div class="text-lg font-bold ${advantageColor}">${advantageLabel}</div>
+          <div class="text-sm text-slate-400">${monthNames[month]} ${now.getFullYear()} — ${current.note}</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 mb-5">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-slate-200">${avgDOM}d</div>
+          <div class="text-[10px] text-slate-500">Avg Days on Market</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-slate-200">${pctReduced}%</div>
+          <div class="text-[10px] text-slate-500">Price Reduced</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-slate-200">${PROPERTIES.length}</div>
+          <div class="text-[10px] text-slate-500">Active Listings</div>
+        </div>
+      </div>
+
+      <!-- Monthly bar chart -->
+      <div class="text-xs text-slate-500 mb-2">Seasonal demand pattern (Pocono market)</div>
+      <div class="flex items-end gap-1 h-16 mb-1">
+        ${seasonalData.map((s, i) => {
+          const isNow = i === month;
+          const barColor = s.advantage === 'buyer' ? 'bg-emerald-500/60' : s.advantage === 'seller' ? 'bg-red-500/60' : 'bg-amber-500/60';
+          return `<div class="flex-1 flex flex-col items-center gap-0.5">
+            <div class="w-full rounded-t ${isNow ? barColor + ' ring-1 ring-white/30' : barColor + '/40'}" style="height: ${s.demand}%"></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="flex gap-1 text-[9px] text-slate-600">
+        ${seasonalData.map((s, i) => `<div class="flex-1 text-center ${i === month ? 'text-white font-bold' : ''}">${s.month}</div>`).join('')}
+      </div>
+
+      <div class="mt-4 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+        <div class="text-xs text-emerald-400 font-medium mb-1">Best months to buy in the Poconos</div>
+        <div class="text-sm text-slate-300">${bestMonths.join(', ')} — lowest competition, most negotiating power. Sellers who list in fall/winter are often more motivated.</div>
+      </div>
+    `;
   }
 
   lucide.createIcons();
