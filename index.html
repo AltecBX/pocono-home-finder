@@ -23968,16 +23968,28 @@ function openDetailModal(id) {
           </a>
         </div>` : ''}
 
-        <!-- Street View -->
+        <!-- Street View & Satellite -->
         ${p.latitude ? `
         <div class="p-6 border-b border-white/5">
           <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
-            <i data-lucide="eye" class="w-4 h-4"></i> Street View
+            <i data-lucide="eye" class="w-4 h-4"></i> Explore the Area
           </h4>
-          <div class="rounded-xl overflow-hidden" style="aspect-ratio: 16/9;">
-            <iframe src="https://www.google.com/maps/embed/v1/streetview?key=AIzaSyBnuQ4r7gXud5HEUb3clIJyH3V3CZUg0RY&location=${p.latitude},${p.longitude}&heading=0&pitch=0&fov=90" width="100%" height="100%" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="https://www.google.com/maps/@${p.latitude},${p.longitude},3a,75y,0h,90t/data=!3m6!1e1!3m4!1s!2e0!7i13312!8i6656" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-4 text-center hover:bg-white/10 transition no-underline group">
+              <div class="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center mx-auto mb-2">
+                <i data-lucide="eye" class="w-6 h-6 text-blue-400"></i>
+              </div>
+              <div class="text-sm font-medium text-slate-300 group-hover:text-water">Street View</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">Walk the neighborhood</div>
+            </a>
+            <a href="https://www.google.com/maps/@${p.latitude},${p.longitude},300m/data=!3m1!1e3" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-4 text-center hover:bg-white/10 transition no-underline group">
+              <div class="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-2">
+                <i data-lucide="satellite" class="w-6 h-6 text-emerald-400"></i>
+              </div>
+              <div class="text-sm font-medium text-slate-300 group-hover:text-water">Satellite View</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">See the lake & property</div>
+            </a>
           </div>
-          <a href="https://www.google.com/maps/@${p.latitude},${p.longitude},3a,75y,0h,90t/data=!3m6!1e1!3m4!1s!2e0!7i13312!8i6656" target="_blank" class="text-xs text-slate-500 hover:text-water mt-2 inline-flex items-center gap-1 no-underline"><i data-lucide="external-link" class="w-3 h-3"></i>Open in Google Maps</a>
         </div>` : ''}
 
         <!-- Nearby Amenities -->
