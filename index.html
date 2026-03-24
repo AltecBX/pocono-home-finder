@@ -21816,28 +21816,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 <!-- HEADER / NAV                                                       -->
 <!-- ================================================================== -->
 <header id="header" class="fixed top-0 left-0 right-0 z-50 glass-strong" style="padding-top: env(safe-area-inset-top, 0px);">
-  <!-- Realtor Contact Strip -->
-  <div class="bg-gradient-to-r from-water/15 to-emerald-500/10 border-b border-white/5">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-8 text-[11px]">
-      <span class="text-slate-400">Your Realtor: <span class="text-white font-medium">Theresa Staiano</span></span>
-      <div class="flex items-center gap-3">
-        <button onclick="confirmContact('call')" class="flex items-center gap-1 text-slate-400 hover:text-water transition-colors bg-transparent border-0 cursor-pointer text-[11px] p-0">
-          <i data-lucide="phone" class="w-3 h-3"></i>
-          <span class="hidden sm:inline">917-596-5538</span>
-          <span class="sm:hidden">Call</span>
-        </button>
-        <button onclick="confirmContact('email')" class="flex items-center gap-1 text-slate-400 hover:text-water transition-colors bg-transparent border-0 cursor-pointer text-[11px] p-0">
-          <i data-lucide="mail" class="w-3 h-3"></i>
-          <span class="hidden sm:inline">teresajstaiano@gmail.com</span>
-          <span class="sm:hidden">Email</span>
-        </button>
-        <button onclick="confirmContact('text')" class="flex items-center gap-1 text-slate-400 hover:text-water transition-colors bg-transparent border-0 cursor-pointer text-[11px] p-0 sm:hidden">
-          <i data-lucide="message-circle" class="w-3 h-3"></i>
-          Text
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- Realtor info moved to mobile menu and desktop nav -->
   <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
     <!-- Logo -->
     <a href="#hero" class="flex items-center gap-2 text-lg font-bold tracking-tight">
@@ -21855,6 +21834,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <a href="#dashboard" class="text-sm text-slate-300 hover:text-water transition-colors">Dashboard</a>
       <a href="#compare" class="text-sm text-slate-300 hover:text-water transition-colors">Compare</a>
       <a href="#trips" class="text-sm text-slate-300 hover:text-water transition-colors">Trips</a>
+      <button onclick="confirmContact('call')" class="text-sm text-water hover:text-white transition-colors flex items-center gap-1.5 bg-water/10 px-3 py-1.5 rounded-full"><i data-lucide="phone" class="w-3.5 h-3.5"></i>Theresa</button>
     </nav>
     <!-- Mobile Hamburger -->
     <button id="hamburger-btn" class="md:hidden p-2 rounded-lg hover:bg-white/5 transition" aria-label="Menu">
@@ -21893,13 +21873,41 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       </span>
       <div id="theme-toggle" class="toggle-switch active" onclick="toggleTheme()"></div>
     </div>
+
+    <!-- Your Realtor -->
+    <div class="pt-4 mt-4 border-t border-white/10">
+      <div class="text-xs text-slate-500 uppercase tracking-wider mb-3">Your Realtor</div>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-water/20 flex items-center justify-center shrink-0">
+          <i data-lucide="user" class="w-5 h-5 text-water"></i>
+        </div>
+        <div>
+          <div class="text-white font-semibold">Theresa Staiano</div>
+          <div class="text-xs text-slate-400">Licensed Real Estate Agent</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="closeMobileMenu();confirmContact('call')" class="flex flex-col items-center gap-1 py-3 rounded-xl glass hover:bg-water/10 transition">
+          <i data-lucide="phone" class="w-5 h-5 text-emerald-400"></i>
+          <span class="text-[11px] text-slate-400">Call</span>
+        </button>
+        <button onclick="closeMobileMenu();confirmContact('text')" class="flex flex-col items-center gap-1 py-3 rounded-xl glass hover:bg-water/10 transition">
+          <i data-lucide="message-circle" class="w-5 h-5 text-blue-400"></i>
+          <span class="text-[11px] text-slate-400">Text</span>
+        </button>
+        <button onclick="closeMobileMenu();confirmContact('email')" class="flex flex-col items-center gap-1 py-3 rounded-xl glass hover:bg-water/10 transition">
+          <i data-lucide="mail" class="w-5 h-5 text-amber-400"></i>
+          <span class="text-[11px] text-slate-400">Email</span>
+        </button>
+      </div>
+    </div>
   </nav>
 </div>
 
 <!-- ================================================================== -->
 <!-- HERO SECTION                                                       -->
 <!-- ================================================================== -->
-<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden" style="padding-top: calc(6rem + env(safe-area-inset-top, 0px));">
+<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden" style="padding-top: calc(4rem + env(safe-area-inset-top, 0px));">
   <!-- Ambient glow orbs -->
   <div class="hero-glow glow-1"></div>
   <div class="hero-glow glow-2"></div>
