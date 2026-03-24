@@ -23196,7 +23196,7 @@ function checkDeepLink() {
 
 function renderPropertyCard(p) {
   const isCompared = compareList.includes(p.id);
-  const sourcesPreview = (p.sources || []).slice(0, 4);
+  const sourcesPreview = (p.sources || []).filter((s, i, arr) => arr.findIndex(x => x.name === s.name) === i).slice(0, 4);
   return `
     <div class="property-card glass rounded-2xl overflow-hidden animate-fade-in" data-id="${p.id}">
       <!-- Photo area (clickable) -->
