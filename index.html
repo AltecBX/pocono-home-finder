@@ -21234,6 +21234,28 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 <!-- HEADER / NAV                                                       -->
 <!-- ================================================================== -->
 <header id="header" class="fixed top-0 left-0 right-0 z-50 glass-strong" style="padding-top: env(safe-area-inset-top, 0px);">
+  <!-- Realtor Contact Strip -->
+  <div class="bg-gradient-to-r from-water/15 to-emerald-500/10 border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-8 text-[11px]">
+      <span class="text-slate-400">Your Realtor: <span class="text-white font-medium">Theresa Staiano</span></span>
+      <div class="flex items-center gap-3">
+        <a href="tel:917-596-5538" class="flex items-center gap-1 text-slate-400 hover:text-water transition-colors">
+          <i data-lucide="phone" class="w-3 h-3"></i>
+          <span class="hidden sm:inline">917-596-5538</span>
+          <span class="sm:hidden">Call</span>
+        </a>
+        <a href="mailto:teresajstaiano@gmail.com" class="flex items-center gap-1 text-slate-400 hover:text-water transition-colors">
+          <i data-lucide="mail" class="w-3 h-3"></i>
+          <span class="hidden sm:inline">teresajstaiano@gmail.com</span>
+          <span class="sm:hidden">Email</span>
+        </a>
+        <a href="sms:917-596-5538" class="flex items-center gap-1 text-slate-400 hover:text-water transition-colors sm:hidden">
+          <i data-lucide="message-circle" class="w-3 h-3"></i>
+          Text
+        </a>
+      </div>
+    </div>
+  </div>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
     <!-- Logo -->
     <a href="#hero" class="flex items-center gap-2 text-lg font-bold tracking-tight">
@@ -21295,7 +21317,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 <!-- ================================================================== -->
 <!-- HERO SECTION                                                       -->
 <!-- ================================================================== -->
-<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden" style="padding-top: calc(4rem + env(safe-area-inset-top, 0px));">
+<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden" style="padding-top: calc(6rem + env(safe-area-inset-top, 0px));">
   <!-- Ambient glow orbs -->
   <div class="hero-glow glow-1"></div>
   <div class="hero-glow glow-2"></div>
