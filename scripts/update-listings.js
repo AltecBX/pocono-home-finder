@@ -130,6 +130,14 @@ function getSourcesForProperty(address, city, zipCode) {
     { name: 'Realtor.com', url: `https://www.realtor.com/realestateandhomes-search/${encodeURIComponent(city + '_PA')}/type-single-family-home?keyword=${addr}`, verified: false },
     { name: 'Trulia', url: `https://www.trulia.com/home/${q}`, verified: false },
     { name: 'Homes.com', url: `https://www.homes.com/property-search/?q=${q}`, verified: false },
+    { name: 'FlexMLS', url: `https://poconorealestate.flexmls.com/cgi-bin/mainmenu.cgi?cmd=url+search/quick&search_text=${addr}`, verified: false },
+    { name: 'Century 21', url: `https://www.century21.com/real-estate/${encodeURIComponent(city.toLowerCase().replace(/\s+/g,'-'))}-pa/LCPA${encodeURIComponent(city.toUpperCase().replace(/\s+/g,''))}/?k=${addr}`, verified: false },
+    { name: 'Weichert', url: `https://www.weichert.com/search/?query=${q}`, verified: false },
+    { name: 'Coldwell Banker', url: `https://www.coldwellbanker.com/search?query=${q}`, verified: false },
+    { name: 'Movoto', url: `https://www.movoto.com/search/?q=${q}`, verified: false },
+    { name: 'Pocono RE', url: `https://www.poconosrealestate.com/search/?search_text=${addr}`, verified: false },
+    { name: 'Mashvisor', url: `https://www.mashvisor.com/search?query=${q}`, verified: false },
+    { name: 'Howard Hanna', url: `https://www.howardhanna.com/Search?q=${q}`, verified: false },
   ];
 }
 

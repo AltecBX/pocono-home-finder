@@ -22619,24 +22619,38 @@ function deduplicateProperties() {
 
 // Enrich sources — mark verified + upgrade generic URLs to address-specific searches
 function enrichSources() {
+  const extraSites = [
+    { name: 'FlexMLS', urlFn: (a,c,q) => `https://poconorealestate.flexmls.com/cgi-bin/mainmenu.cgi?cmd=url+search/quick&search_text=${encodeURIComponent(a)}` },
+    { name: 'Century 21', urlFn: (a,c,q) => `https://www.century21.com/real-estate/${encodeURIComponent(c.toLowerCase().replace(/\s+/g,'-'))}-pa/?k=${encodeURIComponent(a)}` },
+    { name: 'Weichert', urlFn: (a,c,q) => `https://www.weichert.com/search/?query=${q}` },
+    { name: 'Coldwell Banker', urlFn: (a,c,q) => `https://www.coldwellbanker.com/search?query=${q}` },
+    { name: 'Movoto', urlFn: (a,c,q) => `https://www.movoto.com/search/?q=${q}` },
+    { name: 'Pocono RE', urlFn: (a,c,q) => `https://www.poconosrealestate.com/search/?search_text=${encodeURIComponent(a)}` },
+    { name: 'Mashvisor', urlFn: (a,c,q) => `https://www.mashvisor.com/search?query=${q}` },
+    { name: 'Howard Hanna', urlFn: (a,c,q) => `https://www.howardhanna.com/Search?q=${q}` },
+  ];
   PROPERTIES.forEach(p => {
     if (!p.sources) return;
     const q = encodeURIComponent(`${p.address} ${p.city} PA ${p.zipCode}`);
     p.sources.forEach(s => {
-      // Auto-detect verified: LakeHouse URLs with a property slug are direct links
       if (s.verified === undefined) {
         s.verified = !!(
           (s.name === 'LakeHouse.com' && s.url && s.url.includes('-p')) ||
           (s.url && s.url.includes('realestateandhomes-detail'))
         );
       }
-      // Upgrade generic county-wide URLs to address-specific searches
       if (!s.verified && s.url) {
         if (s.name === 'Zillow' && s.url.includes('monroe-county')) s.url = `https://www.zillow.com/homes/${q}_rb/`;
         if (s.name === 'Redfin' && s.url.includes('Monroe-County')) s.url = `https://www.redfin.com/search#query=${q}`;
         if (s.name === 'Realtor.com' && s.url.includes('Monroe-County')) s.url = `https://www.realtor.com/realestateandhomes-search/${encodeURIComponent(p.city + '_PA')}?keyword=${encodeURIComponent(p.address)}`;
         if (s.name === 'Trulia' && s.url.includes('Monroe_County')) s.url = `https://www.trulia.com/home/${q}`;
         if (s.name === 'Homes.com' && s.url.includes('monroe-county')) s.url = `https://www.homes.com/property-search/?q=${q}`;
+      }
+    });
+    // Add extra search sites if not already present
+    extraSites.forEach(site => {
+      if (!p.sources.some(s => s.name === site.name)) {
+        p.sources.push({ name: site.name, url: site.urlFn(p.address, p.city, q), verified: false });
       }
     });
   });
