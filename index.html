@@ -177,6 +177,8 @@ tailwind.config = {
     from { transform: translateY(0); }
     to { transform: translateY(100%); }
   }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
   @keyframes drawRing {
     from { stroke-dashoffset: var(--circumference); }
     to { stroke-dashoffset: var(--dash-offset); }
@@ -22027,7 +22029,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
   </div>
 
   <!-- Desktop Filter Bar -->
-  <div class="hidden sm:flex flex-wrap items-center gap-3 mb-8 glass rounded-xl p-4">
+  <div id="filter-bar" class="hidden sm:flex flex-wrap items-center gap-3 mb-8 glass rounded-xl p-4 transition-all duration-300" style="position: sticky; top: calc(4rem + env(safe-area-inset-top, 0px)); z-index: 30;">
     <!-- Lake filter -->
     <select id="filter-lake" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none min-w-[160px]">
       <option value="all">All Lakes</option>
@@ -22226,6 +22228,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
         <!-- Rendered by JS -->
       </table>
     </div>
+    <div id="compare-recommendation"></div>
   </div>
 </section>
 
@@ -23030,7 +23033,8 @@ function renderPropertyCard(p) {
     <div class="property-card glass rounded-2xl overflow-hidden animate-fade-in" data-id="${p.id}">
       <!-- Photo area (clickable) -->
       <div class="relative cursor-pointer" style="aspect-ratio: 16/10;" onclick="openDetailModal(${p.id})">
-        <img src="${p.image}" alt="${p.address}" class="w-full h-full object-cover" loading="lazy">
+        <div class="absolute inset-0 skeleton"></div>
+        <img src="${p.image}" alt="${p.address}" class="w-full h-full object-cover relative z-[1]" loading="lazy" onload="this.previousElementSibling.style.display='none'">
         <!-- Dark gradient overlay at bottom -->
         <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
 
@@ -23629,6 +23633,64 @@ function updateCompareSection() {
 
   html += '</tbody>';
   document.getElementById('compare-table').innerHTML = html;
+
+  // AI Winner Recommendation
+  if (props.length >= 2) {
+    // Score each property across weighted categories
+    const scores = props.map(p => {
+      let s = 0;
+      const m = calcMortgage(p.price);
+      const monthly = m.payment + Math.round(p.annualTax / 12) + (p.hoaFee || 0);
+      s += (1 - monthly / 8000) * 25; // Lower cost = better (max ~$8K/mo)
+      s += p.overallScore * 0.2;
+      s += p.valueScore * 0.15;
+      s += (p.waterType === 'lakefront' ? 15 : 5);
+      s += p.dogSwimAccessible ? 8 : 0;
+      s += !p.isFloodHazard ? 5 : -5;
+      s += p.commute ? (180 - p.commute.minutes) * 0.08 : 0;
+      s += (p.bedrooms >= 3 ? 5 : 0);
+      s += (p.daysOnMarket >= 60 ? 3 : 0); // Negotiation opportunity
+      return s;
+    });
+    const winnerIdx = scores.indexOf(Math.max(...scores));
+    const winner = props[winnerIdx];
+    const loser = props.find((p, i) => i !== winnerIdx);
+
+    // Generate insights
+    const insights = [];
+    const wM = calcMortgage(winner.price);
+    const wMonthly = wM.payment + Math.round(winner.annualTax / 12) + (winner.hoaFee || 0);
+    if (loser) {
+      const lM = calcMortgage(loser.price);
+      const lMonthly = lM.payment + Math.round(loser.annualTax / 12) + (loser.hoaFee || 0);
+      const diff = lMonthly - wMonthly;
+      if (diff > 50) insights.push(`Saves <strong>$${Math.abs(diff).toLocaleString()}/mo</strong> vs ${formatPrice(loser.price)} property`);
+    }
+    if (winner.waterType === 'lakefront' && loser?.waterType !== 'lakefront') insights.push('Direct lakefront (vs community access)');
+    if (winner.dogSwimAccessible && !loser?.dogSwimAccessible) insights.push('Dog-friendly water access');
+    if (winner.commute && loser?.commute && winner.commute.minutes < loser.commute.minutes - 5) insights.push(`${loser.commute.minutes - winner.commute.minutes} min shorter commute`);
+    if (!winner.isFloodHazard && loser?.isFloodHazard) insights.push('Not in a flood zone (saves ~$3K/yr insurance)');
+    if (winner.overallScore > (loser?.overallScore || 0)) insights.push(`Higher overall score (${winner.overallScore} vs ${loser?.overallScore || '—'})`);
+
+    const recEl = document.getElementById('compare-recommendation');
+    if (recEl) {
+      recEl.innerHTML = `
+        <div class="glass rounded-xl p-5 mt-6 border border-emerald-500/20">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+              <i data-lucide="trophy" class="w-5 h-5 text-emerald-400"></i>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-emerald-400">Recommended: ${formatPrice(winner.price)} — ${winner.address}</div>
+              <div class="text-xs text-slate-500">Wins in ${rows.filter(r => r.bestIdx === winnerIdx).length} of ${rows.filter(r => r.bestIdx >= 0).length} categories</div>
+            </div>
+          </div>
+          ${insights.length > 0 ? `<div class="flex flex-wrap gap-2">${insights.map(i => `<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2.5 py-1">${i}</span>`).join('')}</div>` : ''}
+        </div>
+      `;
+    }
+  }
+
   lucide.createIcons();
 }
 
@@ -23889,6 +23951,18 @@ function openDetailModal(id) {
           </a>
         </div>` : ''}
 
+        <!-- Street View -->
+        ${p.latitude ? `
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+            <i data-lucide="eye" class="w-4 h-4"></i> Street View
+          </h4>
+          <div class="rounded-xl overflow-hidden" style="aspect-ratio: 16/9;">
+            <iframe src="https://www.google.com/maps/embed/v1/streetview?key=AIzaSyBnuQ4r7gXud5HEUb3clIJyH3V3CZUg0RY&location=${p.latitude},${p.longitude}&heading=0&pitch=0&fov=90" width="100%" height="100%" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+          <a href="https://www.google.com/maps/@${p.latitude},${p.longitude},3a,75y,0h,90t/data=!3m6!1e1!3m4!1s!2e0!7i13312!8i6656" target="_blank" class="text-xs text-slate-500 hover:text-water mt-2 inline-flex items-center gap-1 no-underline"><i data-lucide="external-link" class="w-3 h-3"></i>Open in Google Maps</a>
+        </div>` : ''}
+
         <!-- Nearby Amenities -->
         ${(p.nearestTesla || p.nearestGrocery) ? `
         <div class="p-6 border-b border-white/5">
@@ -23934,6 +24008,32 @@ function openDetailModal(id) {
           <a href="https://www.tesla.com/findus/location/supercharger/${p.nearestTesla.teslaId}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 mt-3 text-[11px] text-slate-500 hover:text-red-400 transition">
             <i data-lucide="battery-charging" class="w-3 h-3"></i> Check live availability on Tesla.com <i data-lucide="external-link" class="w-3 h-3"></i>
           </a>` : ''}
+        </div>` : ''}
+
+        <!-- Nearby Dining -->
+        ${p.latitude ? `
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+            <i data-lucide="utensils" class="w-4 h-4"></i> Nearby Dining & Entertainment
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <a href="https://www.google.com/maps/search/restaurants/@${p.latitude},${p.longitude},13z" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-3 text-center hover:bg-white/10 transition no-underline group">
+              <div class="text-lg mb-1">🍽️</div>
+              <div class="text-xs text-slate-400 group-hover:text-water">Restaurants</div>
+            </a>
+            <a href="https://www.google.com/maps/search/bars+pubs/@${p.latitude},${p.longitude},13z" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-3 text-center hover:bg-white/10 transition no-underline group">
+              <div class="text-lg mb-1">🍺</div>
+              <div class="text-xs text-slate-400 group-hover:text-water">Bars & Pubs</div>
+            </a>
+            <a href="https://www.google.com/maps/search/coffee+shops/@${p.latitude},${p.longitude},13z" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-3 text-center hover:bg-white/10 transition no-underline group">
+              <div class="text-lg mb-1">☕</div>
+              <div class="text-xs text-slate-400 group-hover:text-water">Coffee</div>
+            </a>
+            <a href="https://www.google.com/maps/search/pizza+delivery/@${p.latitude},${p.longitude},13z" target="_blank" rel="noopener noreferrer" class="glass rounded-xl p-3 text-center hover:bg-white/10 transition no-underline group">
+              <div class="text-lg mb-1">🍕</div>
+              <div class="text-xs text-slate-400 group-hover:text-water">Pizza</div>
+            </a>
+          </div>
         </div>` : ''}
 
         <!-- Your Notes -->
@@ -24647,6 +24747,37 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show "new since last visit" notification
   setTimeout(checkNewSinceLastVisit, 1500);
 });
+// ========== BACK TO TOP ==========
+(function() {
+  const btn = document.createElement('button');
+  btn.id = 'back-to-top';
+  btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>';
+  btn.className = 'fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-water/80 text-white shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-water transition-all opacity-0 pointer-events-none';
+  btn.style.cssText = 'transition: opacity 0.3s, transform 0.3s; bottom: calc(24px + env(safe-area-inset-bottom, 0px));';
+  btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.body.appendChild(btn);
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 600) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+    else { btn.style.opacity = '0'; btn.style.pointerEvents = 'none'; }
+  }, { passive: true });
+})();
+
+// ========== STICKY FILTER BAR ==========
+(function() {
+  const filterBar = document.getElementById('filter-bar');
+  if (!filterBar) return;
+  const observer = new IntersectionObserver(([entry]) => {
+    if (!entry.isIntersecting) {
+      filterBar.classList.add('stuck');
+    } else {
+      filterBar.classList.remove('stuck');
+    }
+  }, { threshold: 0, rootMargin: '-80px 0px 0px 0px' });
+  const sentinel = document.createElement('div');
+  sentinel.id = 'filter-sentinel';
+  filterBar.parentElement.insertBefore(sentinel, filterBar);
+  observer.observe(sentinel);
+})();
 </script>
 
 </body>
