@@ -41739,6 +41739,108 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { passive: true });
 })();
 
+// ========== FLOATING CALCULATOR BUTTON ==========
+(function() {
+  const calcBtn = document.createElement('button');
+  calcBtn.id = 'float-calc-btn';
+  calcBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>';
+  calcBtn.className = 'fixed z-[9998] w-14 h-14 rounded-full bg-emerald-500 text-white shadow-2xl flex items-center justify-center hover:bg-emerald-400 transition-all';
+  calcBtn.style.cssText = 'bottom: calc(24px + env(safe-area-inset-bottom, 0px)); right: 80px; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);';
+  calcBtn.title = 'Mortgage Calculator';
+  calcBtn.onclick = () => {
+    const existing = document.getElementById('calc-modal');
+    if (existing) { existing.remove(); return; }
+    const modal = document.createElement('div');
+    modal.id = 'calc-modal';
+    modal.className = 'fixed inset-0 z-[10000] flex items-end sm:items-center justify-center';
+    modal.innerHTML = `
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="document.getElementById('calc-modal').remove()"></div>
+      <div class="relative w-full sm:w-[480px] bg-[#111827] rounded-t-2xl sm:rounded-2xl p-6 max-h-[80vh] overflow-y-auto shadow-2xl border border-white/10 animate-fade-in-up" style="padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/></svg> What Can I Afford?</h3>
+          <button onclick="document.getElementById('calc-modal').remove()" class="p-1 rounded-full hover:bg-white/10 transition"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">Enter your financials — we'll show which properties fit your budget.</p>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div><label class="text-[10px] text-slate-500 uppercase block mb-1">Annual Income</label><input type="text" id="calc-income" placeholder="$150,000" class="w-full bg-navy-600 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:border-water/40 focus:outline-none" oninput="updateCalcModal()"></div>
+          <div><label class="text-[10px] text-slate-500 uppercase block mb-1">Monthly Debts</label><input type="text" id="calc-debts" placeholder="$2,000" class="w-full bg-navy-600 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:border-water/40 focus:outline-none" oninput="updateCalcModal()"></div>
+          <div><label class="text-[10px] text-slate-500 uppercase block mb-1">Down Payment</label><input type="text" id="calc-down" placeholder="$80,000" class="w-full bg-navy-600 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:border-water/40 focus:outline-none" oninput="updateCalcModal()"></div>
+          <div><label class="text-[10px] text-slate-500 uppercase block mb-1">Rate %</label><input type="text" id="calc-rate" value="6.8" class="w-full bg-navy-600 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:border-water/40 focus:outline-none" oninput="updateCalcModal()"></div>
+        </div>
+        <div id="calc-result" class="hidden glass rounded-xl p-4">
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div><div class="text-2xl font-bold text-emerald-400" id="calc-max">$0</div><div class="text-[10px] text-slate-500 uppercase">Max Price</div></div>
+            <div><div class="text-2xl font-bold text-water" id="calc-monthly">$0</div><div class="text-[10px] text-slate-500 uppercase">Max Monthly</div></div>
+            <div><div class="text-2xl font-bold text-amber-400" id="calc-count">0</div><div class="text-[10px] text-slate-500 uppercase">Properties</div></div>
+          </div>
+          <button onclick="document.getElementById('calc-modal').remove(); filterByBudget()" class="w-full mt-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/30 transition">Show Properties I Can Afford →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    // Load saved values
+    const saved = JSON.parse(localStorage.getItem('pocono-prequal') || 'null');
+    if (saved) {
+      if (saved.income) document.getElementById('calc-income').value = '$' + saved.income.toLocaleString();
+      if (saved.debts) document.getElementById('calc-debts').value = '$' + saved.debts.toLocaleString();
+      if (saved.down) document.getElementById('calc-down').value = '$' + saved.down.toLocaleString();
+      if (saved.rate) document.getElementById('calc-rate').value = saved.rate;
+      updateCalcModal();
+    }
+  };
+  document.body.appendChild(calcBtn);
+})();
+
+function updateCalcModal() {
+  const parse = (id) => parseInt(String(document.getElementById(id)?.value || '0').replace(/[^0-9.]/g, '')) || 0;
+  const income = parse('calc-income');
+  const debts = parse('calc-debts');
+  const down = parse('calc-down');
+  const rate = parseFloat(document.getElementById('calc-rate')?.value || '6.8') || 6.8;
+  if (income < 10000) { document.getElementById('calc-result')?.classList.add('hidden'); return; }
+  const maxMonthly = Math.round(income / 12 * 0.43) - debts;
+  if (maxMonthly <= 0) { document.getElementById('calc-result')?.classList.add('hidden'); return; }
+  const mortgageBudget = maxMonthly - 600;
+  if (mortgageBudget <= 0) { document.getElementById('calc-result')?.classList.add('hidden'); return; }
+  const r = rate / 100 / 12;
+  const n = 360;
+  const maxLoan = Math.round(mortgageBudget * ((Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n))));
+  const maxPrice = maxLoan + down;
+  const affordable = PROPERTIES.filter(p => p.price <= maxPrice).length;
+  document.getElementById('calc-result')?.classList.remove('hidden');
+  document.getElementById('calc-max').textContent = '$' + maxPrice.toLocaleString();
+  document.getElementById('calc-monthly').textContent = '$' + maxMonthly.toLocaleString();
+  document.getElementById('calc-count').textContent = affordable;
+  localStorage.setItem('pocono-prequal', JSON.stringify({ income, debts, down, rate }));
+  // Also sync to dashboard calc if it exists
+  if (document.getElementById('prequal-income')) {
+    document.getElementById('prequal-income').value = '$' + income.toLocaleString();
+    document.getElementById('prequal-debts').value = '$' + debts.toLocaleString();
+    document.getElementById('prequal-down').value = '$' + down.toLocaleString();
+    document.getElementById('prequal-rate').value = rate;
+    updatePreQual();
+  }
+}
+
+function filterByBudget() {
+  const saved = JSON.parse(localStorage.getItem('pocono-prequal') || 'null');
+  if (!saved) return;
+  const rate = saved.rate || 6.8;
+  const maxMonthly = Math.round(saved.income / 12 * 0.43) - saved.debts;
+  const mortgageBudget = maxMonthly - 600;
+  const r = rate / 100 / 12;
+  const n = 360;
+  const maxLoan = Math.round(mortgageBudget * ((Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n))));
+  const maxPrice = maxLoan + saved.down;
+  // Set price filter to closest option
+  const priceOpts = [300000, 400000, 500000, 600000, 750000, Infinity];
+  const closest = priceOpts.find(p => p >= maxPrice) || Infinity;
+  activeFilters.maxPrice = maxPrice;
+  document.getElementById('filter-price').value = String(closest === Infinity ? 'all' : closest);
+  applyFilters();
+  document.getElementById('search')?.scrollIntoView({ behavior: 'smooth' });
+}
+
 // ========== STICKY FILTER BAR ==========
 (function() {
   const filterBar = document.getElementById('filter-bar');
