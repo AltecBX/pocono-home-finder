@@ -21712,11 +21712,20 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
   </div>
 
   <!-- Needs Review -->
-  <div>
+  <div class="mb-10">
     <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
       <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i> Needs Review
     </h3>
     <div id="dash-review" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+  </div>
+
+  <!-- Market Heat by Lake -->
+  <div>
+    <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
+      <i data-lucide="flame" class="w-5 h-5 text-orange-400"></i> Market Heat by Lake
+    </h3>
+    <p class="text-sm text-slate-500 mb-4">How competitive is each lake? Based on median price, avg days on market, and inventory.</p>
+    <div id="dash-market-heat" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
   </div>
 </section>
 
@@ -22378,6 +22387,7 @@ function renderPropertyCard(p) {
         <!-- Indicators row -->
         <div class="flex items-center gap-3 mt-3 flex-wrap">
           <span class="text-xs text-slate-500">${p.daysOnMarket}d on market</span>
+          ${p.daysOnMarket >= 90 ? '<span class="text-xs bg-orange-500/10 text-orange-400 rounded-full px-2 py-0.5 flex items-center gap-1" title="On market 90+ days — seller may accept lower offers"><i data-lucide="trending-down" class="w-3 h-3"></i>Negotiate</span>' : p.daysOnMarket >= 60 ? '<span class="text-xs bg-amber-500/10 text-amber-400 rounded-full px-2 py-0.5">Sitting</span>' : ''}
           ${p.dogSwimAccessible ? '<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5 flex items-center gap-1"><i data-lucide="dog" class="w-3 h-3"></i>Dog OK</span>' : ''}
           ${(() => { const pa = getLakePriceAnalysis(p); return pa && pa.pctDiff < 0 ? `<span class="text-xs bg-emerald-500/10 text-emerald-400 rounded-full px-2 py-0.5">${pa.pctDiff}% avg</span>` : pa && pa.pctDiff > 10 ? `<span class="text-xs bg-red-500/10 text-red-400 rounded-full px-2 py-0.5">+${pa.pctDiff}% avg</span>` : ''; })()}
         </div>
@@ -23490,6 +23500,62 @@ function renderDashboard() {
   document.getElementById('dash-review').innerHTML = review.length > 0
     ? review.map(miniCard).join('')
     : '<p class="text-slate-600 text-sm col-span-3">No properties need review</p>';
+
+  // Market Heat by Lake
+  const lakeMap = {};
+  PROPERTIES.forEach(p => {
+    if (!p.waterBodyName || p.waterBodyName === 'None') return;
+    if (!lakeMap[p.waterBodyName]) lakeMap[p.waterBodyName] = [];
+    lakeMap[p.waterBodyName].push(p);
+  });
+  const lakeStats = Object.entries(lakeMap)
+    .filter(([, props]) => props.length >= 3)
+    .map(([lake, props]) => {
+      const prices = props.map(p => p.price).sort((a, b) => a - b);
+      const median = prices[Math.floor(prices.length / 2)];
+      const avgDOM = Math.round(props.reduce((s, p) => s + p.daysOnMarket, 0) / props.length);
+      const reduced = props.filter(p => p.previousPrice).length;
+      const newListings = props.filter(p => p.daysOnMarket <= 7).length;
+      // Heat score: low DOM = hot, many listings = hot, few reductions = hot
+      const heat = Math.min(100, Math.max(0, Math.round(100 - avgDOM * 0.8 + newListings * 5 - reduced * 3)));
+      return { lake, count: props.length, median, avgDOM, reduced, newListings, heat };
+    })
+    .sort((a, b) => b.heat - a.heat);
+
+  const heatEl = document.getElementById('dash-market-heat');
+  if (heatEl) {
+    heatEl.innerHTML = lakeStats.map(s => {
+      const heatColor = s.heat >= 70 ? 'text-red-400' : s.heat >= 40 ? 'text-amber-400' : 'text-blue-400';
+      const heatBg = s.heat >= 70 ? 'bg-red-500/10' : s.heat >= 40 ? 'bg-amber-500/10' : 'bg-blue-500/10';
+      const heatLabel = s.heat >= 70 ? 'Hot' : s.heat >= 40 ? 'Warm' : 'Cool';
+      const heatIcon = s.heat >= 70 ? 'flame' : s.heat >= 40 ? 'thermometer' : 'snowflake';
+      return `
+        <div class="glass rounded-xl p-4 cursor-pointer hover:border-water/20 transition" onclick="filterMap('${s.lake}');document.getElementById('search').scrollIntoView({behavior:'smooth'})">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-semibold text-sm">${s.lake}</span>
+            <span class="text-xs ${heatColor} ${heatBg} rounded-full px-2 py-0.5 flex items-center gap-1">
+              <i data-lucide="${heatIcon}" class="w-3 h-3"></i>${heatLabel}
+            </span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div class="text-sm font-bold text-slate-200">${s.count}</div>
+              <div class="text-[10px] text-slate-500">Listings</div>
+            </div>
+            <div>
+              <div class="text-sm font-bold text-slate-200">${formatPrice(s.median)}</div>
+              <div class="text-[10px] text-slate-500">Median</div>
+            </div>
+            <div>
+              <div class="text-sm font-bold ${s.avgDOM <= 14 ? 'text-red-400' : s.avgDOM <= 30 ? 'text-amber-400' : 'text-slate-200'}">${s.avgDOM}d</div>
+              <div class="text-[10px] text-slate-500">Avg DOM</div>
+            </div>
+          </div>
+          ${s.reduced > 0 ? `<div class="mt-2 text-[10px] text-slate-500">${s.reduced} price reduction${s.reduced > 1 ? 's' : ''}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
 
   lucide.createIcons();
 }
