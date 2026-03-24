@@ -22643,6 +22643,22 @@ function enrichSources() {
 }
 
 // Enrich properties with distance data on load
+// Internet availability by township (2025 data)
+const TOWNSHIP_INTERNET = {
+  'Tobyhanna': { best: 'Fiber', speed: '7 Gbps', provider: 'Frontier', icon: 'wifi', color: 'text-emerald-400' },
+  'Coolbaugh': { best: 'Fiber', speed: '7 Gbps', provider: 'Frontier', icon: 'wifi', color: 'text-emerald-400' },
+  'Barrett': { best: 'Fiber/Cable', speed: '2-7 Gbps', provider: 'Frontier/Blue Ridge', icon: 'wifi', color: 'text-emerald-400' },
+  'Middle Smithfield': { best: 'Cable', speed: '2 Gbps', provider: 'Blue Ridge', icon: 'wifi', color: 'text-amber-400' },
+  'Pocono': { best: 'Cable', speed: '2 Gbps', provider: 'Blue Ridge', icon: 'wifi', color: 'text-amber-400' },
+  'Stroud': { best: 'Fiber', speed: '7 Gbps', provider: 'Frontier/Blue Ridge', icon: 'wifi', color: 'text-emerald-400' },
+  'Chestnuthill': { best: 'Cable', speed: '2 Gbps', provider: 'Blue Ridge', icon: 'wifi', color: 'text-amber-400' },
+  'Tunkhannock': { best: 'Cable', speed: '2 Gbps', provider: 'Blue Ridge', icon: 'wifi', color: 'text-amber-400' },
+  'Jackson': { best: 'Cable', speed: '2 Gbps', provider: 'Blue Ridge', icon: 'wifi', color: 'text-amber-400' },
+};
+function getInternetInfo(township) {
+  return TOWNSHIP_INTERNET[township] || { best: 'T-Mobile/Starlink', speed: '100-245 Mbps', provider: 'T-Mobile/Starlink', icon: 'satellite', color: 'text-slate-400' };
+}
+
 function enrichWithDistances() {
   PROPERTIES.forEach(p => {
     if (!p.nearestTesla && p.latitude && p.longitude) {
@@ -23093,6 +23109,7 @@ function renderPropertyCard(p) {
           ${p.nearestTesla ? `<a href="${gmapsDirFromProperty(p.latitude, p.longitude, p.nearestTesla.lat, p.nearestTesla.lng)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 hover:text-red-400 transition no-underline text-slate-500" onclick="event.stopPropagation()" title="${p.nearestTesla.name} — ${p.nearestTesla.kw}kW, ${p.nearestTesla.stalls} stalls"><i data-lucide="zap" class="w-3 h-3 text-red-400"></i>${p.nearestTesla.miles} mi</a>` : ''}
           ${p.nearestGrocery ? `<a href="${gmapsDirFromProperty(p.latitude, p.longitude, p.nearestGrocery.lat, p.nearestGrocery.lng)}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 hover:text-blue-400 transition no-underline text-slate-500" onclick="event.stopPropagation()" title="${p.nearestGrocery.name}"><i data-lucide="shopping-cart" class="w-3 h-3 text-blue-400"></i>${p.nearestGrocery.miles} mi</a>` : ''}
           ${p.sqft > 0 ? `<span class="flex items-center gap-1" title="Price per sqft"><i data-lucide="ruler" class="w-3 h-3 text-amber-400"></i>$${Math.round(p.price / p.sqft)}/ft²</span>` : ''}
+          ${p.township ? `<span class="flex items-center gap-1 ${getInternetInfo(p.township).color}" title="${getInternetInfo(p.township).provider} — ${getInternetInfo(p.township).speed}"><i data-lucide="wifi" class="w-3 h-3"></i>${getInternetInfo(p.township).best}</span>` : ''}
         </div>
 
         <!-- Source sites row -->
@@ -24008,6 +24025,31 @@ function openDetailModal(id) {
           <a href="https://www.tesla.com/findus/location/supercharger/${p.nearestTesla.teslaId}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 mt-3 text-[11px] text-slate-500 hover:text-red-400 transition">
             <i data-lucide="battery-charging" class="w-3 h-3"></i> Check live availability on Tesla.com <i data-lucide="external-link" class="w-3 h-3"></i>
           </a>` : ''}
+        </div>` : ''}
+
+        <!-- Internet Availability -->
+        ${p.township ? `
+        <div class="p-6 border-b border-white/5">
+          <h4 class="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+            <i data-lucide="wifi" class="w-4 h-4"></i> Internet Availability
+            <span class="text-[10px] text-slate-600 font-normal ml-auto">${p.township} Twp</span>
+          </h4>
+          ${(() => {
+            const inet = getInternetInfo(p.township);
+            return `
+            <div class="glass rounded-xl p-4">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl ${inet.color === 'text-emerald-400' ? 'bg-emerald-500/15' : 'bg-amber-500/15'} flex items-center justify-center">
+                  <i data-lucide="wifi" class="w-5 h-5 ${inet.color}"></i>
+                </div>
+                <div>
+                  <div class="font-semibold ${inet.color}">${inet.best} Available — ${inet.speed}</div>
+                  <div class="text-xs text-slate-500">${inet.provider}</div>
+                </div>
+              </div>
+              <div class="text-xs text-slate-500">Blue Ridge cable covers ~96% of Monroe County. Frontier fiber available in select communities. T-Mobile Home Internet (~$35/mo) and Starlink (~$120/mo) available everywhere as fallback. <strong>Check by address</strong> at <a href="https://broadbandmap.fcc.gov/location-summary/fixed?speed=25&latlon=${p.latitude},${p.longitude}" target="_blank" class="text-water underline">FCC Broadband Map</a>.</div>
+            </div>`;
+          })()}
         </div>` : ''}
 
         <!-- Nearby Dining -->
