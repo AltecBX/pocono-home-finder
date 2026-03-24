@@ -894,11 +894,14 @@ async function main() {
       // Merge: add this source to existing listing
       const existing = masterListings.get(key);
       if (!existing._sources) existing._sources = [];
-      existing._sources.push({
-        name: sourceName,
-        url: listing.listingUrl,
-        verified: true,
-      });
+      // Only add if this source name isn't already present
+      if (!existing._sources.some(s => s.name === sourceName)) {
+        existing._sources.push({
+          name: sourceName,
+          url: listing.listingUrl,
+          verified: true,
+        });
+      }
 
       // Update fields if the new source has better data
       if (!existing.latitude && listing.latitude) {
