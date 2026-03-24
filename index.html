@@ -23073,7 +23073,7 @@ function renderPropertyCard(p) {
           <span class="text-2xl font-bold text-white drop-shadow-lg">${formatPrice(p.price)}</span>
           ${p.previousPrice ? `<span class="ml-2 text-sm text-red-300 line-through drop-shadow">${formatPrice(p.previousPrice)}</span>` : ''}
           ${p.status === 'Price Reduced' ? '<span class="ml-2 text-xs bg-red-500/80 text-white rounded-full px-2 py-0.5 animate-pulse">Price Drop</span>' : ''}
-          ${p.daysOnMarket <= 7 ? '<span class="ml-2 text-xs bg-emerald-500/90 text-white rounded-full px-2 py-0.5">New</span>' : ''}
+          ${p.isComingSoon ? '<span class="ml-2 text-xs bg-violet-500/90 text-white rounded-full px-2 py-0.5">Coming Soon</span>' : p.daysOnMarket <= 7 ? '<span class="ml-2 text-xs bg-emerald-500/90 text-white rounded-full px-2 py-0.5">New</span>' : ''}
           ${p.openHouse ? '<span class="ml-2 text-xs bg-purple-500/90 text-white rounded-full px-2 py-0.5 flex items-center gap-1 inline-flex"><i data-lucide="calendar" class="w-3 h-3"></i>Open House</span>' : ''}
           ${isTopPick(p) ? '<span class="ml-2 text-xs bg-amber-500/90 text-white rounded-full px-2 py-0.5 flex items-center gap-1 inline-flex"><i data-lucide="flame" class="w-3 h-3"></i>Top Pick</span>' : ''}
         </div>

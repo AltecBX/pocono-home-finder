@@ -477,7 +477,53 @@ async function scrapeZillow() {
       });
     }
 
-    console.log(`   Parsed ${listings.length} Zillow listings`);
+    console.log(`   Parsed ${listings.length} Zillow active listings`);
+
+    // Also fetch "Coming Soon" / pre-market listings
+    try {
+      const comingSoonHtml = execSync(`curl -s --compressed --max-time 30 \
+        -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+        -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
+        -H "Accept-Language: en-US,en;q=0.9" \
+        -H "Sec-Fetch-Dest: document" -H "Sec-Fetch-Mode: navigate" -H "Sec-Fetch-Site: none" -H "Sec-Fetch-User: ?1" \
+        "https://www.zillow.com/monroe-county-pa/waterfront/?searchQueryState=%7B%22filterState%22%3A%7B%22isComingSoon%22%3A%7B%22value%22%3Atrue%7D%2C%22isForSaleByAgent%22%3A%7B%22value%22%3Afalse%7D%2C%22isForSaleByOwner%22%3A%7B%22value%22%3Afalse%7D%2C%22isNewConstruction%22%3A%7B%22value%22%3Afalse%7D%2C%22isWaterfront%22%3A%7B%22value%22%3Atrue%7D%7D%7D"`, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+      if (comingSoonHtml && comingSoonHtml.includes('__NEXT_DATA__')) {
+        const csMatch = comingSoonHtml.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+        if (csMatch) {
+          const csData = JSON.parse(csMatch[1]);
+          const csState = csData?.props?.pageProps?.searchPageState || csData?.props?.pageProps;
+          const csCat = csState?.cat1 || csState?.searchResults?.cat1;
+          const csResults = csCat?.searchResults?.listResults || [];
+          let csCount = 0;
+          for (const result of csResults) {
+            const address = result.addressStreet || result.address || '';
+            const price = result.unformattedPrice || result.price || 0;
+            if (!address || !price) continue;
+            listings.push({
+              address: String(address),
+              city: String(result.addressCity || ''),
+              zipCode: String(result.addressZipcode || ''),
+              price: typeof price === 'number' ? price : parseInt(String(price).replace(/[^0-9]/g, '')) || 0,
+              bedrooms: result.beds || 0, bathrooms: result.baths || 0,
+              sqft: result.area || 0, lotAcres: 0, yearBuilt: 0,
+              latitude: result.latLong?.latitude || 0, longitude: result.latLong?.longitude || 0,
+              waterBodyName: 'Unknown Lake', hoaFee: 0, motorboats: false,
+              description: 'Coming Soon — ' + (String(result.hdpData?.homeInfo?.description || '').slice(0, 400)),
+              image: result.imgSrc || '', photos: (result.carouselPhotos || []).map(p => p.url || p).filter(Boolean).slice(0, 20),
+              listingUrl: result.detailUrl ? (result.detailUrl.startsWith('http') ? result.detailUrl : `https://www.zillow.com${result.detailUrl}`) : '',
+              daysOnMarket: 0, isReduced: false, photoCount: result.carouselPhotos?.length || 1,
+              source: 'Zillow', zillow: true, isComingSoon: true,
+            });
+            csCount++;
+          }
+          console.log(`   + ${csCount} Coming Soon listings from Zillow`);
+        }
+      }
+    } catch (e) {
+      console.warn(`   Zillow Coming Soon fetch failed: ${e.message?.slice(0, 80)}`);
+    }
+
+    console.log(`   Total Zillow: ${listings.length} listings`);
   } catch (err) {
     console.error(`   Zillow scrape error: ${err.message}`);
   }
@@ -874,7 +920,7 @@ function generatePropertyJS(listing, id) {
     basement: "See listing", fireplace: true, fencedYard: false,
     dogSwimAccessible: ${dogAccessible}, dogAccessNotes: ${safeDogNotes},
     shorelineType: "${isLakefront ? 'Natural lakefront' : 'Community beach only'}", photoCount: ${photoCount},
-    floodZone: "${listing.floodZone || 'Unknown'}", isFloodHazard: ${listing.isFloodHazard || false},
+    floodZone: "${listing.floodZone || 'Unknown'}", isFloodHazard: ${listing.isFloodHazard || false}, isComingSoon: ${listing.isComingSoon || false},
     openHouse: ${listing.openHouse ? JSON.stringify(listing.openHouse) : 'null'},
     nearestTesla: { name: ${JSON.stringify(nearestTesla.name)}, miles: ${nearestTesla.distance} },
     nearestGrocery: { name: ${JSON.stringify(nearestGrocery.name + ' — ' + (nearestGrocery.address || ''))}, miles: ${nearestGrocery.distance} },
