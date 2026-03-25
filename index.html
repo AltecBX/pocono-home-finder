@@ -58666,7 +58666,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <div class="space-y-5">
       <div>
         <label class="text-sm text-slate-400 block mb-2">County</label>
-        <select id="mf-county" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
+        <select id="mf-county" onchange="updateMobileLakeDropdown()" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
           <option value="all">All Counties</option>
         </select>
       </div>
@@ -60168,6 +60168,30 @@ function updateLakeDropdown() {
       const count = pool.filter(p => p.waterBodyName === lake).length;
       mobileSelect.insertAdjacentHTML('beforeend', `<option value="${lake}">${lake} (${count})</option>`);
     });
+  }
+}
+
+function updateMobileLakeDropdown() {
+  const county = document.getElementById('mf-county')?.value || 'all';
+  const mobileSelect = document.getElementById('mf-lake');
+  if (!mobileSelect) return;
+
+  let pool = [...PROPERTIES];
+  if (county !== 'all') {
+    pool = pool.filter(p => (p.county || 'Monroe') === county);
+  }
+
+  const lakes = [...new Set(pool.map(p => p.waterBodyName))].sort();
+  const currentVal = mobileSelect.value;
+  mobileSelect.innerHTML = '<option value="all">All Lakes</option>';
+  lakes.forEach(lake => {
+    const count = pool.filter(p => p.waterBodyName === lake).length;
+    mobileSelect.insertAdjacentHTML('beforeend', `<option value="${lake}">${lake} (${count})</option>`);
+  });
+  if (lakes.includes(currentVal)) {
+    mobileSelect.value = currentVal;
+  } else {
+    mobileSelect.value = 'all';
   }
 }
 
