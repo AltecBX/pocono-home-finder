@@ -58242,7 +58242,7 @@ const PROPERTIES = [
 // ========== STATE ==========
 let favorites = JSON.parse(localStorage.getItem('phf-favorites') || '[]');
 let compareList = JSON.parse(localStorage.getItem('phf-compare') || '[]');
-let activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all' };
+let activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all', showLand: false };
 let map = null;
 let markers = [];
 
@@ -58515,10 +58515,16 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <option value="grocery">Closest to Grocery</option>
     </select>
     <!-- Dog friendly toggle -->
-    <div class="flex items-center gap-2 ml-auto">
+    <div class="flex items-center gap-2">
       <i data-lucide="dog" class="w-4 h-4 text-slate-400"></i>
       <span class="text-sm text-slate-400">Dog-Friendly</span>
       <div id="filter-dog-toggle" class="toggle-switch" onclick="toggleDogFilter()"></div>
+    </div>
+    <!-- Include Land toggle -->
+    <div class="flex items-center gap-2 ml-auto">
+      <i data-lucide="trees" class="w-4 h-4 text-slate-400"></i>
+      <span class="text-sm text-slate-400">Include Land</span>
+      <div id="filter-land-toggle" class="toggle-switch" onclick="toggleLandFilter()"></div>
     </div>
   </div>
 
@@ -59807,6 +59813,11 @@ function getFilteredProperties() {
   let filtered = [...PROPERTIES];
   const f = activeFilters;
 
+  // Hide vacant land by default (0 beds AND 0 sqft = empty lot)
+  if (!f.showLand) {
+    filtered = filtered.filter(p => p.bedrooms > 0 || p.sqft > 0);
+  }
+
   if (f.county !== 'all') {
     filtered = filtered.filter(p => (p.county || 'Monroe') === f.county);
   }
@@ -60057,8 +60068,15 @@ function toggleDogFilter() {
   applyFilters();
 }
 
+function toggleLandFilter() {
+  const toggle = document.getElementById('filter-land-toggle');
+  toggle.classList.toggle('active');
+  activeFilters.showLand = toggle.classList.contains('active');
+  applyFilters();
+}
+
 function resetFilters() {
-  activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all' };
+  activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all', showLand: false };
   if (document.getElementById('filter-county')) document.getElementById('filter-county').value = 'all';
   document.getElementById('filter-lake').value = 'all';
   document.getElementById('filter-water').value = 'all';
