@@ -58333,7 +58333,7 @@ const PROPERTIES = [
 // ========== STATE ==========
 let favorites = JSON.parse(localStorage.getItem('phf-favorites') || '[]');
 let compareList = JSON.parse(localStorage.getItem('phf-compare') || '[]');
-let activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all', showLand: false };
+let activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'newest', dogFriendly: false, source: 'all', showLand: false };
 let map = null;
 let markers = [];
 
@@ -58347,8 +58347,8 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 <header id="header" class="fixed top-0 left-0 right-0 z-50 glass-strong" style="padding-top: env(safe-area-inset-top, 0px);">
   <!-- Realtor info moved to mobile menu and desktop nav -->
   <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-    <!-- Logo -->
-    <a href="#hero" class="flex items-center gap-2 text-lg font-bold tracking-tight">
+    <!-- Logo — tap to refresh -->
+    <a href="javascript:void(0)" onclick="window.location.reload()" class="flex items-center gap-2 text-lg font-bold tracking-tight">
       <i data-lucide="waves" class="w-6 h-6 text-water"></i>
       <span class="gradient-text">Pocono Lakehouse Search</span>
     </a>
@@ -58593,11 +58593,11 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     </select>
     <!-- Sort -->
     <select id="filter-sort" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none">
+      <option value="newest">Newest First</option>
       <option value="score">Best Match</option>
       <option value="price-asc">Price: Low to High</option>
       <option value="price-desc">Price: High to Low</option>
       <option value="water">Best Water Access</option>
-      <option value="newest">Newest First</option>
       <option value="reduced">Price Drops First</option>
       <option value="sqft">Largest First</option>
       <option value="ppsqft">Lowest $/sqft</option>
@@ -58627,11 +58627,11 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <span id="active-filter-count" class="hidden bg-water/20 text-water text-xs rounded-full px-2 py-0.5 ml-auto"></span>
     </button>
     <select id="filter-sort-mobile" onchange="document.getElementById('filter-sort').value=this.value;applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-xl px-3 py-3 border border-white/10">
+      <option value="newest">Newest</option>
       <option value="score">Best Match</option>
       <option value="price-asc">Price Low</option>
       <option value="price-desc">Price High</option>
       <option value="water">Water Access</option>
-      <option value="newest">Newest</option>
       <option value="reduced">Price Drops</option>
       <option value="sqft">Largest</option>
       <option value="ppsqft">Lowest $/sqft</option>
@@ -60111,18 +60111,64 @@ function showNewListings() {
 }
 
 function applyFilters() {
-  activeFilters.county = document.getElementById('filter-county').value;
+  const prevCounty = activeFilters.county;
+  activeFilters.county = document.getElementById('filter-county')?.value || 'all';
   activeFilters.lake = document.getElementById('filter-lake').value;
   activeFilters.waterType = document.getElementById('filter-water').value;
   activeFilters.minBeds = parseInt(document.getElementById('filter-beds').value);
   activeFilters.maxPrice = parseInt(document.getElementById('filter-price').value);
   activeFilters.sort = document.getElementById('filter-sort').value;
-  activeFilters.source = document.getElementById('filter-source').value;
+  activeFilters.source = document.getElementById('filter-source')?.value || 'all';
+
+  // If county changed, repopulate lake dropdown to only show lakes in that county
+  if (prevCounty !== activeFilters.county) {
+    updateLakeDropdown();
+  }
 
   const filtered = getFilteredProperties();
   renderCards(filtered);
   updateMapMarkers();
   updateActiveFilterCount();
+}
+
+function updateLakeDropdown() {
+  const county = activeFilters.county;
+  const desktopSelect = document.getElementById('filter-lake');
+  const mobileSelect = document.getElementById('mf-lake');
+
+  // Filter properties by county first (but don't filter by land)
+  let pool = [...PROPERTIES];
+  if (county !== 'all') {
+    pool = pool.filter(p => (p.county || 'Monroe') === county);
+  }
+
+  const lakes = [...new Set(pool.map(p => p.waterBodyName))].sort();
+
+  // Rebuild desktop dropdown
+  if (desktopSelect) {
+    const currentVal = desktopSelect.value;
+    desktopSelect.innerHTML = '<option value="all">All Lakes</option>';
+    lakes.forEach(lake => {
+      const count = pool.filter(p => p.waterBodyName === lake).length;
+      desktopSelect.insertAdjacentHTML('beforeend', `<option value="${lake}">${lake} (${count})</option>`);
+    });
+    // Keep selection if it still exists, otherwise reset
+    if (lakes.includes(currentVal)) {
+      desktopSelect.value = currentVal;
+    } else {
+      desktopSelect.value = 'all';
+      activeFilters.lake = 'all';
+    }
+  }
+
+  // Rebuild mobile dropdown
+  if (mobileSelect) {
+    mobileSelect.innerHTML = '<option value="all">All Lakes</option>';
+    lakes.forEach(lake => {
+      const count = pool.filter(p => p.waterBodyName === lake).length;
+      mobileSelect.insertAdjacentHTML('beforeend', `<option value="${lake}">${lake} (${count})</option>`);
+    });
+  }
 }
 
 function toggleTheme() {
@@ -60167,7 +60213,7 @@ function toggleLandFilter() {
 }
 
 function resetFilters() {
-  activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all', showLand: false };
+  activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'newest', dogFriendly: false, source: 'all', showLand: false };
   if (document.getElementById('filter-county')) document.getElementById('filter-county').value = 'all';
   document.getElementById('filter-lake').value = 'all';
   document.getElementById('filter-water').value = 'all';
