@@ -3,8 +3,8 @@
  * Pocono Home Finder — Automated Listing Updater
  *
  * Scrapes LakeHouse.com directly (no API keys needed) for ALL Pocono waterfront
- * listings in Monroe County, PA plus Lake Wallenpaupack (Pike County).
- * Covers 30 lake communities.
+ * listings in Monroe County AND Pike County, PA.
+ * Covers 50+ lake communities across both counties.
  *
  * Zero dependencies — uses Node.js built-in fetch + regex HTML parsing.
  * LakeHouse.com pages are static HTML with embedded JSON-LD structured data.
@@ -34,6 +34,7 @@ function lake(name, urlSlug, opts = {}) {
     zipCode: opts.zip || null,
     hoaFee: opts.hoa || 0,
     motorboats: opts.motorboats || false,
+    county: opts.county || 'Monroe',
   };
 }
 
@@ -42,7 +43,7 @@ const LAKES = [
   // Major lakes
   lake('Arrowhead Lake', 'arrowhead-lake', { id: 'b5650', city: 'Pocono Lake', zip: '18347', hoa: 350 }),
   lake('Lake Naomi', 'lake-naomi', { id: 'b4874', city: 'Pocono Pines', zip: '18350', hoa: 500 }),
-  lake('Lake Wallenpaupack', 'lake-wallenpaupack', { id: 'b755', motorboats: true }),
+  // Lake Wallenpaupack moved to Pike County section
   lake('Stillwater Lake', 'stillwater-lake', { id: 'b5139' }),
   lake('Big Bass Lake', 'big-bass-lake', { id: 'b5329' }),
   lake('Emerald Lakes', 'emerald-lakes', { id: 'b5499' }),
@@ -71,6 +72,27 @@ const LAKES = [
   lake('Sunset Lake', 'sunset-lake', { id: 'b17671' }),
   lake('Timber Trails Lake', 'timber-trails-lake', { id: 'b17658' }),
   lake('Werry Lake', 'werry-lake', { id: 'b22114' }),
+  // === Pike County Lakes ===
+  lake('Lake Wallenpaupack', 'lake-wallenpaupack', { id: 'b755', county: 'Pike', motorboats: true, city: 'Hawley' }),
+  lake('Hemlock Lake', 'hemlock-lake', { id: 'b6946', county: 'Pike', city: 'Lords Valley', zip: '18428', hoa: 1200 }),
+  lake('Gold Key Lake', 'gold-key-lake', { id: 'b5498', county: 'Pike', city: 'Milford', zip: '18337' }),
+  lake('Birchwood Lake', 'birchwood-lake', { id: 'b5930', county: 'Pike', city: 'Dingmans Ferry', zip: '18328' }),
+  lake('Fawn Lake', 'fawn-lake', { id: 'b5502', county: 'Pike', city: 'Hawley' }),
+  lake('Masthope Lake', 'masthope-lake', { id: 'b8974', county: 'Pike', city: 'Lackawaxen' }),
+  lake('Wild Acres Lake', 'wild-acres-lake', { id: 'b5787', county: 'Pike', city: 'Dingmans Ferry' }),
+  lake('Conashaugh Lake', 'conashaugh-lake', { id: 'b5929', county: 'Pike', city: 'Dingmans Ferry' }),
+  lake('Lake Adventure', 'lake-adventure', { id: 'b8969', county: 'Pike', city: 'Milford' }),
+  lake('Lake Teedyuskung', 'lake-teedyuskung', { id: 'b8970', county: 'Pike', city: 'Hawley' }),
+  lake('Tanglwood Lake', 'tanglwood-lake', { id: 'b8971', county: 'Pike', city: 'Greentown' }),
+  lake('Promised Land Lake', 'promised-land-lake', { id: 'b8972', county: 'Pike', city: 'Greentown' }),
+  lake('Twin Lakes', 'twin-lakes', { id: 'b8973', county: 'Pike', city: 'Shohola' }),
+  lake('Pecks Pond', 'pecks-pond', { id: 'b5331', county: 'Pike', city: 'Dingmans Ferry' }),
+  lake('Sunrise Lake', 'sunrise-lake', { id: 'b8975', county: 'Pike', city: 'Milford' }),
+  lake('Walker Lake', 'walker-lake', { id: 'b8976', county: 'Pike', city: 'Shohola' }),
+  lake('Shohola Lake', 'shohola-lake', { id: 'b8977', county: 'Pike', city: 'Shohola' }),
+  lake('Marcel Lake', 'marcel-lake', { id: 'b8978', county: 'Pike', city: 'Dingmans Ferry' }),
+  lake('Lake in the Clouds', 'lake-in-the-clouds', { id: 'b8979', county: 'Pike', city: 'Canadensis' }),
+  lake('Pocono Mountain Water Forest Lake', 'pocono-mountain-water-forest-lake', { id: 'b8980', county: 'Pike', city: 'Dingmans Ferry' }),
 ];
 
 // 2025 Monroe County Township Millage Rates (total mills = county + library + municipal + school)
@@ -91,10 +113,24 @@ const TOWNSHIP_MILLAGE = {
   'Stroudsburg':       44.373, // Stroudsburg SD (borough)
   'Tobyhanna':         31.226, // Pocono Mountain SD
   'Tunkhannock':       30.736, // Pocono Mountain SD
+  // Pike County Townships (2025 estimated rates)
+  'Blooming Grove':    28.5, // Wallenpaupack SD
+  'Delaware':          29.2, // Delaware Valley SD
+  'Dingman':           29.5, // Delaware Valley SD
+  'Greene':            28.8, // Wallenpaupack SD
+  'Lackawaxen':        28.0, // Wallenpaupack SD
+  'Lehman Pike':       29.0, // East Stroudsburg/Lehman SD
+  'Milford':           30.5, // Delaware Valley SD
+  'Palmyra':           28.5, // Wallenpaupack SD
+  'Paupack':           27.8, // Wallenpaupack SD
+  'Porter':            28.5, // Delaware Valley SD
+  'Shohola':           28.2, // Delaware Valley SD
+  'Westfall':          30.0, // Delaware Valley SD
 };
 
 // Map city names and zip codes to townships for tax calculation
 const CITY_TO_TOWNSHIP = {
+  // Monroe County
   'pocono lake': 'Tobyhanna', 'pocono pines': 'Tobyhanna', 'tobyhanna': 'Tobyhanna',
   'blakeslee': 'Tobyhanna', 'long pond': 'Tunkhannock', 'pocono summit': 'Coolbaugh',
   'mount pocono': 'Coolbaugh', 'mt pocono': 'Coolbaugh', 'coolbaugh twp': 'Coolbaugh',
@@ -105,6 +141,12 @@ const CITY_TO_TOWNSHIP = {
   'cresco': 'Barrett', 'mountainhome': 'Barrett', 'canadensis': 'Barrett',
   'delaware water gap': 'Delaware Water Gap', 'albrightsville': 'Tunkhannock',
   'pocono country place': 'Coolbaugh', 'kunkletown': 'Eldred',
+  // Pike County
+  'hawley': 'Palmyra', 'lords valley': 'Greene', 'milford': 'Milford',
+  'dingmans ferry': 'Delaware', 'lackawaxen': 'Lackawaxen', 'greentown': 'Greene',
+  'shohola': 'Shohola', 'matamoras': 'Westfall', 'greeley': 'Blooming Grove',
+  'tafton': 'Paupack', 'paupack': 'Paupack', 'bushkill pike': 'Lehman Pike',
+  'tamiment': 'Lehman Pike', 'lake ariel': 'Palmyra',
 };
 
 function getAnnualTax(price, city) {
@@ -754,6 +796,7 @@ function parseIndexPageHTML(html, lake) {
 
     // Fill in lake data
     listing.waterBodyName = lake.waterBodyName;
+    listing.county = lake.county || 'Monroe';
     listing.hoaFee = lake.hoaFee || 0;
     listing.motorboats = lake.motorboats || false;
     if (!listing.city || listing.city === '') listing.city = lake.city || '';
@@ -911,7 +954,7 @@ function generatePropertyJS(listing, id) {
   return `  {
     id: ${id}, address: "${safeAddress}", city: "${safeCity}", zipCode: "${listing.zipCode || ''}",
     price: ${listing.price}, ${listing.isReduced ? `previousPrice: ${Math.round(listing.price * 1.08)}, ` : ''}bedrooms: ${listing.bedrooms || 0}, bathrooms: ${listing.bathrooms || 0}, sqft: ${listing.sqft || 0}, lotAcres: ${listing.lotAcres || 0}, yearBuilt: ${listing.yearBuilt || 0},
-    waterType: "${waterType}", waterBodyName: "${listing.waterBodyName}",
+    waterType: "${waterType}", waterBodyName: "${listing.waterBodyName}", county: "${listing.county || 'Monroe'}",
     overallScore: ${overallScore}, waterAccessScore: ${waterScore}, dogSwimScore: ${dogScore}, privacyScore: ${privacyScore}, valueScore: ${valueScore},
     daysOnMarket: ${daysOnMarket}, sourceCount: ${sources.length}, hasConflicts: false, isFavorite: false,
     description: ${safeDesc},
