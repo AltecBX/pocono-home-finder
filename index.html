@@ -39041,7 +39041,7 @@ const PROPERTIES = [
 // ========== STATE ==========
 let favorites = JSON.parse(localStorage.getItem('phf-favorites') || '[]');
 let compareList = JSON.parse(localStorage.getItem('phf-compare') || '[]');
-let activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all' };
+let activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all' };
 let map = null;
 let markers = [];
 
@@ -39156,7 +39156,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       Find Our Perfect<br>Pocono Lakehouse
     </h1>
     <p class="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto animate-fade-in-up stagger-1">
-      Every lake property in Monroe County, PA in one place. Real MLS data, updated daily, so we never miss a listing.
+      Every lake property in the Poconos — Monroe &amp; Pike County, PA. Real MLS data, updated daily, so we never miss a listing.
     </p>
 
     <!-- Smart Search Bar -->
@@ -39265,6 +39265,10 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 
   <!-- Desktop Filter Bar -->
   <div id="filter-bar" class="hidden sm:flex flex-wrap items-center gap-3 mb-8 glass rounded-xl p-4 transition-all duration-300" style="position: sticky; top: calc(4rem + env(safe-area-inset-top, 0px)); z-index: 30;">
+    <!-- County filter -->
+    <select id="filter-county" onchange="onCountyFilter()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none min-w-[140px]">
+      <option value="all">All Counties</option>
+    </select>
     <!-- Lake filter -->
     <select id="filter-lake" onchange="applyFilters()" class="bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-water/40 focus:outline-none min-w-[160px]">
       <option value="all">All Lakes</option>
@@ -39362,6 +39366,12 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       </button>
     </div>
     <div class="space-y-5">
+      <div>
+        <label class="text-sm text-slate-400 block mb-2">County</label>
+        <select id="mf-county" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
+          <option value="all">All Counties</option>
+        </select>
+      </div>
       <div>
         <label class="text-sm text-slate-400 block mb-2">Lake</label>
         <select id="mf-lake" class="w-full bg-navy-600 text-slate-300 text-sm rounded-lg px-3 py-3 border border-white/10">
@@ -40200,7 +40210,7 @@ function renderMortgageSection(p) {
           </div>
         </div>
         ${p.isFloodHazard ? `<div class="mt-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i><span><strong>FEMA Zone ${p.floodZone}</strong> — Flood insurance required. ~$3,000/yr added to insurance estimate. <a href="https://msc.fema.gov/portal/search#searchresultsanchor" target="_blank" class="underline">Check FEMA map</a></span></div>` : ''}
-        <div class="text-[10px] text-slate-600 mt-3">${p.township ? `<span class="text-slate-500">${p.township} Twp</span> · ` : ''}20% down ($${m.down.toLocaleString()}), 6.8% rate, 30yr. Tax based on 2025 Monroe County millage rates. Insurance ${p.isFloodHazard ? 'incl. $3K/yr flood' : 'est. 0.35%/yr'}. Commute: 4 weekend round trips via Tesla Supercharger.</div>
+        <div class="text-[10px] text-slate-600 mt-3">${p.township ? `<span class="text-slate-500">${p.township} Twp</span> · ` : ''}20% down ($${m.down.toLocaleString()}), 6.8% rate, 30yr. Tax based on 2025 ${p.county || 'Monroe'} County millage rates. Insurance ${p.isFloodHazard ? 'incl. $3K/yr flood' : 'est. 0.35%/yr'}. Commute: 4 weekend round trips via Tesla Supercharger.</div>
       </div>
 
       ${p.bedrooms >= 1 ? renderAirbnbEstimate(p, totalMonthly) : ''}
@@ -40596,6 +40606,9 @@ function getFilteredProperties() {
   let filtered = [...PROPERTIES];
   const f = activeFilters;
 
+  if (f.county !== 'all') {
+    filtered = filtered.filter(p => (p.county || 'Monroe') === f.county);
+  }
   if (f.lake !== 'all') {
     filtered = filtered.filter(p => p.waterBodyName === f.lake);
   }
@@ -40692,6 +40705,7 @@ function smartSearch(query) {
 
 function syncFiltersToUI() {
   const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  setVal('filter-county', activeFilters.county || 'all');
   setVal('filter-lake', activeFilters.lake);
   setVal('filter-water', activeFilters.waterType);
   setVal('filter-beds', activeFilters.minBeds || 0);
@@ -40787,13 +40801,14 @@ function showNewListings() {
   if (alert) alert.remove();
 
   // Sort by newest and scroll to results
-  activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'newest', dogFriendly: false, source: 'all', search: '', textQuery: '' };
+  activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'newest', dogFriendly: false, source: 'all', search: '', textQuery: '' };
   syncFiltersToUI();
   applyFilters();
   document.getElementById('search')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 function applyFilters() {
+  activeFilters.county = document.getElementById('filter-county').value;
   activeFilters.lake = document.getElementById('filter-lake').value;
   activeFilters.waterType = document.getElementById('filter-water').value;
   activeFilters.minBeds = parseInt(document.getElementById('filter-beds').value);
@@ -40842,9 +40857,11 @@ function toggleDogFilter() {
 }
 
 function resetFilters() {
-  activeFilters = { lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false };
+  activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'score', dogFriendly: false, source: 'all' };
+  if (document.getElementById('filter-county')) document.getElementById('filter-county').value = 'all';
   document.getElementById('filter-lake').value = 'all';
   document.getElementById('filter-water').value = 'all';
+  repopulateLakeFilter();
   document.getElementById('filter-beds').value = '0';
   document.getElementById('filter-price').value = '999999999';
   document.getElementById('filter-sort').value = 'score';
@@ -40907,6 +40924,7 @@ function openMobileFilters() {
   document.getElementById('mobile-filter-panel').classList.add('open');
   document.getElementById('mobile-filter-backdrop').classList.add('open');
   // Sync values
+  if (document.getElementById('mf-county')) document.getElementById('mf-county').value = activeFilters.county || 'all';
   document.getElementById('mf-lake').value = activeFilters.lake;
   document.getElementById('mf-water').value = activeFilters.waterType;
   document.getElementById('mf-beds').value = activeFilters.minBeds.toString();
@@ -40924,6 +40942,7 @@ function closeMobileFilters() {
 }
 
 function applyMobileFilters() {
+  if (document.getElementById('mf-county')) document.getElementById('filter-county').value = document.getElementById('mf-county').value;
   document.getElementById('filter-lake').value = document.getElementById('mf-lake').value;
   document.getElementById('filter-water').value = document.getElementById('mf-water').value;
   document.getElementById('filter-beds').value = document.getElementById('mf-beds').value;
@@ -42168,6 +42187,42 @@ function updateHeroStats() {
 
 // ========== INIT ==========
 
+function populateCountyFilters() {
+  const counties = [...new Set(PROPERTIES.map(p => p.county || 'Monroe'))].sort();
+  if (counties.length <= 1) return; // Don't show if only one county
+  ['filter-county', 'mf-county'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    counties.forEach(c => {
+      const count = PROPERTIES.filter(p => (p.county || 'Monroe') === c).length;
+      sel.insertAdjacentHTML('beforeend', `<option value="${c}">${c} County (${count})</option>`);
+    });
+  });
+}
+
+function onCountyFilter() {
+  activeFilters.county = document.getElementById('filter-county').value;
+  // Reset lake filter when county changes and repopulate lakes for that county
+  activeFilters.lake = 'all';
+  repopulateLakeFilter();
+  applyFilters();
+}
+
+function repopulateLakeFilter() {
+  const county = activeFilters.county;
+  const props = county === 'all' ? PROPERTIES : PROPERTIES.filter(p => (p.county || 'Monroe') === county);
+  const lakes = [...new Set(props.map(p => p.waterBodyName))].sort();
+  ['filter-lake', 'mf-lake'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="all">All Lakes</option>';
+    lakes.forEach(lake => {
+      const count = props.filter(p => p.waterBodyName === lake).length;
+      sel.insertAdjacentHTML('beforeend', `<option value="${lake}">${lake} (${count})</option>`);
+    });
+  });
+}
+
 function populateLakeFilters() {
   const lakes = [...new Set(PROPERTIES.map(p => p.waterBodyName))].sort();
   // Desktop dropdown
@@ -42212,6 +42267,7 @@ document.addEventListener('DOMContentLoaded', () => {
   enrichWithDistances();
   loadFavorites();
   lucide.createIcons();
+  populateCountyFilters();
   populateLakeFilters();
   renderCards(getFilteredProperties());
   initMap();
