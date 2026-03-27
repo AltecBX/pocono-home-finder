@@ -257,22 +257,28 @@ tailwind.config = {
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px);
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.25s ease-out;
   }
   .modal-content {
     background: var(--bg-primary);
     max-height: 90vh;
     overflow-y: auto;
-    border-radius: 16px;
+    border-radius: 20px;
     width: min(95vw, 720px);
     border: 1px solid var(--border-subtle);
-    animation: fadeInUp 0.3s ease-out;
+    animation: modalZoomIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+  }
+  @keyframes modalZoomIn {
+    from { opacity: 0; transform: scale(0.92) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
   @media (max-width: 640px) {
     .modal-content {
@@ -282,8 +288,9 @@ tailwind.config = {
       height: 100vh;
       height: 100dvh;
       border-radius: 0;
-      animation: slideUp 0.3s ease-out;
+      animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
       padding-top: env(safe-area-inset-top, 0px);
+      box-shadow: none;
     }
     .modal-overlay {
       align-items: flex-end;
@@ -56541,6 +56548,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
       <a href="#search" class="text-sm text-slate-300 hover:text-water transition-colors">Search</a>
       <a href="#map-section" class="text-sm text-slate-300 hover:text-water transition-colors">Map</a>
       <a href="#dashboard" class="text-sm text-slate-300 hover:text-water transition-colors">Dashboard</a>
+      <a href="javascript:void(0)" onclick="showFavoritesView()" class="text-sm text-slate-300 hover:text-water transition-colors flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5"></i>Favorites<span id="fav-count-badge" class="ml-1 text-[10px] bg-red-500/80 text-white rounded-full px-1.5 min-w-[18px] text-center hidden">0</span></a>
       <a href="#compare" class="text-sm text-slate-300 hover:text-water transition-colors">Compare</a>
       <a href="#trips" class="text-sm text-slate-300 hover:text-water transition-colors">Trips</a>
       <button onclick="confirmContact('call')" class="text-sm text-water hover:text-white transition-colors flex items-center gap-1.5 bg-water/10 px-3 py-1.5 rounded-full"><i data-lucide="phone" class="w-3.5 h-3.5"></i>Theresa</button>
@@ -56919,6 +56927,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
     <button onclick="filterMap('all')" class="map-filter-btn active px-3 py-1.5 rounded-full text-xs glass text-water border-water/30" data-filter="all">All Lakes</button>
     <span id="map-lake-buttons"></span>
     <span class="w-px h-6 bg-white/10 mx-1"></span>
+    <button id="satellite-toggle-btn" onclick="toggleMapSatellite()" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-water transition flex items-center gap-1"><i data-lucide="satellite" class="w-3 h-3"></i> Satellite</button>
     <button id="toggle-tesla-btn" onclick="toggleMapLayer('tesla')" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-red-400 transition flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Tesla</button>
     <button id="toggle-grocery-btn" onclick="toggleMapLayer('grocery')" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-blue-400 transition flex items-center gap-1"><i data-lucide="shopping-cart" class="w-3 h-3"></i> Stores</button>
     <button id="toggle-flood-btn" onclick="toggleMapLayer('flood')" class="px-3 py-1.5 rounded-full text-xs glass text-slate-400 hover:text-cyan-400 transition flex items-center gap-1"><i data-lucide="waves" class="w-3 h-3"></i> Flood Zones</button>
@@ -58524,7 +58533,36 @@ function toggleFavorite(id) {
   if (prop.isFavorite) { if (!favorites.includes(id)) favorites.push(id); }
   else { favorites = favorites.filter(f => f !== id); }
   localStorage.setItem('phf-favorites', JSON.stringify(favorites));
+  updateFavBadge();
   renderCards(getFilteredProperties());
+}
+
+function updateFavBadge() {
+  const badge = document.getElementById('fav-count-badge');
+  if (!badge) return;
+  if (favorites.length > 0) {
+    badge.textContent = favorites.length;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function showFavoritesView() {
+  if (favorites.length === 0) {
+    alert('No favorites yet! Tap the heart on any property to save it.');
+    return;
+  }
+  // Reset all filters, show only favorites
+  activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'newest', dogFriendly: false, source: 'all', showLand: true };
+  syncFiltersToUI();
+  const favProps = PROPERTIES.filter(p => favorites.includes(p.id));
+  document.getElementById('result-count').textContent = favProps.length + ' favorite' + (favProps.length !== 1 ? 's' : '');
+  const grid = document.getElementById('property-grid');
+  grid.innerHTML = favProps.map(renderPropertyCard).join('');
+  lucide.createIcons();
+  removeLoadMore();
+  document.getElementById('search')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 // ========== COMPARE ==========
@@ -59105,6 +59143,7 @@ function openDetailModal(id) {
   `;
   document.body.style.overflow = 'hidden';
   lucide.createIcons();
+  initCarouselSwipe();
 }
 
 function closeModal() {
@@ -59126,6 +59165,53 @@ function carouselPrev() {
   if (carouselIndex <= 0) return;
   carouselIndex--;
   updateCarousel();
+}
+
+// Touch swipe support for photo carousel
+let touchStartX = 0;
+let touchStartY = 0;
+let touchDeltaX = 0;
+let isSwiping = false;
+
+function initCarouselSwipe() {
+  const track = document.getElementById('carousel-track');
+  if (!track) return;
+  const container = track.parentElement;
+
+  container.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchDeltaX = 0;
+    isSwiping = false;
+    track.style.transition = 'none';
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+
+    // Only swipe if horizontal movement is dominant
+    if (!isSwiping && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+      isSwiping = true;
+    }
+    if (!isSwiping) return;
+
+    e.preventDefault();
+    touchDeltaX = dx;
+    const offset = -(carouselIndex * 100) + (dx / container.offsetWidth * 100);
+    track.style.transform = 'translateX(' + offset + '%)';
+  }, { passive: false });
+
+  container.addEventListener('touchend', () => {
+    track.style.transition = 'transform 0.3s ease';
+    if (Math.abs(touchDeltaX) > 50) {
+      if (touchDeltaX < 0) carouselNext();
+      else carouselPrev();
+    } else {
+      updateCarousel();
+    }
+    isSwiping = false;
+  }, { passive: true });
 }
 
 function updateCarousel() {
@@ -59175,16 +59261,38 @@ document.addEventListener('keydown', function(e) {
 let teslaLayer = null, groceryLayer = null, floodLayer = null;
 let showTeslaMarkers = false, showGroceryMarkers = false, showFloodLayer = false;
 
+let roadLayer, satelliteLayer, isMapSatellite = false;
+
 function initMap() {
   map = L.map('leaflet-map', { zoomControl: true }).setView([41.25, -75.38], 9);
 
-  // Google Maps tiles
-  L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+  // Road tiles (default)
+  roadLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
     maxZoom: 20,
     attribution: '&copy; Google Maps'
   }).addTo(map);
 
+  // Satellite tiles (toggle)
+  satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    attribution: '&copy; Google Maps'
+  });
+
   addMarkers(PROPERTIES);
+}
+
+function toggleMapSatellite() {
+  const btn = document.getElementById('satellite-toggle-btn');
+  if (isMapSatellite) {
+    map.removeLayer(satelliteLayer);
+    roadLayer.addTo(map);
+    if (btn) { btn.classList.remove('bg-water/30', 'text-water'); btn.classList.add('text-slate-400'); }
+  } else {
+    map.removeLayer(roadLayer);
+    satelliteLayer.addTo(map);
+    if (btn) { btn.classList.add('bg-water/30', 'text-water'); btn.classList.remove('text-slate-400'); }
+  }
+  isMapSatellite = !isMapSatellite;
 }
 
 function toggleMapLayer(type) {
@@ -59737,12 +59845,56 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
 });
 
-// ========== HERO STATS ==========
+// ========== HERO STATS (animated counters) ==========
+function animateCounter(el, target, duration = 1200) {
+  let start = 0;
+  const startTime = performance.now();
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const ease = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(ease * target);
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+let heroStatsAnimated = false;
 function updateHeroStats() {
-  document.getElementById('stat-total').textContent = PROPERTIES.length;
-  document.getElementById('stat-lakefront').textContent = PROPERTIES.filter(p => p.waterType === 'LAKEFRONT').length;
-  document.getElementById('stat-dogfriendly').textContent = PROPERTIES.filter(p => p.dogSwimAccessible).length;
-  document.getElementById('stat-sources').textContent = [...new Set(PROPERTIES.map(p => p.waterBodyName))].length;
+  const total = PROPERTIES.filter(p => p.bedrooms > 0 || p.sqft > 0).length;
+  const lakefront = PROPERTIES.filter(p => p.waterType === 'LAKEFRONT').length;
+  const dogFriendly = PROPERTIES.filter(p => p.dogSwimAccessible).length;
+  const lakes = [...new Set(PROPERTIES.map(p => p.waterBodyName))].length;
+
+  if (!heroStatsAnimated) {
+    heroStatsAnimated = true;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateCounter(document.getElementById('stat-total'), total);
+          animateCounter(document.getElementById('stat-lakefront'), lakefront, 1000);
+          animateCounter(document.getElementById('stat-dogfriendly'), dogFriendly, 800);
+          animateCounter(document.getElementById('stat-sources'), lakes, 900);
+          observer.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    const statsEl = document.getElementById('stat-total')?.closest('.glass');
+    if (statsEl) observer.observe(statsEl);
+    else {
+      // Fallback: just set values
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-lakefront').textContent = lakefront;
+      document.getElementById('stat-dogfriendly').textContent = dogFriendly;
+      document.getElementById('stat-sources').textContent = lakes;
+    }
+  } else {
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-lakefront').textContent = lakefront;
+    document.getElementById('stat-dogfriendly').textContent = dogFriendly;
+    document.getElementById('stat-sources').textContent = lakes;
+  }
 }
 
 // ========== INIT ==========
@@ -59836,6 +59988,7 @@ document.addEventListener('DOMContentLoaded', () => {
   runTypingAnimation();
   initScrollReveal();
   updateHeroStats();
+  updateFavBadge();
 
   // Invalidate map size after a beat (Leaflet quirk)
   setTimeout(() => { if (map) map.invalidateSize(); }, 500);
