@@ -151,10 +151,20 @@ const CITY_TO_TOWNSHIP = {
   'tamiment': 'Lehman Pike', 'lake ariel': 'Palmyra',
 };
 
-function getAnnualTax(price, city) {
+// PA property tax: millage applies to ASSESSED VALUE, not market price.
+// Monroe County CLR (Common Level Ratio) ≈ 27.5% (2025), Pike County CLR ≈ 20.3% (2025)
+// Source: PA STEB ratios — https://www.revenue.pa.gov/TaxTypes/RETPT/CLR/Pages/default.aspx
+const COUNTY_CLR = {
+  'Monroe': 0.275,
+  'Pike': 0.203,
+};
+
+function getAnnualTax(price, city, county) {
   const township = CITY_TO_TOWNSHIP[(city || '').toLowerCase().trim()];
   const millage = township ? TOWNSHIP_MILLAGE[township] : 32.5; // default ~avg
-  return Math.round(price * millage / 1000);
+  const clr = COUNTY_CLR[county] || 0.25; // default assessment ratio
+  const assessedValue = price * clr;
+  return Math.round(assessedValue * millage / 1000);
 }
 
 // Unsplash fallback photos in case listing photo fails
@@ -961,7 +971,7 @@ function generatePropertyJS(listing, id) {
     daysOnMarket: ${daysOnMarket}, sourceCount: ${sources.length}, hasConflicts: false, isFavorite: false,
     description: ${safeDesc},
     latitude: ${lat.toFixed(8)}, longitude: ${lng.toFixed(8)},
-    township: "${CITY_TO_TOWNSHIP[(listing.city || '').toLowerCase().trim()] || ''}", status: "${listing.isReduced ? 'Price Reduced' : 'Active'}", hoaFee: ${listing.hoaFee || 0}, annualTax: ${getAnnualTax(listing.price, listing.city)}, garage: "See listing",
+    township: "${CITY_TO_TOWNSHIP[(listing.city || '').toLowerCase().trim()] || ''}", status: "${listing.isReduced ? 'Price Reduced' : 'Active'}", hoaFee: ${listing.hoaFee || 0}, annualTax: ${getAnnualTax(listing.price, listing.city, listing.county)}, garage: "See listing",
     basement: "See listing", fireplace: true, fencedYard: false,
     dogSwimAccessible: ${dogAccessible}, dogAccessNotes: ${safeDogNotes},
     shorelineType: "${isLakefront ? 'Natural lakefront' : 'Community beach only'}", photoCount: ${photoCount},
