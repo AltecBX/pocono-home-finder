@@ -102,9 +102,10 @@ const LAKES = [
   // === Sullivan County, NY Lakes (verified LakeHouse.com IDs) ===
   // b-codes confirmed working — non-sequential, not placeholder IDs
   lake('White Lake',              'white-lake',              { id: 'b645',   county: 'Sullivan', state: 'NY', city: 'White Lake',       zip: '12786', motorboats: true }),
-  lake('Swinging Bridge Reservoir','swinging-bridge-reservoir',{ id: 'b1342',  county: 'Sullivan', state: 'NY', city: 'Monticello',       zip: '12701', motorboats: true }),
-  lake('Black Lake',              'black-lake',              { id: 'b627',   county: 'Sullivan', state: 'NY', city: 'Youngsville' }),
-  lake('Mountain Lake',           'mountain-lake',           { id: 'b6560',  county: 'Sullivan', state: 'NY', city: 'Monticello' }),
+  lake('Kauneonga Lake',          'white-lake',              { id: 'b645',   county: 'Sullivan', state: 'NY', city: 'Kauneonga Lake',   zip: '12749', motorboats: true }),  // north end of White Lake
+  lake('Swinging Bridge Reservoir','swinging-bridge-reservoir',{ id: 'b1342', county: 'Sullivan', state: 'NY', city: 'Monticello',       zip: '12701', motorboats: true }),
+  lake('Black Lake',              'black-lake',              { id: 'b627',   county: 'Sullivan', state: 'NY', city: 'Youngsville',      zip: '12791' }),
+  lake('Mountain Lake',           'mountain-lake',           { id: 'b6560',  county: 'Sullivan', state: 'NY', city: 'Monticello',       zip: '12701' }),
   lake('Wolf Lake',               'wolf-lake',               { id: 'b646',   county: 'Sullivan', state: 'NY', city: 'Wurtsboro',        zip: '12790' }),
   lake('Yankee Lake',             'yankee-lake',             { id: 'b626',   county: 'Sullivan', state: 'NY', city: 'Wurtsboro',        zip: '12790' }),
   lake('Wanaksink Lake',          'wanaksink-lake',          { id: 'b647',   county: 'Sullivan', state: 'NY', city: 'Livingston Manor', zip: '12758' }),
@@ -119,7 +120,14 @@ const LAKES = [
   lake('Kiamesha Lake',           'kiamesha-lake',           { id: 'b8579',  county: 'Sullivan', state: 'NY', city: 'Kiamesha Lake',   zip: '12751' }),
   lake('Hunter Lake',             'hunter-lake',             { id: 'b8260',  county: 'Sullivan', state: 'NY', city: 'Grahamsville',    zip: '12740' }),
   lake('Crystal Lake',            'crystal-lake',            { id: 'b22615', county: 'Sullivan', state: 'NY', city: 'Bethel',          zip: '12720' }),
-  // Note: Mohican Lake, Tennanah Lake, and Toronto Reservoir are not indexed on LakeHouse.com
+  lake('Mohican Lake',            'mohican-lake',            { id: 'b3276',  county: 'Sullivan', state: 'NY', city: 'Glen Spey',        zip: '12737', motorboats: true }),
+  lake('Pleasure Lake',           'pleasure-lake',           { id: 'b6581',  county: 'Sullivan', state: 'NY', city: 'South Fallsburg',  zip: '12779' }),
+  lake('Timber Lake',             'timber-lake',             { id: 'b9893',  county: 'Sullivan', state: 'NY', city: 'Yulan',            zip: '12792' }),
+  lake('Tennanah Lake',           'tennanah-lake',           { id: 'b4332',  county: 'Sullivan', state: 'NY', city: 'Roscoe',           zip: '12776', motorboats: true }),
+  lake('Toronto Reservoir',       'toronto-reservoir',       { id: 'b1344',  county: 'Sullivan', state: 'NY', city: 'Bethel',           zip: '12720', motorboats: true }),
+  lake('Luxton Lake',             'luxton-lake',             { id: 'b4366',  county: 'Sullivan', state: 'NY', city: 'Narrowsburg',      zip: '12764' }),
+  lake('Loch Ada',                'loch-ada',                { id: 'b4331',  county: 'Sullivan', state: 'NY', city: 'Glen Spey',        zip: '12737' }),
+  lake('Shandelee Lake',          'shandelee-lake',          { id: 'b4340',  county: 'Sullivan', state: 'NY', city: 'Livingston Manor', zip: '12758' }),
 ];
 
 // 2025 Monroe County Township Millage Rates (total mills = county + library + municipal + school)
@@ -343,13 +351,23 @@ async function scrapeRedfin() {
   console.log('\n🔴 Scraping Redfin (Stingray API)...');
   const listings = [];
 
-  // Known Sullivan County lake zip codes — catch lake-community properties even without water keywords
-  const NY_LAKE_ZIPS = new Set(LAKES.filter(l => l.state === 'NY' && l.zipCode).map(l => l.zipCode));
+  // ALL Sullivan County, NY zip codes — comprehensive net so no zip is ever a dead end
+  const ALL_SULLIVAN_ZIPS = new Set([
+    '12701','12719','12720','12723','12724','12725','12726','12727','12728','12732',
+    '12733','12734','12736','12737','12738','12739','12740','12741','12742','12743',
+    '12745','12747','12748','12749','12750','12751','12752','12754','12758','12759',
+    '12760','12762','12763','12764','12765','12766','12767','12768','12770','12775',
+    '12776','12777','12779','12781','12783','12784','12785','12786','12787','12788',
+    '12789','12790','12791','12792',
+  ]);
   const NY_LAKES = LAKES.filter(l => l.state === 'NY');
 
   // Helper to process a set of homes from one Redfin county response
   function processRedfinHomes(homes, regionLabel, stateCode, countyName) {
-    const waterKeywords = /\b(lake|lakefront|lake\s*front|waterfront|water\s*front|pond|lakeshore|lakeside|lake\s*access|lake\s*community|lake\s*view)\b/i;
+    // Broad water-body keyword set — covers lakes, ponds, brooks, creeks, rivers, reservoirs
+    const waterKeywords = /\b(lake|lakefront|lake\s*front|waterfront|water\s*front|pond|lakeshore|lakeside|lake\s*access|lake\s*community|lake\s*view|lake\s*rights|brook|creek|river|stream|reservoir|shore|shorefront|shoreline|beach|dock|boat\s*dock|boat\s*launch|marina|cove|inlet|bay|waterway|riparian|riparian\s*rights)\b/i;
+    // Also check street/address name for water-body words (catches "Beaver Brook Rd", "Lake Shore Dr", etc.)
+    const streetWaterWords = /\b(lake|pond|brook|creek|river|stream|shore|beach|bay|cove|marina|dock|water|reservoir)\b/i;
     const lakesForRegion = stateCode === 'NY' ? NY_LAKES : LAKES.filter(l => l.state === 'PA');
     console.log(`   Redfin returned ${homes.length} total ${regionLabel} listings`);
 
@@ -360,11 +378,12 @@ async function scrapeRedfin() {
       const address = home.streetLine || '';
       const zip = String(home.zip || '');
 
+      // Include if any field has a water keyword OR the street name itself has a water word
+      // (e.g. "Beaver Brook Rd" → brook in street; "Lake Shore Dr" → lake in street)
       const isWaterfront = waterKeywords.test(remarks) || waterKeywords.test(tags) ||
                            waterKeywords.test(subdivision) || waterKeywords.test(address);
-      // For NY: also include properties in known lake-community zip codes
-      const isNYLakeCommunity = stateCode === 'NY' && NY_LAKE_ZIPS.has(zip);
-      if (!isWaterfront && !isNYLakeCommunity) continue;
+      const hasWaterStreet = streetWaterWords.test(address);
+      if (!isWaterfront && !hasWaterStreet) continue;
 
       // Match to a specific lake
       let matchedLake = 'Unknown Lake';
@@ -384,10 +403,14 @@ async function scrapeRedfin() {
           }
         }
       }
-      // For NY: zip-code fallback — assign to the lake whose zip matches
+      // For NY: zip-code fallback — assign to the lake whose zip matches (uses all Sullivan County zips)
       if (matchedLake === 'Unknown Lake' && stateCode === 'NY') {
         const zipLake = NY_LAKES.find(l => l.zipCode === zip);
         if (zipLake) matchedLake = zipLake.name;
+      }
+      // For NY: if still unknown but in Sullivan County, mark as Sullivan County Waterfront
+      if (matchedLake === 'Unknown Lake' && stateCode === 'NY' && ALL_SULLIVAN_ZIPS.has(zip)) {
+        matchedLake = 'Sullivan County Waterfront';
       }
 
       const price = home.price?.value || home.price || 0;
