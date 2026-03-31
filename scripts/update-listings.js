@@ -343,8 +343,92 @@ async function scrapeRedfin() {
   console.log('\n🔴 Scraping Redfin (Stingray API)...');
   const listings = [];
 
+  // Known Sullivan County lake zip codes — catch lake-community properties even without water keywords
+  const NY_LAKE_ZIPS = new Set(LAKES.filter(l => l.state === 'NY' && l.zipCode).map(l => l.zipCode));
+  const NY_LAKES = LAKES.filter(l => l.state === 'NY');
+
+  // Helper to process a set of homes from one Redfin county response
+  function processRedfinHomes(homes, regionLabel, stateCode, countyName) {
+    const waterKeywords = /\b(lake|lakefront|lake\s*front|waterfront|water\s*front|pond|lakeshore|lakeside|lake\s*access|lake\s*community|lake\s*view)\b/i;
+    const lakesForRegion = stateCode === 'NY' ? NY_LAKES : LAKES.filter(l => l.state === 'PA');
+    console.log(`   Redfin returned ${homes.length} total ${regionLabel} listings`);
+
+    for (const home of homes) {
+      const remarks = home.listingRemarks || '';
+      const tags = (home.listingTags || []).join(' ');
+      const subdivision = home.location || '';
+      const address = home.streetLine || '';
+      const zip = String(home.zip || '');
+
+      const isWaterfront = waterKeywords.test(remarks) || waterKeywords.test(tags) ||
+                           waterKeywords.test(subdivision) || waterKeywords.test(address);
+      // For NY: also include properties in known lake-community zip codes
+      const isNYLakeCommunity = stateCode === 'NY' && NY_LAKE_ZIPS.has(zip);
+      if (!isWaterfront && !isNYLakeCommunity) continue;
+
+      // Match to a specific lake
+      let matchedLake = 'Unknown Lake';
+      const searchText = `${remarks} ${tags} ${subdivision} ${address}`.toLowerCase();
+      for (const lake of lakesForRegion) {
+        const lakeLower = lake.name.toLowerCase();
+        if (searchText.includes(lakeLower) || searchText.includes(lakeLower.replace(' lake', '').replace('lake ', ''))) {
+          matchedLake = lake.name; break;
+        }
+      }
+      // Keyword fallback
+      if (matchedLake === 'Unknown Lake') {
+        for (const lake of lakesForRegion) {
+          const keywords = LAKE_COMMUNITY_KEYWORDS[lake.name];
+          if (keywords && keywords.length > 0 && keywords.every(kw => searchText.includes(kw))) {
+            matchedLake = lake.name; break;
+          }
+        }
+      }
+      // For NY: zip-code fallback — assign to the lake whose zip matches
+      if (matchedLake === 'Unknown Lake' && stateCode === 'NY') {
+        const zipLake = NY_LAKES.find(l => l.zipCode === zip);
+        if (zipLake) matchedLake = zipLake.name;
+      }
+
+      const price = home.price?.value || home.price || 0;
+      if (!price || price <= 0) continue;
+      const lat = home.latLong?.latitude || home.latitude || 0;
+      const lng = home.latLong?.longitude || home.longitude || 0;
+      const listingUrl = home.url ? `https://www.redfin.com${home.url}` : '';
+      let image = '';
+      const photos = [];
+      if (home.photos && home.photos.length > 0) {
+        for (const photo of home.photos) {
+          let url = '';
+          if (typeof photo === 'string') url = photo;
+          else if (photo.photoUrls?.fullScreenPhotoUrl) url = photo.photoUrls.fullScreenPhotoUrl;
+          else if (photo.photoUrls?.nonFullScreenPhotoUrl) url = photo.photoUrls.nonFullScreenPhotoUrl;
+          if (url) photos.push(url);
+        }
+        image = photos[0] || '';
+      }
+      const num = (v) => { if (v == null) return 0; if (typeof v === 'number') return v; if (typeof v === 'object' && v.value != null) return Number(v.value) || 0; return Number(v) || 0; };
+      const str = (v) => { if (v == null) return ''; if (typeof v === 'string') return v; if (typeof v === 'object' && v.value != null) return String(v.value); return String(v); };
+      const sqft = num(home.sqFt);
+      const lotSqft = num(home.lotSize);
+      listings.push({
+        address: str(address), city: str(home.city), zipCode: zip,
+        state: stateCode, county: countyName,
+        price: num(price), bedrooms: num(home.beds), bathrooms: num(home.baths),
+        sqft, lotAcres: lotSqft > 0 ? Math.round(lotSqft / 43560 * 100) / 100 : 0,
+        yearBuilt: num(home.yearBuilt), latitude: lat, longitude: lng,
+        waterBodyName: matchedLake, hoaFee: num(home.hoa), motorboats: false,
+        description: String(remarks || '').slice(0, 500),
+        image, photos: photos.slice(0, 30), listingUrl,
+        mlsId: str(home.mlsId), daysOnMarket: num(home.dom) || num(home.timeOnRedfin),
+        isReduced: (home.sashes || []).some(s => { const t = typeof s === 'string' ? s : String(s?.sashType || s?.sashTypeId || ''); return t.includes('PRICE_DROP'); }),
+        photoCount: (home.photos || []).length, source: 'Redfin', redfin: true,
+      });
+    }
+  }
+
   try {
-    // Fetch ALL Monroe County active single-family listings
+    // ---- Monroe County, PA ----
     const apiUrl = 'https://www.redfin.com/stingray/api/gis?al=1&region_id=2405&region_type=5&num_homes=500&status=9&sf=1,2,3,5,6,7&uipt=1&v=8';
     const resp = await fetch(apiUrl, {
       headers: {
@@ -356,133 +440,41 @@ async function scrapeRedfin() {
 
     if (!resp.ok) {
       console.warn(`   Redfin API returned HTTP ${resp.status}`);
-      return listings;
+    } else {
+      let text = await resp.text();
+      if (text.startsWith('{}&&')) text = text.slice(4);
+      const data = JSON.parse(text);
+      const homes = data?.payload?.homes || [];
+      processRedfinHomes(homes, 'Monroe County PA', 'PA', 'Monroe');
     }
-
-    let text = await resp.text();
-    // Strip CSRF prefix: {}&&
-    if (text.startsWith('{}&&')) text = text.slice(4);
-    const data = JSON.parse(text);
-
-    const homes = data?.payload?.homes || [];
-    console.log(`   Redfin returned ${homes.length} total Monroe County listings`);
-
-    // Filter for waterfront/lake keywords
-    const waterKeywords = /\b(lake|lakefront|lake\s*front|waterfront|water\s*front|pond|lakeshore|lakeside|lake\s*access|lake\s*community|lake\s*view)\b/i;
-
-    for (const home of homes) {
-      const remarks = home.listingRemarks || '';
-      const tags = (home.listingTags || []).join(' ');
-      const subdivision = home.location || '';
-      const address = home.streetLine || '';
-
-      // Check if this is a waterfront/lake property
-      const isWaterfront = waterKeywords.test(remarks) ||
-                           waterKeywords.test(tags) ||
-                           waterKeywords.test(subdivision) ||
-                           waterKeywords.test(address);
-
-      if (!isWaterfront) continue;
-
-      // Try to match to a specific lake
-      let matchedLake = 'Unknown Lake';
-      const searchText = `${remarks} ${tags} ${subdivision} ${address}`.toLowerCase();
-      for (const lake of LAKES) {
-        const lakeLower = lake.name.toLowerCase();
-        if (searchText.includes(lakeLower) || searchText.includes(lakeLower.replace(' lake', '').replace('lake ', ''))) {
-          matchedLake = lake.name;
-          break;
-        }
-      }
-
-      // If no exact match, try partial keyword matching
-      if (matchedLake === 'Unknown Lake') {
-        for (const lake of LAKES) {
-          const keywords = LAKE_COMMUNITY_KEYWORDS[lake.name];
-          if (keywords && keywords.length > 0 && keywords.every(kw => searchText.includes(kw))) {
-            matchedLake = lake.name;
-            break;
-          }
-        }
-      }
-
-      const price = home.price?.value || home.price || 0;
-      if (!price || price <= 0) continue;
-
-      const lat = home.latLong?.latitude || home.latitude || 0;
-      const lng = home.latLong?.longitude || home.longitude || 0;
-
-      // Build listing URL
-      const listingUrl = home.url ? `https://www.redfin.com${home.url}` : '';
-
-      // Get all photos
-      let image = '';
-      const photos = [];
-      if (home.photos && home.photos.length > 0) {
-        for (const photo of home.photos) {
-          let url = '';
-          if (typeof photo === 'string') url = photo;
-          else if (photo.photoUrls && photo.photoUrls.fullScreenPhotoUrl) url = photo.photoUrls.fullScreenPhotoUrl;
-          else if (photo.photoUrls && photo.photoUrls.nonFullScreenPhotoUrl) url = photo.photoUrls.nonFullScreenPhotoUrl;
-          if (url) photos.push(url);
-        }
-        image = photos[0] || '';
-      }
-
-      // Helper to extract plain number from Redfin's {value: N} or plain N
-      const num = (v) => {
-        if (v == null) return 0;
-        if (typeof v === 'number') return v;
-        if (typeof v === 'object' && v.value != null) return Number(v.value) || 0;
-        return Number(v) || 0;
-      };
-      const str = (v) => {
-        if (v == null) return '';
-        if (typeof v === 'string') return v;
-        if (typeof v === 'object' && v.value != null) return String(v.value);
-        return String(v);
-      };
-
-      const sqft = num(home.sqFt);
-      const lotSqft = num(home.lotSize);
-      const lotAcres = lotSqft > 0 ? Math.round(lotSqft / 43560 * 100) / 100 : 0;
-
-      listings.push({
-        address: str(address),
-        city: str(home.city),
-        zipCode: str(home.zip),
-        price: num(price),
-        bedrooms: num(home.beds),
-        bathrooms: num(home.baths),
-        sqft: sqft,
-        lotAcres: lotAcres,
-        yearBuilt: num(home.yearBuilt),
-        latitude: lat,
-        longitude: lng,
-        waterBodyName: matchedLake,
-        hoaFee: num(home.hoa),
-        motorboats: false,
-        description: String(remarks || '').slice(0, 500),
-        image: image,
-        photos: photos.slice(0, 30),
-        listingUrl: listingUrl,
-        mlsId: str(home.mlsId),
-        daysOnMarket: num(home.dom) || num(home.timeOnRedfin),
-        isReduced: (home.sashes || []).some(s => {
-          const t = typeof s === 'string' ? s : String(s?.sashType || s?.sashTypeId || '');
-          return t.includes('PRICE_DROP');
-        }),
-        photoCount: (home.photos || []).length,
-        source: 'Redfin',
-        redfin: true,
-      });
-    }
-
-    console.log(`   Found ${listings.length} waterfront/lake listings on Redfin`);
   } catch (err) {
-    console.error(`   Redfin scrape error: ${err.message}`);
+    console.error(`   Redfin Monroe County error: ${err.message}`);
   }
 
+  try {
+    // ---- Sullivan County, NY ----
+    const nyApiUrl = 'https://www.redfin.com/stingray/api/gis?al=1&region_id=1997&region_type=5&num_homes=500&status=9&sf=1,2,3,5,6,7&uipt=1&v=8';
+    const nyResp = await fetch(nyApiUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Referer': 'https://www.redfin.com/county/1997/NY/Sullivan-County',
+      },
+    });
+    if (!nyResp.ok) {
+      console.warn(`   Redfin Sullivan County NY returned HTTP ${nyResp.status}`);
+    } else {
+      let nyText = await nyResp.text();
+      if (nyText.startsWith('{}&&')) nyText = nyText.slice(4);
+      const nyData = JSON.parse(nyText);
+      const nyHomes = nyData?.payload?.homes || [];
+      processRedfinHomes(nyHomes, 'Sullivan County NY', 'NY', 'Sullivan');
+    }
+  } catch (err) {
+    console.error(`   Redfin Sullivan County NY error: ${err.message}`);
+  }
+
+  console.log(`   Redfin total: ${listings.length} waterfront/lake listings`);
   return listings;
 }
 
@@ -1118,14 +1110,29 @@ async function main() {
   console.log('─'.repeat(40));
   for (const lake of LAKES) {
     console.log(`📍 Scraping ${lake.name}...`);
+    let totalFound = 0, totalAdded = 0;
     try {
-      const html = await fetchPage(lake.indexUrl);
-      const listings = parseIndexPageHTML(html, lake);
-      let added = 0;
-      for (const l of listings) {
-        if (addListing(l, 'LakeHouse.com')) added++;
+      // Page 1 — base URL
+      const html1 = await fetchPage(lake.indexUrl);
+      const page1Listings = parseIndexPageHTML(html1, lake);
+      for (const l of page1Listings) { if (addListing(l, 'LakeHouse.com')) totalAdded++; }
+      totalFound += page1Listings.length;
+
+      // Pages 2–5 — LakeHouse.com pagination: insert -p2, -p3, etc. before .html
+      if (page1Listings.length >= 10) { // only paginate if first page was full
+        for (let pg = 2; pg <= 5; pg++) {
+          const pageUrl = lake.indexUrl.replace('.html', `-p${pg}.html`);
+          try {
+            await new Promise(r => setTimeout(r, 400));
+            const html = await fetchPage(pageUrl);
+            const listings = parseIndexPageHTML(html, lake);
+            if (listings.length === 0) break; // no more pages
+            for (const l of listings) { if (addListing(l, 'LakeHouse.com')) totalAdded++; }
+            totalFound += listings.length;
+          } catch (e) { break; } // 404 = no more pages
+        }
       }
-      console.log(`   Found ${listings.length}, added ${added} new`);
+      console.log(`   Found ${totalFound}, added ${totalAdded} new`);
     } catch (err) {
       console.error(`   Error scraping ${lake.name}: ${err.message}`);
     }
