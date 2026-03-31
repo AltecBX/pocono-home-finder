@@ -230,12 +230,8 @@ function getAnnualTax(price, city, county) {
   return Math.round(assessedValue * millage / 1000);
 }
 
-// Unsplash fallback photos in case listing photo fails
-const FALLBACK_PHOTOS = [
-  'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=500&fit=crop',
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop',
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=500&fit=crop',
-];
+// No fallback photos — use empty string so the app shows a clean "no photo" placeholder
+// instead of fake luxury stock images that misrepresent the actual property
 
 // Generate property-specific search URLs for each listing site
 function getSourcesForProperty(address, city, zipCode, state) {
@@ -1041,7 +1037,7 @@ function generatePropertyJS(listing, id) {
 
   const sources = [...verifiedSources, ...searchLinks];
 
-  const image = listing.image || FALLBACK_PHOTOS[id % FALLBACK_PHOTOS.length];
+  const image = listing.image || '';
   const lat = listing.latitude || (41.1 + pseudoRand(31, 400) / 1000);
   const lng = listing.longitude || (-75.6 + pseudoRand(37, 400) / 1000);
 
