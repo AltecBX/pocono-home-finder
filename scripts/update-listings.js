@@ -921,25 +921,75 @@ function parseIndexPageHTML(html, lake) {
   return listings.filter(l => !l.skip && l.bedrooms !== undefined && l.address);
 }
 
-// Enrich individual listing page for GPS coordinates
+// Fetch a page using curl (bypasses TLS fingerprinting that blocks Node fetch on Redfin/Zillow)
+function fetchPageCurl(url) {
+  const { execSync } = require('child_process');
+  try {
+    const html = execSync(
+      `curl -s -L --max-time 15 -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "${url}"`,
+      { maxBuffer: 10 * 1024 * 1024, timeout: 20000 }
+    ).toString();
+    return html;
+  } catch (e) {
+    throw new Error(`curl failed: ${e.message}`);
+  }
+}
+
+// Enrich individual listing page for GPS coordinates + photos
 async function enrichListing(listing) {
   try {
-    const html = await fetchPage(listing.listingUrl);
+    const isRedfin = (listing.listingUrl || '').includes('redfin.com');
+    const isZillow = (listing.listingUrl || '').includes('zillow.com');
 
-    // Extract GPS from Google Maps link: q=41.15718460,+-75.56371307
+    // Redfin and Zillow block Node.js fetch — use curl instead
+    let html;
+    if (isRedfin || isZillow) {
+      try { html = fetchPageCurl(listing.listingUrl); }
+      catch (e) { return listing; } // can't get page, skip enrichment
+    } else {
+      html = await fetchPage(listing.listingUrl);
+    }
+
+    // Extract GPS from Google Maps link (LakeHouse pages): q=41.15718460,+-75.56371307
     const coordMatch = html.match(/q=([\d.-]+),\s*\+?([\d.-]+)/);
     if (coordMatch) {
       listing.latitude = parseFloat(coordMatch[1]);
       listing.longitude = parseFloat(coordMatch[2]);
     }
 
-    // Extract og:image if we don't have a good image yet
-    if (!listing.image || listing.image.includes('lazyload.gif')) {
+    // Extract og:image — works for Redfin, Zillow, and most listing sites
+    if (!listing.image || listing.image.includes('lazyload.gif') || listing.image === '') {
       const ogMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
-      if (ogMatch) listing.image = ogMatch[1];
+      if (ogMatch && ogMatch[1] && !ogMatch[1].endsWith('/files/') && !ogMatch[1].endsWith('/files')) {
+        listing.image = ogMatch[1];
+      }
     }
 
-    // Extract fuller description if available
+    // For Redfin: extract photos from the page JSON state
+    if (isRedfin) {
+      const photos = [];
+      // Redfin embeds photo URLs in script tags as photoUrls arrays
+      const photoRegex = /"photoUrl"\s*:\s*"([^"]+)"/g;
+      let m;
+      while ((m = photoRegex.exec(html)) !== null) {
+        const url = m[1].replace(/\\u002F/g, '/');
+        if (url.startsWith('http') && !photos.includes(url)) photos.push(url);
+      }
+      // Also try srcUrl / fullScreenPhotoUrl patterns
+      const srcRegex = /"(?:srcUrl|fullScreenPhotoUrl|nonFullScreenPhotoUrl)"\s*:\s*"([^"]+)"/g;
+      while ((m = srcRegex.exec(html)) !== null) {
+        const url = m[1].replace(/\\u002F/g, '/');
+        if (url.startsWith('http') && !photos.includes(url)) photos.push(url);
+      }
+      if (photos.length > 0) {
+        listing.photos = photos.slice(0, 30);
+        listing.image = listing.photos[0];
+        listing.photoCount = photos.length;
+      }
+      return listing; // done for Redfin, no LakeHouse-specific fields below
+    }
+
+    // Extract fuller description if available (LakeHouse pages)
     const descBlock = html.match(/class="item-details-i"[^>]*>\s*<h3[^>]*>([\s\S]*?)<\/h3>/);
     if (descBlock) {
       const fullDesc = decodeEntities(descBlock[1].replace(/<[^>]+>/g, '').replace(/\n/g, ' ').trim());
@@ -952,18 +1002,16 @@ async function enrichListing(listing) {
     const realtorMatch = html.match(/href="(https:\/\/www\.realtor\.com\/realestateandhomes-detail\/[^"]+)"/);
     if (realtorMatch) listing.realtorUrl = realtorMatch[1];
 
-    // Extract all photo URLs — LakeHouse uses CSS background-image style, not src attributes
+    // Extract all LakeHouse photo URLs
     const allPhotos = [];
     let photoMatch;
-    // Match CSS: url(https://images.lakehouse.com/files/medium/...)
     const bgRegex = /url\((https?:\/\/[^)]*lakehouse\.com\/files\/[^)]+)\)/g;
     while ((photoMatch = bgRegex.exec(html)) !== null) {
       const url = photoMatch[1].replace('/small/', '/medium/').replace('/large/', '/medium/');
       if (!allPhotos.includes(url)) allPhotos.push(url);
     }
-    // Also match src/data-src attributes (backup)
-    const srcRegex = /(?:src|data-src)="(https?:\/\/[^"]*lakehouse\.com\/files\/[^"]+)"/g;
-    while ((photoMatch = srcRegex.exec(html)) !== null) {
+    const srcRegex2 = /(?:src|data-src)="(https?:\/\/[^"]*lakehouse\.com\/files\/[^"]+)"/g;
+    while ((photoMatch = srcRegex2.exec(html)) !== null) {
       const url = photoMatch[1].replace('/small/', '/medium/').replace('/large/', '/medium/');
       if (!allPhotos.includes(url)) allPhotos.push(url);
     }
