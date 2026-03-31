@@ -230,6 +230,11 @@ tailwind.config = {
     animation-delay: 4s;
   }
 
+  /* ========== CATSKILLS REGION GLOW (earthy green/forest tint) ========== */
+  .catskills-glow.glow-1 { background: rgba(52, 211, 153, 0.13); }
+  .catskills-glow.glow-2 { background: rgba(16, 185, 129, 0.10); }
+  .catskills-glow.glow-3 { background: rgba(52, 211, 153, 0.07); }
+
   /* ========== GRADIENT TEXT ========== */
   .gradient-text {
     background: linear-gradient(135deg, #f8fafc 0%, #38bdf8 50%, #0ea5e9 100%);
@@ -48370,6 +48375,129 @@ function getActiveProperties() {
   return REGIONS[activeRegion].properties;
 }
 
+// ========== REGION CONTENT CONFIG ==========
+const REGION_CONTENT = {
+  'pa-poconos': {
+    appTitle: 'Pocono Lakehouse Search',
+    heroTitle: 'Find Our Perfect<br>Pocono Lakehouse',
+    heroDesc: 'Every lake property in the Poconos — Monroe &amp; Pike County, PA. Real MLS data, updated daily, so we never miss a listing.',
+    footerTitle: 'Pocono Lakehouse Search',
+    footerTagline: 'Built for finding the perfect Pocono waterfront home',
+    scrollCTA: 'Explore Properties',
+    sourcesHtml: `
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Zillow</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Redfin</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Realtor.com</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Trulia</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Homes.com</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">FlexMLS</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Century 21</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Weichert</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Coldwell Banker</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Movoto</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Pocono RE</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Mashvisor</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Howard Hanna</span>`,
+    typingPhrases: [
+      'Lakefront homes where the dogs can swim...',
+      '3+ bedrooms under $600K on Arrowhead Lake...',
+      'Lake Naomi waterfront with private dock...',
+      'Lake Wallenpaupack with Tesla charger nearby...',
+      'Dog-friendly lakefront under $500K...',
+    ],
+    statLabels: { total: 'Properties', lakefront: 'Lakefront', dogfriendly: 'Dog-Friendly', sources: 'Lakes Covered' },
+  },
+  'ny-catskills': {
+    appTitle: 'Catskills Lakehouse Search',
+    heroTitle: 'Find Our Perfect<br>Catskills Retreat',
+    heroDesc: 'Every lake property in Sullivan County, NY — White Lake, Swinging Bridge, Mongaup Valley &amp; more. Real MLS data, updated daily.',
+    footerTitle: 'Catskills Lakehouse Search',
+    footerTagline: 'Built for finding the perfect Catskills waterfront home',
+    scrollCTA: 'Explore Catskills',
+    sourcesHtml: `
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Zillow</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Redfin</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Realtor.com</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Trulia</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Homes.com</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Howard Hanna</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Weichert</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Coldwell Banker</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Catskills RE</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">LakeHouse.com</span>
+      <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Mashvisor</span>`,
+    typingPhrases: [
+      'Lakefront retreat on White Lake, Sullivan County...',
+      '3+ bedrooms under $600K near Monticello...',
+      'Swinging Bridge Reservoir waterfront...',
+      'Dog-friendly lake home in the Catskills...',
+      'Sullivan County lakefront under $500K...',
+    ],
+    statLabels: { total: 'Properties', lakefront: 'Lakefront', dogfriendly: 'Dog-Friendly', sources: 'Lakes Covered' },
+  },
+};
+
+function updateRegionContent(regionId) {
+  const c = REGION_CONTENT[regionId];
+  if (!c) return;
+
+  // Header title
+  const headerTitle = document.querySelector('#header .gradient-text');
+  if (headerTitle) headerTitle.textContent = c.appTitle;
+
+  // Hero
+  const heroTitle = document.getElementById('hero-title');
+  if (heroTitle) heroTitle.innerHTML = c.heroTitle;
+  const heroDesc = document.getElementById('hero-desc');
+  if (heroDesc) heroDesc.innerHTML = c.heroDesc;
+  const heroSources = document.getElementById('hero-sources');
+  if (heroSources) heroSources.innerHTML = c.sourcesHtml;
+  const heroScrollCTA = document.getElementById('hero-scroll-cta');
+  if (heroScrollCTA) heroScrollCTA.textContent = c.scrollCTA;
+
+  // Stat labels
+  const slTotal = document.getElementById('stat-total-label');
+  if (slTotal) slTotal.textContent = c.statLabels.total;
+  const slLakefront = document.getElementById('stat-lakefront-label');
+  if (slLakefront) slLakefront.textContent = c.statLabels.lakefront;
+  const slDog = document.getElementById('stat-dogfriendly-label');
+  if (slDog) slDog.textContent = c.statLabels.dogfriendly;
+  const slSources = document.getElementById('stat-sources-label');
+  if (slSources) slSources.textContent = c.statLabels.sources;
+
+  // Footer
+  const footerTitle = document.getElementById('footer-title');
+  if (footerTitle) footerTitle.textContent = c.footerTitle;
+  const footerTagline = document.getElementById('footer-tagline');
+  if (footerTagline) footerTagline.textContent = c.footerTagline;
+
+  // Ambient glow color for Catskills (earthy green) vs Poconos (ocean blue)
+  const heroGlows = document.querySelectorAll('.hero-glow');
+  if (regionId === 'ny-catskills') {
+    heroGlows.forEach(g => g.classList.add('catskills-glow'));
+  } else {
+    heroGlows.forEach(g => g.classList.remove('catskills-glow'));
+  }
+
+  // Update page title
+  document.title = c.appTitle + ' — Jerry & Theresa\'s 2nd Home';
+
+  // Restart typing animation with region-specific phrases
+  restartTypingAnimation(c.typingPhrases);
+}
+
+let typingPhrases = [];
+let typingAnimationActive = false;
+
+function restartTypingAnimation(phrases) {
+  typingPhrases = phrases;
+  typingAnimationActive = false; // signal current loop to stop
+  setTimeout(() => {
+    typingAnimationActive = true;
+    runTypingAnimation(phrases);
+  }, 300);
+}
+
 function switchRegion(regionId) {
   if (regionId === activeRegion) return;
   activeRegion = regionId;
@@ -48386,9 +48514,11 @@ function switchRegion(regionId) {
     tab.classList.toggle('active', tab.dataset.region === regionId);
   });
 
-  // Update header title
-  const titleEl = document.querySelector('#header .gradient-text');
-  if (titleEl) titleEl.textContent = regionId === 'pa-poconos' ? 'Pocono Lakehouse Search' : 'Catskills Lakehouse Search';
+  // Update all region-specific content
+  updateRegionContent(regionId);
+
+  // Re-animate hero stats on region switch
+  heroStatsAnimated = false;
 
   // Reset filters
   activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'newest', dogFriendly: false, source: 'all', showLand: false };
@@ -48440,6 +48570,22 @@ function repopulateFiltersForRegion() {
       sel.insertAdjacentHTML('beforeend', `<option value="${lake}">${lake} (${count})</option>`);
     });
   });
+
+  // Map lake quick-filter buttons
+  const mapBtns = document.getElementById('map-lake-buttons');
+  if (mapBtns) {
+    mapBtns.innerHTML = '';
+    const topLakes = lakes.filter(l => props.filter(p => p.waterBodyName === l).length >= 1);
+    topLakes.forEach(lake => {
+      mapBtns.insertAdjacentHTML('beforeend',
+        `<button onclick="filterMap('${lake}')" class="map-filter-btn px-3 py-1.5 rounded-full text-xs glass text-slate-400" data-filter="${lake}">${lake}</button>`
+      );
+    });
+    // Reset active button to "All"
+    document.querySelectorAll('.map-filter-btn').forEach(b => b.classList.remove('active', 'text-water', 'border-water/30'));
+    const allBtn = document.querySelector('.map-filter-btn[data-filter="all"]');
+    if (allBtn) { allBtn.classList.add('active', 'text-water', 'border-water/30'); }
+  }
 }
 
 // ========== STATE ==========
@@ -48573,11 +48719,11 @@ NY_PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; 
   <div class="hero-glow glow-3"></div>
 
   <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center py-20">
-    <p class="text-sm tracking-[0.2em] uppercase text-water/70 font-medium animate-fade-in-up mb-4">Jerry & Theresa</p>
-    <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight gradient-text animate-fade-in-up">
+    <p id="hero-eyebrow" class="text-sm tracking-[0.2em] uppercase text-water/70 font-medium animate-fade-in-up mb-4">Jerry & Theresa</p>
+    <h1 id="hero-title" class="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight gradient-text animate-fade-in-up">
       Find Our Perfect<br>Pocono Lakehouse
     </h1>
-    <p class="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto animate-fade-in-up stagger-1">
+    <p id="hero-desc" class="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto animate-fade-in-up stagger-1">
       Every lake property in the Poconos — Monroe &amp; Pike County, PA. Real MLS data, updated daily, so we never miss a listing.
     </p>
 
@@ -48596,7 +48742,7 @@ NY_PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; 
     <!-- Searching across sites -->
     <div class="mt-6 animate-fade-in-up stagger-2">
       <p class="text-xs text-slate-600 mb-2">Searching across all major listing sites:</p>
-      <div class="inline-flex flex-wrap justify-center gap-x-2 gap-y-1 max-w-xl mx-auto">
+      <div id="hero-sources" class="inline-flex flex-wrap justify-center gap-x-2 gap-y-1 max-w-xl mx-auto">
         <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Zillow</span>
         <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Redfin</span>
         <span class="text-[11px] text-slate-500 bg-white/5 rounded-full px-2.5 py-0.5">Realtor.com</span>
@@ -48634,22 +48780,22 @@ NY_PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; 
       <div class="inline-flex flex-wrap justify-center gap-4 sm:gap-8 glass rounded-2xl px-6 sm:px-8 py-4">
         <div class="text-center">
           <div class="text-2xl font-bold text-water" id="stat-total">12</div>
-          <div class="text-xs text-slate-500 mt-0.5">Properties</div>
+          <div class="text-xs text-slate-500 mt-0.5" id="stat-total-label">Properties</div>
         </div>
         <div class="w-px bg-white/10 hidden sm:block"></div>
         <div class="text-center">
           <div class="text-2xl font-bold text-water" id="stat-lakefront">5</div>
-          <div class="text-xs text-slate-500 mt-0.5">Lakefront</div>
+          <div class="text-xs text-slate-500 mt-0.5" id="stat-lakefront-label">Lakefront</div>
         </div>
         <div class="w-px bg-white/10 hidden sm:block"></div>
         <div class="text-center">
           <div class="text-2xl font-bold text-water" id="stat-dogfriendly">7</div>
-          <div class="text-xs text-slate-500 mt-0.5">Dog-Friendly</div>
+          <div class="text-xs text-slate-500 mt-0.5" id="stat-dogfriendly-label">Dog-Friendly</div>
         </div>
         <div class="w-px bg-white/10 hidden sm:block"></div>
         <div class="text-center">
           <div class="text-2xl font-bold text-water" id="stat-sources">3</div>
-          <div class="text-xs text-slate-500 mt-0.5">Lakes Covered</div>
+          <div class="text-xs text-slate-500 mt-0.5" id="stat-sources-label">Lakes Covered</div>
         </div>
       </div>
     </div>
@@ -48667,7 +48813,7 @@ NY_PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; 
     <!-- Scroll down indicator -->
     <div class="mt-8 animate-fade-in-up stagger-4">
       <a href="#search" class="inline-flex flex-col items-center gap-1 text-slate-600 hover:text-water transition">
-        <span class="text-xs">Explore Properties</span>
+        <span id="hero-scroll-cta" class="text-xs">Explore Properties</span>
         <i data-lucide="chevron-down" class="w-5 h-5 animate-bounce"></i>
       </a>
     </div>
@@ -49070,9 +49216,9 @@ NY_PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center">
     <div class="flex items-center justify-center gap-2 mb-3">
       <i data-lucide="waves" class="w-5 h-5 text-water"></i>
-      <span class="font-semibold gradient-text">Pocono Lakehouse Search</span>
+      <span id="footer-title" class="font-semibold gradient-text">Pocono Lakehouse Search</span>
     </div>
-    <p class="text-slate-600 text-sm">Built for finding the perfect Pocono waterfront home</p>
+    <p id="footer-tagline" class="text-slate-600 text-sm">Built for finding the perfect Pocono waterfront home</p>
     <p class="text-slate-700 text-xs mt-2">Data sourced from LakeHouse.com &bull; Updated daily</p>
   </div>
 </footer>
@@ -50025,6 +50171,17 @@ function renderCards(properties) {
   if (properties.length === 0) {
     grid.innerHTML = '';
     noResults.classList.remove('hidden');
+    // Show region-appropriate empty state message
+    const noResultsMsg = noResults.querySelector('p');
+    const allProps = getActiveProperties();
+    if (noResultsMsg) {
+      if (allProps.length === 0) {
+        const regionLabel = activeRegion === 'ny-catskills' ? 'Catskills (Sullivan County, NY)' : 'Pocono (Monroe & Pike County, PA)';
+        noResultsMsg.textContent = `No listings loaded yet for ${regionLabel}. Check back soon!`;
+      } else {
+        noResultsMsg.textContent = 'No properties match your filters';
+      }
+    }
     count.textContent = '0 results';
     removeLoadMore();
     return;
@@ -51759,14 +51916,9 @@ async function fetchWeather(lat = 41.122, lng = -75.364, label = 'Poconos') {
 
 // ========== TYPING ANIMATION ==========
 
-function runTypingAnimation() {
-  const phrases = [
-    'Lakefront homes where the dogs can swim...',
-    '3+ bedrooms under $600K on Arrowhead Lake...',
-    'Lake Naomi waterfront with private dock...',
-    'Lake Wallenpaupack with Tesla charger nearby...',
-    'Dog-friendly lakefront under $500K...',
-  ];
+function runTypingAnimation(phrases) {
+  if (!phrases) phrases = REGION_CONTENT[activeRegion]?.typingPhrases || REGION_CONTENT['pa-poconos'].typingPhrases;
+  const instanceId = ++runTypingAnimation._id;
   const el = document.getElementById('typing-text');
   const searchInput = document.getElementById('smart-search');
   let phraseIdx = 0;
@@ -51775,13 +51927,15 @@ function runTypingAnimation() {
   let typingPaused = false;
 
   // Hide typing placeholder when search input is focused or has content
-  if (searchInput) {
+  if (searchInput && !runTypingAnimation._listenersAttached) {
+    runTypingAnimation._listenersAttached = true;
     searchInput.addEventListener('focus', () => { el.style.display = 'none'; typingPaused = true; });
     searchInput.addEventListener('blur', () => { if (!searchInput.value) { el.style.display = ''; typingPaused = false; } });
     searchInput.addEventListener('input', () => { if (searchInput.value) { el.style.display = 'none'; typingPaused = true; } });
   }
 
   function tick() {
+    if (instanceId !== runTypingAnimation._id) return; // stale instance — stop
     if (typingPaused) { setTimeout(tick, 500); return; }
     const phrase = phrases[phraseIdx];
     if (!deleting) {
@@ -51806,6 +51960,8 @@ function runTypingAnimation() {
   }
   tick();
 }
+runTypingAnimation._id = 0;
+runTypingAnimation._listenersAttached = false;
 
 // ========== SCROLL REVEAL ==========
 
@@ -51972,8 +52128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.region-tab').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.region === urlRegion);
     });
-    const titleEl = document.querySelector('#header .gradient-text');
-    if (titleEl) titleEl.textContent = urlRegion === 'pa-poconos' ? 'Pocono Lakehouse Search' : 'Catskills Lakehouse Search';
+    updateRegionContent(urlRegion);
   }
 
   // Update region tab counts
@@ -51995,7 +52150,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initMap();
   renderDashboard();
   updateCompareSection();
-  runTypingAnimation();
+  runTypingAnimation._id = 0;
+  runTypingAnimation(REGION_CONTENT[activeRegion]?.typingPhrases);
   initScrollReveal();
   updateHeroStats();
   updateFavBadge();
