@@ -388,6 +388,24 @@ tailwind.config = {
   }
 
   /* ========== TOGGLE SWITCH ========== */
+  /* ========== REGION TABS ========== */
+  .region-tab {
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+  }
+  .region-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.03); }
+  .region-tab.active {
+    color: var(--accent-water);
+    background: rgba(56, 189, 248, 0.08);
+    border-color: rgba(56, 189, 248, 0.2);
+  }
+  html[data-theme="light"] .region-tab.active {
+    color: var(--accent-water);
+    background: rgba(2, 132, 199, 0.08);
+    border-color: rgba(2, 132, 199, 0.2);
+  }
+
   .toggle-switch {
     width: 44px; height: 24px;
     background: #2a3a4e;
@@ -45175,6 +45193,121 @@ const PROPERTIES = [
   }
 ];
 
+// ========== NY SULLIVAN COUNTY PROPERTIES (populated by scraper) ==========
+const NY_PROPERTIES = [];
+
+// ========== REGION CONFIG ==========
+const REGIONS = {
+  'pa-poconos': {
+    id: 'pa-poconos',
+    label: 'PA Poconos',
+    sublabel: 'Monroe & Pike Counties',
+    icon: 'mountain',
+    mapCenter: [41.15, -75.35],
+    mapZoom: 10,
+    weatherLat: 41.10,
+    weatherLng: -75.35,
+    weatherLabel: 'Poconos',
+    properties: PROPERTIES,
+    homeAddress: '96 Stockbridge Rd, Yonkers, NY 10710',
+    homeLat: 40.9401,
+    homeLng: -73.8663,
+  },
+  'ny-catskills': {
+    id: 'ny-catskills',
+    label: 'NY Catskills',
+    sublabel: 'Sullivan County',
+    icon: 'trees',
+    mapCenter: [41.72, -74.78],
+    mapZoom: 10,
+    weatherLat: 41.72,
+    weatherLng: -74.78,
+    weatherLabel: 'Catskills',
+    properties: NY_PROPERTIES,
+    homeAddress: '96 Stockbridge Rd, Yonkers, NY 10710',
+    homeLat: 40.9401,
+    homeLng: -73.8663,
+  }
+};
+
+let activeRegion = 'pa-poconos';
+
+function getActiveProperties() {
+  return REGIONS[activeRegion].properties;
+}
+
+function switchRegion(regionId) {
+  if (regionId === activeRegion) return;
+  activeRegion = regionId;
+  const region = REGIONS[regionId];
+
+  // Update URL
+  const url = new URL(window.location);
+  if (regionId === 'pa-poconos') url.searchParams.delete('region');
+  else url.searchParams.set('region', regionId);
+  history.replaceState({}, '', url);
+
+  // Update tab UI
+  document.querySelectorAll('.region-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.region === regionId);
+  });
+
+  // Update header title
+  const titleEl = document.querySelector('#header .gradient-text');
+  if (titleEl) titleEl.textContent = regionId === 'pa-poconos' ? 'Pocono Lakehouse Search' : 'Catskills Lakehouse Search';
+
+  // Reset filters
+  activeFilters = { county: 'all', lake: 'all', waterType: 'all', minBeds: 0, maxPrice: Infinity, sort: 'newest', dogFriendly: false, source: 'all', showLand: false };
+  syncFiltersToUI();
+
+  // Re-populate county and lake filters for this region
+  repopulateFiltersForRegion();
+
+  // Re-center map
+  if (map) {
+    map.setView(region.mapCenter, region.mapZoom);
+  }
+
+  // Re-render
+  applyFilters();
+  updateHeroStats();
+  updateFavBadge();
+  fetchWeather(region.weatherLat, region.weatherLng, region.weatherLabel);
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function repopulateFiltersForRegion() {
+  const props = getActiveProperties();
+  const counties = [...new Set(props.map(p => p.county || 'Unknown'))].sort();
+
+  // County dropdown
+  ['filter-county', 'mf-county'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="all">All Counties</option>';
+    if (counties.length > 1) {
+      counties.forEach(c => {
+        const count = props.filter(p => (p.county || 'Unknown') === c).length;
+        sel.insertAdjacentHTML('beforeend', `<option value="${c}">${c} County (${count})</option>`);
+      });
+    }
+  });
+
+  // Lake dropdown
+  const lakes = [...new Set(props.map(p => p.waterBodyName))].sort();
+  ['filter-lake', 'mf-lake'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="all">All Lakes</option>';
+    lakes.forEach(lake => {
+      const count = props.filter(p => p.waterBodyName === lake).length;
+      sel.insertAdjacentHTML('beforeend', `<option value="${lake}">${lake} (${count})</option>`);
+    });
+  });
+}
+
 // ========== STATE ==========
 let favorites = JSON.parse(localStorage.getItem('phf-favorites') || '[]');
 let compareList = JSON.parse(localStorage.getItem('phf-compare') || '[]');
@@ -45184,6 +45317,7 @@ let markers = [];
 
 // Apply saved favorites
 PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
+NY_PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 </script>
 
 <!-- ================================================================== -->
@@ -45218,6 +45352,22 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
   </div>
   </div>
 </header>
+
+<!-- Region Tab Bar -->
+<div id="region-tabs" class="fixed left-0 right-0 z-40 glass-strong border-b border-white/5" style="top: calc(4rem + env(safe-area-inset-top, 0px));">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 h-10 overflow-x-auto">
+    <button class="region-tab active flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap" data-region="pa-poconos" onclick="switchRegion('pa-poconos')">
+      <i data-lucide="mountain" class="w-3 h-3"></i>
+      <span>PA Poconos</span>
+      <span class="region-tab-count text-[10px] opacity-60" id="tab-count-pa"></span>
+    </button>
+    <button class="region-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap" data-region="ny-catskills" onclick="switchRegion('ny-catskills')">
+      <i data-lucide="trees" class="w-3 h-3"></i>
+      <span>NY Catskills</span>
+      <span class="region-tab-count text-[10px] opacity-60" id="tab-count-ny"></span>
+    </button>
+  </div>
+</div>
 
 <!-- Mobile Menu -->
 <div id="mobile-menu-backdrop" class="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
@@ -45282,7 +45432,7 @@ PROPERTIES.forEach(p => { if (favorites.includes(p.id)) p.isFavorite = true; });
 <!-- ================================================================== -->
 <!-- HERO SECTION                                                       -->
 <!-- ================================================================== -->
-<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden" style="padding-top: calc(4rem + env(safe-area-inset-top, 0px));">
+<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden" style="padding-top: calc(6.5rem + env(safe-area-inset-top, 0px));">
   <!-- Ambient glow orbs -->
   <div class="hero-glow glow-1"></div>
   <div class="hero-glow glow-2"></div>
@@ -46783,7 +46933,7 @@ function removeLoadMore() {
 // ========== FILTERING & SORTING ==========
 
 function getFilteredProperties() {
-  let filtered = [...PROPERTIES];
+  let filtered = [...getActiveProperties()];
   const f = activeFilters;
 
   // Hide vacant land by default (0 beds AND 0 sqft = empty lot)
@@ -48396,10 +48546,8 @@ document.getElementById('hamburger-btn').addEventListener('click', () => {
 
 // ========== POCONO WEATHER WIDGET ==========
 
-async function fetchPoconoWeather() {
+async function fetchWeather(lat = 41.122, lng = -75.364, label = 'Poconos') {
   try {
-    // Mt Pocono, PA coordinates (center of Pocono region)
-    const lat = 41.122, lng = -75.364;
     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York&forecast_days=3`);
     const data = await res.json();
     const c = data.current;
@@ -48555,10 +48703,11 @@ function animateCounter(el, target, duration = 1200) {
 
 let heroStatsAnimated = false;
 function updateHeroStats() {
-  const total = PROPERTIES.filter(p => p.bedrooms > 0 || p.sqft > 0).length;
-  const lakefront = PROPERTIES.filter(p => p.waterType === 'LAKEFRONT').length;
-  const dogFriendly = PROPERTIES.filter(p => p.dogSwimAccessible).length;
-  const lakes = [...new Set(PROPERTIES.map(p => p.waterBodyName))].length;
+  const AP = getActiveProperties();
+  const total = AP.filter(p => p.bedrooms > 0 || p.sqft > 0).length;
+  const lakefront = AP.filter(p => p.waterType === 'LAKEFRONT').length;
+  const dogFriendly = AP.filter(p => p.dogSwimAccessible).length;
+  const lakes = [...new Set(AP.map(p => p.waterBodyName))].length;
 
   if (!heroStatsAnimated) {
     heroStatsAnimated = true;
@@ -48593,13 +48742,14 @@ function updateHeroStats() {
 // ========== INIT ==========
 
 function populateCountyFilters() {
-  const counties = [...new Set(PROPERTIES.map(p => p.county || 'Monroe'))].sort();
-  if (counties.length <= 1) return; // Don't show if only one county
+  const AP = getActiveProperties();
+  const counties = [...new Set(AP.map(p => p.county || 'Monroe'))].sort();
+  if (counties.length <= 1) return;
   ['filter-county', 'mf-county'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     counties.forEach(c => {
-      const count = PROPERTIES.filter(p => (p.county || 'Monroe') === c).length;
+      const count = AP.filter(p => (p.county || 'Monroe') === c).length;
       sel.insertAdjacentHTML('beforeend', `<option value="${c}">${c} County (${count})</option>`);
     });
   });
@@ -48615,7 +48765,8 @@ function onCountyFilter() {
 
 function repopulateLakeFilter() {
   const county = activeFilters.county;
-  const props = county === 'all' ? PROPERTIES : PROPERTIES.filter(p => (p.county || 'Monroe') === county);
+  const AP = getActiveProperties();
+  const props = county === 'all' ? AP : AP.filter(p => (p.county || 'Monroe') === county);
   const lakes = [...new Set(props.map(p => p.waterBodyName))].sort();
   ['filter-lake', 'mf-lake'].forEach(id => {
     const sel = document.getElementById(id);
@@ -48667,6 +48818,26 @@ function populateLakeFilters() {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadTheme();
+
+  // Detect region from URL param
+  const urlRegion = new URLSearchParams(window.location.search).get('region');
+  if (urlRegion && REGIONS[urlRegion]) {
+    activeRegion = urlRegion;
+    document.querySelectorAll('.region-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.region === urlRegion);
+    });
+    const titleEl = document.querySelector('#header .gradient-text');
+    if (titleEl) titleEl.textContent = urlRegion === 'pa-poconos' ? 'Pocono Lakehouse Search' : 'Catskills Lakehouse Search';
+  }
+
+  // Update region tab counts
+  const paCount = PROPERTIES.filter(p => p.bedrooms > 0 || p.sqft > 0).length;
+  const nyCount = NY_PROPERTIES.filter(p => p.bedrooms > 0 || p.sqft > 0).length;
+  const paTab = document.getElementById('tab-count-pa');
+  const nyTab = document.getElementById('tab-count-ny');
+  if (paTab) paTab.textContent = paCount > 0 ? `(${paCount})` : '';
+  if (nyTab) nyTab.textContent = nyCount > 0 ? `(${nyCount})` : '(Coming soon)';
+
   deduplicateProperties();
   enrichSources();
   enrichWithDistances();
@@ -48689,8 +48860,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load saved pre-qual data
   loadPreQual();
 
-  // Weather
-  fetchPoconoWeather();
+  // Weather — use active region
+  const region = REGIONS[activeRegion];
+  fetchWeather(region.weatherLat, region.weatherLng, region.weatherLabel);
 
   // Price drop detection
   const drops = trackPrices();
