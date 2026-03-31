@@ -99,25 +99,27 @@ const LAKES = [
   lake('Tink Wig Lake', 'tink-wig-lake', { id: 'b11643', county: 'Pike', city: 'Hawley' }),
   lake('Woodledge Lake', 'woodledge-lake', { id: 'b17980', county: 'Pike', city: 'Lackawaxen' }),
 
-  // === Sullivan County, NY Lakes ===
-  lake('White Lake', 'white-lake', { id: 'b645', county: 'Sullivan', state: 'NY', city: 'White Lake', zip: '12786', motorboats: true }),
-  lake('Swinging Bridge Reservoir', 'swinging-bridge-reservoir', { id: 'b1342', county: 'Sullivan', state: 'NY', city: 'Monticello', zip: '12701', motorboats: true }),
-  lake('Black Lake', 'black-lake', { id: 'b627', county: 'Sullivan', state: 'NY', city: 'Youngsville' }),
-  lake('Mountain Lake', 'mountain-lake', { id: 'b6560', county: 'Sullivan', state: 'NY', city: 'Monticello' }),
-  lake('Lake Huntington', 'lake-huntington', { id: 'b12341', county: 'Sullivan', state: 'NY', city: 'Lake Huntington', zip: '12752', motorboats: true }),
-  lake('Highland Lake', 'highland-lake', { id: 'b12342', county: 'Sullivan', state: 'NY', city: 'Highland Lake', zip: '12743', hoa: 600, motorboats: true }),
-  lake('Mohican Lake', 'mohican-lake', { id: 'b12343', county: 'Sullivan', state: 'NY', city: 'Glen Spey', zip: '12737', motorboats: true }),
-  lake('Sackett Lake', 'sackett-lake', { id: 'b12344', county: 'Sullivan', state: 'NY', city: 'Monticello', zip: '12701', motorboats: true }),
-  lake('Wolf Lake', 'wolf-lake', { id: 'b12345', county: 'Sullivan', state: 'NY', city: 'Wurtsboro', zip: '12790' }),
-  lake('Yankee Lake', 'yankee-lake', { id: 'b12346', county: 'Sullivan', state: 'NY', city: 'Wurtsboro', zip: '12790' }),
-  lake('Wanaksink Lake', 'wanaksink-lake', { id: 'b12347', county: 'Sullivan', state: 'NY', city: 'Livingston Manor', zip: '12758' }),
-  lake('Lake Louise Marie', 'lake-louise-marie', { id: 'b12348', county: 'Sullivan', state: 'NY', city: 'Rock Hill', zip: '12775', hoa: 800 }),
-  lake('Loch Sheldrake', 'loch-sheldrake', { id: 'b12349', county: 'Sullivan', state: 'NY', city: 'Loch Sheldrake', zip: '12759' }),
-  lake('Tennanah Lake', 'tennanah-lake', { id: 'b12350', county: 'Sullivan', state: 'NY', city: 'Roscoe', zip: '12776', motorboats: true }),
-  lake('Swan Lake', 'swan-lake', { id: 'b12351', county: 'Sullivan', state: 'NY', city: 'Swan Lake', zip: '12783' }),
-  lake('Kenoza Lake', 'kenoza-lake', { id: 'b12352', county: 'Sullivan', state: 'NY', city: 'Kenoza Lake', zip: '12750' }),
-  lake('Toronto Reservoir', 'toronto-reservoir', { id: 'b12353', county: 'Sullivan', state: 'NY', city: 'Bethel', zip: '12720', motorboats: true }),
-  lake('Kiamesha Lake', 'kiamesha-lake', { id: 'b12354', county: 'Sullivan', state: 'NY', city: 'Kiamesha Lake', zip: '12751' }),
+  // === Sullivan County, NY Lakes (verified LakeHouse.com IDs) ===
+  // b-codes confirmed working — non-sequential, not placeholder IDs
+  lake('White Lake',              'white-lake',              { id: 'b645',   county: 'Sullivan', state: 'NY', city: 'White Lake',       zip: '12786', motorboats: true }),
+  lake('Swinging Bridge Reservoir','swinging-bridge-reservoir',{ id: 'b1342',  county: 'Sullivan', state: 'NY', city: 'Monticello',       zip: '12701', motorboats: true }),
+  lake('Black Lake',              'black-lake',              { id: 'b627',   county: 'Sullivan', state: 'NY', city: 'Youngsville' }),
+  lake('Mountain Lake',           'mountain-lake',           { id: 'b6560',  county: 'Sullivan', state: 'NY', city: 'Monticello' }),
+  lake('Wolf Lake',               'wolf-lake',               { id: 'b646',   county: 'Sullivan', state: 'NY', city: 'Wurtsboro',        zip: '12790' }),
+  lake('Yankee Lake',             'yankee-lake',             { id: 'b626',   county: 'Sullivan', state: 'NY', city: 'Wurtsboro',        zip: '12790' }),
+  lake('Wanaksink Lake',          'wanaksink-lake',          { id: 'b647',   county: 'Sullivan', state: 'NY', city: 'Livingston Manor', zip: '12758' }),
+  lake('Pine Lake',               'pine-lake',               { id: 'b638',   county: 'Sullivan', state: 'NY', city: 'Forestburgh',      zip: '12777' }),
+  lake('Lake Huntington',         'lake-huntington',         { id: 'b4341',  county: 'Sullivan', state: 'NY', city: 'Lake Huntington',  zip: '12752', motorboats: true }),
+  lake('Swan Lake',               'swan-lake',               { id: 'b4365',  county: 'Sullivan', state: 'NY', city: 'Swan Lake',        zip: '12783' }),
+  lake('Kenoza Lake',             'kenoza-lake',             { id: 'b4330',  county: 'Sullivan', state: 'NY', city: 'Kenoza Lake',      zip: '12750' }),
+  lake('Sackett Lake',            'sackett-lake',            { id: 'b2353',  county: 'Sullivan', state: 'NY', city: 'Monticello',       zip: '12701', motorboats: true }),
+  lake('Highland Lake',           'highland-lake',           { id: 'b2325',  county: 'Sullivan', state: 'NY', city: 'Highland Lake',    zip: '12743', hoa: 600, motorboats: true }),
+  lake('Loch Sheldrake',          'loch-sheldrake',          { id: 'b5404',  county: 'Sullivan', state: 'NY', city: 'Loch Sheldrake',  zip: '12759' }),
+  lake('Lake Louise Marie',       'lake-louise-marie',       { id: 'b1339',  county: 'Sullivan', state: 'NY', city: 'Rock Hill',        zip: '12775', hoa: 800 }),
+  lake('Kiamesha Lake',           'kiamesha-lake',           { id: 'b8579',  county: 'Sullivan', state: 'NY', city: 'Kiamesha Lake',   zip: '12751' }),
+  lake('Hunter Lake',             'hunter-lake',             { id: 'b8260',  county: 'Sullivan', state: 'NY', city: 'Grahamsville',    zip: '12740' }),
+  lake('Crystal Lake',            'crystal-lake',            { id: 'b22615', county: 'Sullivan', state: 'NY', city: 'Bethel',          zip: '12720' }),
+  // Note: Mohican Lake, Tennanah Lake, and Toronto Reservoir are not indexed on LakeHouse.com
 ];
 
 // 2025 Monroe County Township Millage Rates (total mills = county + library + municipal + school)
@@ -228,23 +230,45 @@ const FALLBACK_PHOTOS = [
 ];
 
 // Generate property-specific search URLs for each listing site
-function getSourcesForProperty(address, city, zipCode) {
-  const q = encodeURIComponent(`${address} ${city} PA ${zipCode}`);
+function getSourcesForProperty(address, city, zipCode, state) {
+  state = state || 'PA';
+  const stateCode = state;
+  const q = encodeURIComponent(`${address} ${city} ${stateCode} ${zipCode}`);
   const addr = encodeURIComponent(address);
+  const citySlug = encodeURIComponent(city.toLowerCase().replace(/\s+/g, '-'));
+  const cityUpper = encodeURIComponent(city.toUpperCase().replace(/\s+/g, ''));
+
+  if (state === 'NY') {
+    return [
+      { name: 'Zillow',           url: `https://www.zillow.com/homes/${q}_rb/`, verified: false },
+      { name: 'Redfin',           url: `https://www.redfin.com/search#query=${q}`, verified: false },
+      { name: 'Realtor.com',      url: `https://www.realtor.com/realestateandhomes-search/${encodeURIComponent(city + '_NY')}/type-single-family-home?keyword=${addr}`, verified: false },
+      { name: 'Trulia',           url: `https://www.trulia.com/home/${q}`, verified: false },
+      { name: 'Homes.com',        url: `https://www.homes.com/property-search/?q=${q}`, verified: false },
+      { name: 'Howard Hanna',     url: `https://www.howardhanna.com/Search?q=${q}`, verified: false },
+      { name: 'Weichert',         url: `https://www.weichert.com/search/?query=${q}`, verified: false },
+      { name: 'Coldwell Banker',  url: `https://www.coldwellbanker.com/search?query=${q}`, verified: false },
+      { name: 'Century 21',       url: `https://www.century21.com/real-estate/${citySlug}-ny/LCNY${cityUpper}/?k=${addr}`, verified: false },
+      { name: 'Catskills RE',     url: `https://sullivancounty4sale.com/search/?q=${q}`, verified: false },
+      { name: 'Find Homes HV',    url: `https://www.findhomesinhudsonvalley.com/search/?q=${q}`, verified: false },
+      { name: 'Mashvisor',        url: `https://www.mashvisor.com/search?query=${q}`, verified: false },
+    ];
+  }
+
   return [
-    { name: 'Zillow', url: `https://www.zillow.com/homes/${q}_rb/`, verified: false },
-    { name: 'Redfin', url: `https://www.redfin.com/search#query=${q}`, verified: false },
-    { name: 'Realtor.com', url: `https://www.realtor.com/realestateandhomes-search/${encodeURIComponent(city + '_PA')}/type-single-family-home?keyword=${addr}`, verified: false },
-    { name: 'Trulia', url: `https://www.trulia.com/home/${q}`, verified: false },
-    { name: 'Homes.com', url: `https://www.homes.com/property-search/?q=${q}`, verified: false },
-    { name: 'FlexMLS', url: `https://poconorealestate.flexmls.com/cgi-bin/mainmenu.cgi?cmd=url+search/quick&search_text=${addr}`, verified: false },
-    { name: 'Century 21', url: `https://www.century21.com/real-estate/${encodeURIComponent(city.toLowerCase().replace(/\s+/g,'-'))}-pa/LCPA${encodeURIComponent(city.toUpperCase().replace(/\s+/g,''))}/?k=${addr}`, verified: false },
-    { name: 'Weichert', url: `https://www.weichert.com/search/?query=${q}`, verified: false },
-    { name: 'Coldwell Banker', url: `https://www.coldwellbanker.com/search?query=${q}`, verified: false },
-    { name: 'Movoto', url: `https://www.movoto.com/search/?q=${q}`, verified: false },
-    { name: 'Pocono RE', url: `https://www.poconosrealestate.com/search/?search_text=${addr}`, verified: false },
-    { name: 'Mashvisor', url: `https://www.mashvisor.com/search?query=${q}`, verified: false },
-    { name: 'Howard Hanna', url: `https://www.howardhanna.com/Search?q=${q}`, verified: false },
+    { name: 'Zillow',         url: `https://www.zillow.com/homes/${q}_rb/`, verified: false },
+    { name: 'Redfin',         url: `https://www.redfin.com/search#query=${q}`, verified: false },
+    { name: 'Realtor.com',    url: `https://www.realtor.com/realestateandhomes-search/${encodeURIComponent(city + '_PA')}/type-single-family-home?keyword=${addr}`, verified: false },
+    { name: 'Trulia',         url: `https://www.trulia.com/home/${q}`, verified: false },
+    { name: 'Homes.com',      url: `https://www.homes.com/property-search/?q=${q}`, verified: false },
+    { name: 'FlexMLS',        url: `https://poconorealestate.flexmls.com/cgi-bin/mainmenu.cgi?cmd=url+search/quick&search_text=${addr}`, verified: false },
+    { name: 'Century 21',     url: `https://www.century21.com/real-estate/${citySlug}-pa/LCPA${cityUpper}/?k=${addr}`, verified: false },
+    { name: 'Weichert',       url: `https://www.weichert.com/search/?query=${q}`, verified: false },
+    { name: 'Coldwell Banker',url: `https://www.coldwellbanker.com/search?query=${q}`, verified: false },
+    { name: 'Movoto',         url: `https://www.movoto.com/search/?q=${q}`, verified: false },
+    { name: 'Pocono RE',      url: `https://www.poconosrealestate.com/search/?search_text=${addr}`, verified: false },
+    { name: 'Mashvisor',      url: `https://www.mashvisor.com/search?query=${q}`, verified: false },
+    { name: 'Howard Hanna',   url: `https://www.howardhanna.com/Search?q=${q}`, verified: false },
   ];
 }
 
@@ -993,7 +1017,7 @@ function generatePropertyJS(listing, id) {
   const verifiedSources = (listing._sources || [{ name: 'LakeHouse.com', url: listing.listingUrl, verified: true }]);
   if (listing.realtorUrl) verifiedSources.push({ name: 'Realtor.com', url: listing.realtorUrl, verified: true });
 
-  const searchLinks = getSourcesForProperty(listing.address, listing.city, listing.zipCode)
+  const searchLinks = getSourcesForProperty(listing.address, listing.city, listing.zipCode, listing.state || 'PA')
     .filter(s => !verifiedSources.some(v => v.name === s.name));
 
   const sources = [...verifiedSources, ...searchLinks];
