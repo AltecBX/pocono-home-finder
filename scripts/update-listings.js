@@ -1042,7 +1042,7 @@ function generatePropertyJS(listing, id) {
   const safeDogNotes = JSON.stringify(dogNotes);
 
   return `  {
-    id: ${id}, address: "${safeAddress}", city: "${safeCity}", zipCode: "${listing.zipCode || ''}",
+    id: ${id}, address: "${safeAddress}", city: "${safeCity}", zipCode: "${listing.zipCode || ''}", state: "${listing.state || 'PA'}",
     price: ${listing.price}, ${listing.isReduced ? `previousPrice: ${Math.round(listing.price * 1.08)}, ` : ''}bedrooms: ${listing.bedrooms || 0}, bathrooms: ${listing.bathrooms || 0}, sqft: ${listing.sqft || 0}, lotAcres: ${listing.lotAcres || 0}, yearBuilt: ${listing.yearBuilt || 0},
     waterType: "${waterType}", waterBodyName: "${listing.waterBodyName}", county: "${listing.county || 'Monroe'}",
     overallScore: ${overallScore}, waterAccessScore: ${waterScore}, dogSwimScore: ${dogScore}, privacyScore: ${privacyScore}, valueScore: ${valueScore},
