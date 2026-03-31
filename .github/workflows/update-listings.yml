@@ -39,5 +39,9 @@ jobs:
 
           Automated daily refresh of Pocono & Catskills waterfront listings.
           Source: LakeHouse.com (direct scrape, no API keys needed)"
-          git pull --rebase origin main
+          # Fetch latest remote changes
+          git fetch origin main
+          # Merge remote into local — if there's a conflict in index.html,
+          # prefer the scraper's freshly-generated version (ours)
+          git merge origin/main -X ours --no-edit || true
           git push
