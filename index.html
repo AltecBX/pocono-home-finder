@@ -230,7 +230,76 @@ tailwind.config = {
     animation-delay: 4s;
   }
 
-  /* ========== CATSKILLS REGION GLOW (earthy green/forest tint) ========== */
+  /* ========== CATSKILLS REGION — Subtle forest-green accent theme ========== */
+  /* Shift the whole app's accent from sky-blue to emerald-green when NY tab is active */
+
+  html[data-region="ny-catskills"] {
+    --accent-water: #6ee7b7;   /* emerald-300 — lighter, softer green */
+    --accent-brand: #34d399;   /* emerald-400 */
+  }
+
+  /* gradient-text: blue→green */
+  html[data-region="ny-catskills"] .gradient-text {
+    background: linear-gradient(135deg, #f8fafc 0%, #6ee7b7 50%, #34d399 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  html[data-theme="light"][data-region="ny-catskills"] .gradient-text {
+    background: linear-gradient(135deg, #065f46, #059669);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Tailwind text-water → green */
+  html[data-region="ny-catskills"] .text-water { color: #6ee7b7 !important; }
+
+  /* Tailwind bg-water/* opacity variants */
+  html[data-region="ny-catskills"] .bg-water\/5  { background-color: rgba(110,231,183,0.05) !important; }
+  html[data-region="ny-catskills"] .bg-water\/10 { background-color: rgba(110,231,183,0.10) !important; }
+  html[data-region="ny-catskills"] .bg-water\/20 { background-color: rgba(110,231,183,0.20) !important; }
+
+  /* Tailwind border-water/* variants */
+  html[data-region="ny-catskills"] .border-water\/30 { border-color: rgba(110,231,183,0.30) !important; }
+
+  /* hover variants */
+  html[data-region="ny-catskills"] .hover\:text-water:hover        { color: #6ee7b7 !important; }
+  html[data-region="ny-catskills"] .hover\:border-water\/30:hover  { border-color: rgba(110,231,183,0.30) !important; }
+  html[data-region="ny-catskills"] .hover\:bg-water\/10:hover      { background-color: rgba(110,231,183,0.10) !important; }
+  html[data-region="ny-catskills"] .hover\:bg-water\/20:hover      { background-color: rgba(110,231,183,0.20) !important; }
+  html[data-region="ny-catskills"] .group:hover .group-hover\:text-water { color: #6ee7b7 !important; }
+
+  /* Active-layer map button */
+  html[data-region="ny-catskills"] .active-layer {
+    border-color: rgba(110,231,183,0.30) !important;
+    color: #6ee7b7 !important;
+    background: rgba(110,231,183,0.08) !important;
+  }
+
+  /* Region tab active state */
+  html[data-region="ny-catskills"] .region-tab.active {
+    color: #6ee7b7;
+    background: rgba(110,231,183,0.08);
+    border-color: rgba(110,231,183,0.25);
+  }
+
+  /* Toggle switch */
+  html[data-region="ny-catskills"] .toggle-switch.active { background: #34d399; }
+
+  /* Typing cursor */
+  html[data-region="ny-catskills"] .typing-cursor {
+    border-right-color: #6ee7b7;
+  }
+
+  /* water-gradient-line in footer: auto via --accent-water */
+
+  /* Hero ambient glow orbs */
+  html[data-region="ny-catskills"] .hero-glow.glow-1 { background: rgba(52, 211, 153, 0.13); }
+  html[data-region="ny-catskills"] .hero-glow.glow-2 { background: rgba(16, 185, 129, 0.10); }
+  html[data-region="ny-catskills"] .hero-glow.glow-3 { background: rgba(52, 211, 153, 0.07); }
+
+  /* Keep the old class-based glow for compatibility */
   .catskills-glow.glow-1 { background: rgba(52, 211, 153, 0.13); }
   .catskills-glow.glow-2 { background: rgba(16, 185, 129, 0.10); }
   .catskills-glow.glow-3 { background: rgba(52, 211, 153, 0.07); }
@@ -48441,6 +48510,9 @@ function updateRegionContent(regionId) {
   const c = REGION_CONTENT[regionId];
   if (!c) return;
 
+  // Set data-region on <html> so all CSS variable overrides and Tailwind targeting apply
+  document.documentElement.dataset.region = regionId;
+
   // Header title
   const headerTitle = document.querySelector('#header .gradient-text');
   if (headerTitle) headerTitle.textContent = c.appTitle;
@@ -48471,13 +48543,7 @@ function updateRegionContent(regionId) {
   const footerTagline = document.getElementById('footer-tagline');
   if (footerTagline) footerTagline.textContent = c.footerTagline;
 
-  // Ambient glow color for Catskills (earthy green) vs Poconos (ocean blue)
-  const heroGlows = document.querySelectorAll('.hero-glow');
-  if (regionId === 'ny-catskills') {
-    heroGlows.forEach(g => g.classList.add('catskills-glow'));
-  } else {
-    heroGlows.forEach(g => g.classList.remove('catskills-glow'));
-  }
+  // Hero glow color handled via html[data-region] CSS — no JS manipulation needed
 
   // Update page title
   document.title = c.appTitle + ' — Jerry & Theresa\'s 2nd Home';
