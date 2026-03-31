@@ -37,6 +37,7 @@ jobs:
           git add index.html
           git commit -m "Auto-update listings $(date +'%Y-%m-%d')
 
-          Automated daily refresh of Pocono waterfront listings.
+          Automated daily refresh of Pocono & Catskills waterfront listings.
           Source: LakeHouse.com (direct scrape, no API keys needed)"
+          git pull --rebase origin main
           git push
