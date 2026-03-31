@@ -26,15 +26,18 @@ const INDEX_PATH = path.join(__dirname, '..', 'index.html');
 
 // Helper to build a lake config entry
 function lake(name, urlSlug, opts = {}) {
+  const state = opts.state || 'PA';
+  const stateSlug = state === 'NY' ? 'new-york' : 'pennsylvania';
   return {
     name,
     waterBodyName: name,
-    indexUrl: `https://www.lakehouse.com/${urlSlug}-pennsylvania-lake-homes-for-sale-${opts.id}.html`,
+    indexUrl: `https://www.lakehouse.com/${urlSlug}-${stateSlug}-lake-homes-for-sale-${opts.id}.html`,
     city: opts.city || null,
     zipCode: opts.zip || null,
     hoaFee: opts.hoa || 0,
     motorboats: opts.motorboats || false,
     county: opts.county || 'Monroe',
+    state,
   };
 }
 
@@ -95,6 +98,26 @@ const LAKES = [
   lake('Westcolang Lake', 'westcolang-lake', { id: 'b1465', county: 'Pike', city: 'Lackawaxen' }),
   lake('Tink Wig Lake', 'tink-wig-lake', { id: 'b11643', county: 'Pike', city: 'Hawley' }),
   lake('Woodledge Lake', 'woodledge-lake', { id: 'b17980', county: 'Pike', city: 'Lackawaxen' }),
+
+  // === Sullivan County, NY Lakes ===
+  lake('White Lake', 'white-lake', { id: 'b645', county: 'Sullivan', state: 'NY', city: 'White Lake', zip: '12786', motorboats: true }),
+  lake('Swinging Bridge Reservoir', 'swinging-bridge-reservoir', { id: 'b1342', county: 'Sullivan', state: 'NY', city: 'Monticello', zip: '12701', motorboats: true }),
+  lake('Black Lake', 'black-lake', { id: 'b627', county: 'Sullivan', state: 'NY', city: 'Youngsville' }),
+  lake('Mountain Lake', 'mountain-lake', { id: 'b6560', county: 'Sullivan', state: 'NY', city: 'Monticello' }),
+  lake('Lake Huntington', 'lake-huntington', { id: 'b12341', county: 'Sullivan', state: 'NY', city: 'Lake Huntington', zip: '12752', motorboats: true }),
+  lake('Highland Lake', 'highland-lake', { id: 'b12342', county: 'Sullivan', state: 'NY', city: 'Highland Lake', zip: '12743', hoa: 600, motorboats: true }),
+  lake('Mohican Lake', 'mohican-lake', { id: 'b12343', county: 'Sullivan', state: 'NY', city: 'Glen Spey', zip: '12737', motorboats: true }),
+  lake('Sackett Lake', 'sackett-lake', { id: 'b12344', county: 'Sullivan', state: 'NY', city: 'Monticello', zip: '12701', motorboats: true }),
+  lake('Wolf Lake', 'wolf-lake', { id: 'b12345', county: 'Sullivan', state: 'NY', city: 'Wurtsboro', zip: '12790' }),
+  lake('Yankee Lake', 'yankee-lake', { id: 'b12346', county: 'Sullivan', state: 'NY', city: 'Wurtsboro', zip: '12790' }),
+  lake('Wanaksink Lake', 'wanaksink-lake', { id: 'b12347', county: 'Sullivan', state: 'NY', city: 'Livingston Manor', zip: '12758' }),
+  lake('Lake Louise Marie', 'lake-louise-marie', { id: 'b12348', county: 'Sullivan', state: 'NY', city: 'Rock Hill', zip: '12775', hoa: 800 }),
+  lake('Loch Sheldrake', 'loch-sheldrake', { id: 'b12349', county: 'Sullivan', state: 'NY', city: 'Loch Sheldrake', zip: '12759' }),
+  lake('Tennanah Lake', 'tennanah-lake', { id: 'b12350', county: 'Sullivan', state: 'NY', city: 'Roscoe', zip: '12776', motorboats: true }),
+  lake('Swan Lake', 'swan-lake', { id: 'b12351', county: 'Sullivan', state: 'NY', city: 'Swan Lake', zip: '12783' }),
+  lake('Kenoza Lake', 'kenoza-lake', { id: 'b12352', county: 'Sullivan', state: 'NY', city: 'Kenoza Lake', zip: '12750' }),
+  lake('Toronto Reservoir', 'toronto-reservoir', { id: 'b12353', county: 'Sullivan', state: 'NY', city: 'Bethel', zip: '12720', motorboats: true }),
+  lake('Kiamesha Lake', 'kiamesha-lake', { id: 'b12354', county: 'Sullivan', state: 'NY', city: 'Kiamesha Lake', zip: '12751' }),
 ];
 
 // 2025 Monroe County Township Millage Rates (total mills = county + library + municipal + school)
@@ -128,6 +151,23 @@ const TOWNSHIP_MILLAGE = {
   'Porter':            28.5, // Delaware Valley SD
   'Shohola':           28.2, // Delaware Valley SD
   'Westfall':          30.0, // Delaware Valley SD
+  // Sullivan County, NY Towns — NY uses tax rate per $1000 of assessed value
+  // These are total rates (county + town + school)
+  'Bethel':            35.0,
+  'Callicoon':         33.0,
+  'Cochecton':         34.0,
+  'Delaware NY':       32.0,
+  'Fallsburg':         38.0,
+  'Forestburgh':       30.0,
+  'Fremont':           32.0,
+  'Highland NY':       34.0,
+  'Liberty':           36.0,
+  'Lumberland':        33.0,
+  'Mamakating':        35.0,
+  'Neversink':         32.0,
+  'Rockland':          34.0,
+  'Thompson':          37.0,
+  'Tusten':            33.0,
 };
 
 // Map city names and zip codes to townships for tax calculation
@@ -149,6 +189,18 @@ const CITY_TO_TOWNSHIP = {
   'shohola': 'Shohola', 'matamoras': 'Westfall', 'greeley': 'Blooming Grove',
   'tafton': 'Paupack', 'paupack': 'Paupack', 'bushkill pike': 'Lehman Pike',
   'tamiment': 'Lehman Pike', 'lake ariel': 'Palmyra',
+  // Sullivan County, NY
+  'monticello': 'Thompson', 'kiamesha lake': 'Thompson', 'rock hill': 'Thompson',
+  'white lake': 'Bethel', 'kauneonga lake': 'Bethel', 'bethel': 'Bethel',
+  'swan lake': 'Liberty', 'liberty': 'Liberty', 'loch sheldrake': 'Fallsburg',
+  'south fallsburg': 'Fallsburg', 'woodbourne': 'Fallsburg', 'hurleyville': 'Fallsburg',
+  'glen spey': 'Lumberland', 'lake huntington': 'Cochecton',
+  'livingston manor': 'Rockland', 'roscoe': 'Rockland',
+  'highland lake': 'Highland NY', 'narrowsburg': 'Tusten',
+  'kenoza lake': 'Fremont', 'youngsville': 'Callicoon',
+  'wurtsboro': 'Mamakating', 'summitville': 'Mamakating',
+  'forestburgh': 'Forestburgh', 'neversink': 'Neversink',
+  'grahamsville': 'Neversink', 'jeffersonville': 'Callicoon',
 };
 
 // PA property tax: millage applies to ASSESSED VALUE, not market price.
@@ -157,6 +209,7 @@ const CITY_TO_TOWNSHIP = {
 const COUNTY_CLR = {
   'Monroe': 0.275,
   'Pike': 0.203,
+  'Sullivan': 0.40, // NY Sullivan County avg equalization rate ~40%
 };
 
 function getAnnualTax(price, city, county) {
@@ -809,6 +862,7 @@ function parseIndexPageHTML(html, lake) {
     // Fill in lake data
     listing.waterBodyName = lake.waterBodyName;
     listing.county = lake.county || 'Monroe';
+    listing.state = lake.state || 'PA';
     listing.hoaFee = lake.hoaFee || 0;
     listing.motorboats = lake.motorboats || false;
     if (!listing.city || listing.city === '') listing.city = lake.city || '';
@@ -1171,8 +1225,35 @@ async function main() {
     process.exit(1);
   }
 
-  const newArray = `const PROPERTIES = [\n${propertiesJS}\n]`;
+  // Split listings into PA and NY
+  const paListings = allListings.filter(l => (l.state || 'PA') !== 'NY');
+  const nyListings = allListings.filter(l => l.state === 'NY');
+
+  const paPropertiesJS = paListings.map((l, i) => generatePropertyJS(l, i + 1)).join(',\n');
+  const nyPropertiesJS = nyListings.map((l, i) => generatePropertyJS(l, 10000 + i + 1)).join(',\n');
+
+  const newArray = `const PROPERTIES = [\n${paPropertiesJS}\n]`;
   html = html.substring(0, startIdx) + newArray + html.substring(endIdx);
+
+  // Also update NY_PROPERTIES array
+  const nyStartMarker = 'const NY_PROPERTIES = [';
+  const nyStartIdx = html.indexOf(nyStartMarker);
+  if (nyStartIdx !== -1) {
+    let nyDepth = 0;
+    let nyEndIdx = -1;
+    for (let i = nyStartIdx + nyStartMarker.length; i < html.length; i++) {
+      if (html[i] === '[') nyDepth++;
+      if (html[i] === ']') {
+        if (nyDepth === 0) { nyEndIdx = i + 1; break; }
+        nyDepth--;
+      }
+    }
+    if (nyEndIdx !== -1) {
+      const newNYArray = `const NY_PROPERTIES = [\n${nyPropertiesJS}\n]`;
+      html = html.substring(0, nyStartIdx) + newNYArray + html.substring(nyEndIdx);
+      console.log(`   NY listings: ${nyListings.length}`);
+    }
+  }
 
   // Update the "Last updated" date
   html = html.replace(
