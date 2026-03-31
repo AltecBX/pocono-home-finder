@@ -364,11 +364,14 @@ async function scrapeRedfin() {
 
   // Helper to process a set of homes from one Redfin county response
   function processRedfinHomes(homes, regionLabel, stateCode, countyName) {
-    // Broad water-body keyword set — covers lakes, ponds, brooks, creeks, rivers, reservoirs
-    const waterKeywords = /\b(lake|lakefront|lake\s*front|waterfront|water\s*front|pond|lakeshore|lakeside|lake\s*access|lake\s*community|lake\s*view|lake\s*rights|brook|creek|river|stream|reservoir|shore|shorefront|shoreline|beach|dock|boat\s*dock|boat\s*launch|marina|cove|inlet|bay|waterway|riparian|riparian\s*rights)\b/i;
-    // Also check street/address name for water-body words (catches "Beaver Brook Rd", "Lake Shore Dr", etc.)
-    const streetWaterWords = /\b(lake|pond|brook|creek|river|stream|shore|beach|bay|cove|marina|dock|water|reservoir)\b/i;
+    // Keywords that reliably indicate actual waterfront/lake access (not just "near a creek")
+    // Deliberately excludes: brook, creek, river, stream, shore — too many false positives
+    // (a house "backing to a seasonal brook" or on "Beaver Brook Rd" is not a lake property)
+    const waterKeywords = /\b(lake|lakefront|lake\s*front|waterfront|water\s*front|pond\s*front|pondfront|lake\s*access|lake\s*community|lake\s*view|lake\s*rights|lakeshore|lakeside|deeded\s*water|water\s*access|private\s*beach|boat\s*dock|boat\s*launch|dock\s*rights|lake\s*lot|waterfront\s*lot|on\s*the\s*lake|on\s*the\s*water)\b/i;
+    // Named Sullivan County lake communities that are hard to catch otherwise
     const lakesForRegion = stateCode === 'NY' ? NY_LAKES : LAKES.filter(l => l.state === 'PA');
+    // For NY: also match against known lake names even if "lake" word not present in phrase
+    const nyLakeNames = NY_LAKES.map(l => l.name.toLowerCase());
     console.log(`   Redfin returned ${homes.length} total ${regionLabel} listings`);
 
     for (const home of homes) {
@@ -377,13 +380,14 @@ async function scrapeRedfin() {
       const subdivision = home.location || '';
       const address = home.streetLine || '';
       const zip = String(home.zip || '');
+      const allText = `${remarks} ${tags} ${subdivision}`.toLowerCase();
 
-      // Include if any field has a water keyword OR the street name itself has a water word
-      // (e.g. "Beaver Brook Rd" → brook in street; "Lake Shore Dr" → lake in street)
+      // Must have an explicit waterfront keyword in description/tags/subdivision
       const isWaterfront = waterKeywords.test(remarks) || waterKeywords.test(tags) ||
-                           waterKeywords.test(subdivision) || waterKeywords.test(address);
-      const hasWaterStreet = streetWaterWords.test(address);
-      if (!isWaterfront && !hasWaterStreet) continue;
+                           waterKeywords.test(subdivision);
+      // OR subdivision/remarks explicitly names one of our known lake communities
+      const namesALake = stateCode === 'NY' && nyLakeNames.some(n => allText.includes(n));
+      if (!isWaterfront && !namesALake) continue;
 
       // Match to a specific lake
       let matchedLake = 'Unknown Lake';
