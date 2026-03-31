@@ -892,9 +892,9 @@ function parseIndexPageHTML(html, lake) {
     if (!listing.city || listing.city === '') listing.city = lake.city || '';
     if (!listing.zipCode || listing.zipCode === '') listing.zipCode = lake.zipCode || '';
 
-    // Extract city/zip from listing URL if missing
+    // Extract city/zip from listing URL if missing (handles both PA and NY)
     if ((!listing.city || !listing.zipCode) && listing.listingUrl) {
-      const urlMatch = listing.listingUrl.match(/-([a-z-]+)-pennsylvania-(\d{5})-/);
+      const urlMatch = listing.listingUrl.match(/-([a-z-]+)-(?:pennsylvania|new-york)-(\d{5})-/);
       if (urlMatch) {
         if (!listing.city) listing.city = urlMatch[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         if (!listing.zipCode) listing.zipCode = urlMatch[2];
