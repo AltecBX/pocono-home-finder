@@ -343,6 +343,28 @@ for (const l of LAKES) {
 
 // ========== REDFIN STINGRAY API ==========
 
+// Build a Redfin CDN photo URL straight from the GIS API fields — no page fetch needed,
+// so this works from GitHub Actions (whose IPs Redfin's website blocks but whose CDN it serves).
+// Pattern proven across data sources: photo/{dataSourceId}/mbpaddedwide/{last3ofMlsNumber}/genMid.{mlsId}_{n}.jpg
+function redfinPhotoUrl(dataSourceId, mlsId, n) {
+  if (!dataSourceId || !mlsId) return '';
+  const digits = String(mlsId).replace(/[^0-9]/g, '');
+  if (digits.length < 1) return '';
+  const group = digits.slice(-3);
+  return `https://ssl.cdn-redfin.com/photo/${dataSourceId}/mbpaddedwide/${group}/genMid.${mlsId}_${n}.jpg`;
+}
+
+// Returns { image, photos } constructed from GIS data. The primary photo (_0) is reliable for
+// every data source; extra indices only exist for some, so we keep the constructed set to the
+// primary and let page-enrichment / image-preservation add full carousels when available.
+function buildRedfinPhotosFromGis(home) {
+  const ds = home && home.dataSourceId;
+  const mls = home && home.mlsId && (home.mlsId.value || home.mlsId);
+  const primary = redfinPhotoUrl(ds, mls, 0);
+  if (!primary) return { image: '', photos: [] };
+  return { image: primary, photos: [primary] };
+}
+
 async function scrapeRedfin() {
   console.log('\n🔴 Scraping Redfin (Stingray API)...');
   const listings = [];
@@ -420,7 +442,7 @@ async function scrapeRedfin() {
       const listingUrl = home.url ? `https://www.redfin.com${home.url}` : '';
       let image = '';
       const photos = [];
-      if (home.photos && home.photos.length > 0) {
+      if (Array.isArray(home.photos) && home.photos.length > 0) {
         for (const photo of home.photos) {
           let url = '';
           if (typeof photo === 'string') url = photo;
@@ -429,6 +451,13 @@ async function scrapeRedfin() {
           if (url) photos.push(url);
         }
         image = photos[0] || '';
+      }
+      // The GIS API almost never returns full photo URLs — construct the primary photo
+      // directly from the API's dataSourceId + mlsId so every card has a real image,
+      // generated entirely in CI with no page fetch (immune to Redfin's IP blocking).
+      if (!image) {
+        const built = buildRedfinPhotosFromGis(home);
+        if (built.image) { image = built.image; built.photos.forEach(p => { if (!photos.includes(p)) photos.push(p); }); }
       }
       const num = (v) => { if (v == null) return 0; if (typeof v === 'number') return v; if (typeof v === 'object' && v.value != null) return Number(v.value) || 0; return Number(v) || 0; };
       const str = (v) => { if (v == null) return ''; if (typeof v === 'string') return v; if (typeof v === 'object' && v.value != null) return String(v.value); return String(v); };
@@ -1281,19 +1310,24 @@ async function main() {
       try { if (m[3]) photos = JSON.parse(m[3]); } catch (e) {}
       if (!imgByAddr.has(addr)) imgByAddr.set(addr, { img, photos });
     }
-    let carried = 0;
+    let carried = 0, enriched = 0;
     for (const listing of allListings) {
-      if (listing.image && listing.image.trim()) continue; // already has one this run
       const prev = imgByAddr.get(normalizeAddress(listing.address));
-      if (prev && prev.img) {
+      if (!prev || !prev.img) continue;
+      // Fill a missing image from the last known good one
+      if (!listing.image || !listing.image.trim()) {
         listing.image = prev.img;
-        if ((!listing.photos || listing.photos.length === 0) && prev.photos.length) {
-          listing.photos = prev.photos;
-        }
         carried++;
       }
+      // Carry forward a richer carousel when a previous run had more photos than this one.
+      // Keep this run's (fresh) primary image first so the card thumbnail is always current.
+      if (prev.photos && prev.photos.length > (listing.photos ? listing.photos.length : 0)) {
+        const merged = [listing.image, ...prev.photos.filter(p => p && p !== listing.image)].filter(Boolean);
+        listing.photos = merged.slice(0, 30);
+        enriched++;
+      }
     }
-    console.log(`🖼️  Preserved ${carried} images from previous index.html (${imgByAddr.size} known)`);
+    console.log(`🖼️  Filled ${carried} missing + enriched ${enriched} carousels from previous index.html (${imgByAddr.size} known)`);
   } catch (e) {
     console.warn(`   Could not preserve previous images: ${e.message}`);
   }
