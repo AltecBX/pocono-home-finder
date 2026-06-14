@@ -1263,6 +1263,41 @@ async function main() {
     if (i + 3 < allListings.length) await new Promise(r => setTimeout(r, 800));
   }
 
+  // Step 2.2: Preserve images from the previous index.html.
+  // Redfin/Zillow block GitHub Actions' datacenter IPs, so og:image fetches return
+  // empty in CI. Carry forward any image we already have for the same address so a
+  // CI run can never wipe good photos. (A local run with a real IP populates them.)
+  try {
+    const prevHtml = fs.readFileSync(INDEX_PATH, 'utf8');
+    const imgByAddr = new Map();
+    // Match each property object's address + image (+ photos) from the existing file
+    const objRe = /address:\s*"([^"]*)"[\s\S]*?image:\s*"([^"]*)"(?:[\s\S]*?photos:\s*(\[[^\]]*\]))?/g;
+    let m;
+    while ((m = objRe.exec(prevHtml)) !== null) {
+      const addr = normalizeAddress(m[1]);
+      const img = m[2];
+      if (!addr || !img) continue;
+      let photos = [];
+      try { if (m[3]) photos = JSON.parse(m[3]); } catch (e) {}
+      if (!imgByAddr.has(addr)) imgByAddr.set(addr, { img, photos });
+    }
+    let carried = 0;
+    for (const listing of allListings) {
+      if (listing.image && listing.image.trim()) continue; // already has one this run
+      const prev = imgByAddr.get(normalizeAddress(listing.address));
+      if (prev && prev.img) {
+        listing.image = prev.img;
+        if ((!listing.photos || listing.photos.length === 0) && prev.photos.length) {
+          listing.photos = prev.photos;
+        }
+        carried++;
+      }
+    }
+    console.log(`🖼️  Preserved ${carried} images from previous index.html (${imgByAddr.size} known)`);
+  } catch (e) {
+    console.warn(`   Could not preserve previous images: ${e.message}`);
+  }
+
   // Step 2.5: FEMA Flood Zone lookup (5 at a time, with rate limiting)
   console.log('\n🌊 Checking FEMA flood zones...');
   for (let i = 0; i < allListings.length; i += 5) {
